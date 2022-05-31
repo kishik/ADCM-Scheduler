@@ -1,0 +1,19 @@
+{% extends "myapp/beta_base.html" %}
+{% load crispy_forms_filters %}
+
+{% block title %}
+Login Here
+{% endblock %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+    <div class="container-fluid">
+     <form method="post" class="from-group">
+	{% csrf_token %}
+	{{form|crispy}}
+	<p>Don't have an accoount? Create one <a href="/register">here</a></p>
+	<button type="submit" class="btn btn-success">Login</button>	
+    </form>
+    </div>
+{% endblock %}

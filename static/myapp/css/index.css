@@ -1,0 +1,14 @@
+svg:not(:root) {
+  overflow: visible; // Hide the overflow in IE
+}
+
+circle{
+  background-color: green;
+  color: red;
+}
+
+.row{
+  right: 0;
+  top: 0;
+}
+

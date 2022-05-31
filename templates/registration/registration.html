@@ -1,0 +1,18 @@
+{% extends "myapp/beta_base.html" %}
+{#{% load crispy_forms_filters %}#}
+{##}
+{% load crispy_forms_tags %}
+<style>
+    #registration.form-group{
+        margin: 20%;
+    }
+</style>
+
+{% block content%}
+    <form method="POST" class="form-group" id="registration">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-success">Регистрация</button>
+    </form>
+
+{% endblock content %}

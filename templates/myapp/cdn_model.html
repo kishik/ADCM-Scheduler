@@ -1,0 +1,63 @@
+{% extends "myapp/beta_base.html" %}
+{% csrf_token %}
+
+{% block content %}
+    <div class ="col-9">
+    <h2>Список Моделей</h2>
+    <a class="btn btn-primary rounded-0 btn-block" id="insertRow" href="#">Add new row</a>
+    {% if urns.count > 0 %}
+
+        <div class="table-responsive">
+        <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Раздел</th>
+                <th scope="col">URN</th>
+            </tr>
+            </thead>
+            {% for urn in urns %}
+            <tr><td>{{ urn.name }}</td><td>{{ urn.urn }}</td></tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+
+    </div>
+    </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+    $(function () {
+
+    // Start counting from the third row
+    let counter = {{ urns.count }};
+    console.log(counter)
+    $("#insertRow").on("click", function (event) {
+        event.preventDefault();
+        console.log("recieve")
+        let newRow = $("<tr>");
+        let cols = '';
+
+        // Table columns
+        cols += '<td><input class="form-control rounded-0" type="text" name="type" placeholder="Раздел"></td>';
+        cols += '<td><input class="form-control rounded-0" type="text" name="urn" placeholder="URN"></td>';
+        cols += '<td><button class="btn btn-danger rounded-0" id ="deleteRow"><i class="fa fa-trash"></i></button</td>';
+
+        // Insert the columns inside a row
+        newRow.append(cols);
+
+        // Insert the row inside a table
+        $("table").append(newRow);
+
+        // Increase counter after each row insertion
+        counter++;
+    });
+
+    // Remove row when delete btn is clicked
+    $("table").on("click", "#deleteRow", function (event) {
+        $(this).closest("tr").remove();
+        counter -= 1
+    });
+});
+    </script>
+
+{% endblock content %}
