@@ -21,10 +21,10 @@
 </nav>
 <div class="container-fluid">
 <div class="row">
-<div class="col-3">
+<div class="col-2">
 <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
     <h4 class="nav-link">Планирование</h4>
-      <a class="nav-link" id="model_load"  href="/model_load/" role="tab" aria-controls="v-pills-model_load" aria-selected="true">Модели</a>
+      <a class="nav-link" id="model_load"  href="/urn_index/" role="tab" aria-controls="v-pills-model_load" aria-selected="true">Модели</a>
       <a class="nav-link" id="families"  href="/families/" role="tab" aria-controls="v-pills-families" aria-selected="false">Семейства</a>
       <a class="nav-link" id="sdr"  href="/sdr/" role="tab" aria-controls="v-pills-sdr" aria-selected="false">СДР</a>
       <a class="nav-link" id="volumes"  href="/volumes/" role="tab" aria-controls="v-pills-volumes" aria-selected="false">Ведомость объемов</a>
@@ -41,7 +41,7 @@
 </div>
 
 {#{% if user.is_authenticated %}#}
-<div class="col-9">
+<div class="col-10">
     {% block content %}
     {% endblock %}
 </div>

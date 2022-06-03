@@ -43,6 +43,11 @@ urlpatterns = [
     path('file_upload/', views.file_upload),
     path('register/', v.register, name="register"),
     path('', include("django.contrib.auth.urls")),  # <-- added
+    # path('update_urn/', views.update_urn),
     # path('file_upload/', views.file_upload),
+    path('urn_index/', views.urn_index),
+    path('urn_create/', views.urn_create),
+    path('urn_edit/<int:id>/', views.urn_edit),
+    path('urn_delete/<int:id>/', views.urn_delete),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

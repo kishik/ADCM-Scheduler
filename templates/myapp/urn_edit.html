@@ -1,0 +1,22 @@
+{% extends "myapp/beta_base.html" %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+<br>
+<div class="container">
+<form method="POST">
+        {% csrf_token %}
+        <p>
+            <label>Введите тип</label><br>
+            <input class="form-control" type="text" name="type" value="{{urn.type}}" />
+        </p>
+        <p>
+            <label>Введите URN</label><br>
+            <input class="form-control" type="text" name="urn" value="{{urn.urn}}" />
+        </p>
+        <input class="btn btn-primary" type="submit" value="Сохранить" >
+    </form>
+</div>
+
+{% endblock %}

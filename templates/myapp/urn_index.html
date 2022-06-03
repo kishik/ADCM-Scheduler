@@ -1,0 +1,51 @@
+{% extends "myapp/beta_base.html" %}
+{% load crispy_forms_filters %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+
+    <div class="container">
+    <br>
+    <p>
+  <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+    Добавить URN
+  </button>
+</p>
+<div class="collapse" id="collapseExample">
+  <form method="POST" action="/urn_create/">
+        {% csrf_token %}
+        <p>
+            <label>Введите тип</label>
+            <input class="form-control" type="text" name="type" />
+        </p>
+        <p>
+            <label>Введите URN</label>
+            <input class="form-control" type="text" name="urn" />
+        </p>
+        <input class="btn btn-primary" type="submit" value="Сохранить" >
+    </form>
+    <br><br>
+</div>
+
+
+
+    {% if urns.count > 0 %}
+    <h2>Список URN</h2>
+    <table class="table">
+    <thead>
+        <tr>
+            <th scope="col" class="col-4">Раздел</th>
+            <th scope="col">URN</th>
+        </tr>
+    </thead>
+        {% for urn in urns %}
+
+            <tr><td class="">{{ urn.type }}</td><td class="">{{ urn.urn }}</td></tr>
+            <tr><td><a href="/urn_edit/{{urn.id}}">Изменить</a> | <a href="/urn_delete/{{urn.id}}">Удалить</a></td></tr>
+
+        {% endfor %}
+    </table>
+    {% endif %}
+    </div>
+{% endblock %}

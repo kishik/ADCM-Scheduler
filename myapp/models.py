@@ -11,14 +11,17 @@ class Work(DjangoNode):
     name = StringProperty()
     incoming = RelationshipFrom('Work', 'WORK')
     outcoming = RelationshipFrom('Work', 'WORK')
+    isActive = models.BooleanField()
 
     class Meta:
         app_label = 'myapp'
 
 
 class URN(models.Model):
-    name = models.CharField(max_length=30)
+    type = models.CharField(max_length=30)
     urn = models.CharField(max_length=200)
+    userId = models.IntegerField()
+    isActive = models.BooleanField()
 
 
 # def your_signal_func(sender, instance, signal, created):

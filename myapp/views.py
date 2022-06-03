@@ -1,7 +1,9 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render, redirect
 
 # Create your views here.
+from django.views.generic import CreateView
+
 from myapp.models import Work, URN
 
 
@@ -129,5 +131,58 @@ def urn_show(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
     urns = URN.objects.all()
-    return render(request, "myapp/cdn_model.html", {"urns": urns})
+    return render(request, "myapp/cdn_model.html", {"urns": urns, "user": request.user})
 
+
+def urn_index(request):
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    urns = URN.objects.all()
+    return render(request, "myapp/urn_index.html", {"urns": urns})
+
+
+# сохранение данных в бд
+def urn_create(request):
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    if request.method == "POST":
+        urn = URN()
+        urn.type = request.POST.get("type")
+        urn.urn = request.POST.get("urn")
+        urn.isActive = True
+        urn.userId = request.user.id
+        urn.save()
+    return HttpResponseRedirect("/urn_index/")
+
+
+# изменение данных в бд
+def urn_edit(request, id):
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    try:
+        urn = URN.objects.get(id=id)
+        if urn.userId != request.user.id:
+            return HttpResponseNotFound("<h2>It's not your URN</h2>")
+        if request.method == "POST":
+            urn.type = request.POST.get("type")
+            urn.urn = request.POST.get("urn")
+            urn.save()
+            return HttpResponseRedirect("/urn_index/")
+        else:
+            return render(request, "myapp/urn_edit.html", {"urn": urn})
+    except URN.DoesNotExist:
+        return HttpResponseNotFound("<h2>URN not found</h2>")
+
+
+# удаление данных из бд
+def urn_delete(request, id):
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    try:
+        urn = URN.objects.get(id=id)
+        if urn.userId != request.user.id:
+            return HttpResponseNotFound("<h2>It's not your URN</h2>")
+        urn.delete()
+        return HttpResponseRedirect("/urn_index/")
+    except URN.DoesNotExist:
+        return HttpResponseNotFound("<h2>URN not found</h2>")

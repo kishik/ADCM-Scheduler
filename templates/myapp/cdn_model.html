@@ -1,28 +1,83 @@
 {% extends "myapp/beta_base.html" %}
-{% csrf_token %}
+
+{% load crispy_forms_tags %}
 
 {% block content %}
-    <div class ="col-9">
-    <h2>Список Моделей</h2>
-    <a class="btn btn-primary rounded-0 btn-block" id="insertRow" href="#">Add new row</a>
-    {% if urns.count > 0 %}
+    <style>
+    form.col-12{
+        padding: 0;
+    }
+    {#button.btn-primary{#}
+    {#    margin-right: 2%;#}
 
-        <div class="table-responsive">
-        <table class="table">
-        <thead>
-            <tr>
-                <th scope="col">Раздел</th>
-                <th scope="col">URN</th>
-            </tr>
-            </thead>
+    button.btn.btn-primary{
+        margin-left: 17.4%;
+        margin-right: 48.5%;
+    }
+
+
+    </style>
+    <div class ="col-10">
+    <h2 class="">Список Моделей Пользователя {{ user.username }}</h2>
+    <a class="btn btn-primary rounded-0 btn-block " id="insertRow" href="#">Add new row</a>
+
+
+
+
+        <div class="col-12 row">
+                <p class="col-2" >Раздел</p>
+                <p class="col-6" >URN</p>
+        </div>
+        <div class="col-12 row" id="table">
+        {% if urns.count > 0 %}
             {% for urn in urns %}
-            <tr><td>{{ urn.name }}</td><td>{{ urn.urn }}</td></tr>
+                {% if urn.userId == 0 and urn.isActive %}
+{#                    <tr><td><p class="col-12">{{ urn.name }}</p></td><td><p class="col-12">{{ urn.urn }}</p></td></tr>#}
+
+                        <form class="col-12" action="/update_urn" method="post">
+                        {% csrf_token %}
+                          <div class="form-row col-12">
+                              <input hidden="hidden" class="urn_id" value="{{ urn.id }}">
+                            <div class="col-2">
+                              <input type="text" class="form-control urn_name" readonly="readonly"  value="{{ urn.name }}" required>
+                            </div>
+                            <div class="col-10">
+                              <input type="text" class="form-control urn_urn" readonly="readonly" value="{{ urn.urn }}" required>
+                            </div>
+{#                            <button class="btn btn-primary col-2" type="submit">Submit form</button>#}
+{#                            <button class="btn btn-danger col-2" type="button">Delete form</button>#}
+                          </div>
+
+                        </form>
+
+
+                {% elif user.id == urn.userId and urn.isActive %}
+                    <form class="col-12" action="/update_urn" method="post">
+                          <div class="form-row col-12">
+                              <input hidden="hidden" class="urn_id" value="{{ urn.id }}">
+                            <div class="col-2">
+                              <input type="text" class="form-control urn_name" value="{{ urn.name }}" required>
+                            </div>
+                            <div class="col-10">
+                              <input type="text" class="form-control urn_urn" value="{{ urn.urn }}" required>
+                            </div>
+                          </div>
+                              <div class="form-row col-12">
+                            <button class="btn btn-primary col-2 .offset-2" type="submit">Submit form</button>
+                            <button class="btn btn-danger col-2 .offset-2" type="button">Delete form</button>
+                          </div>
+
+                        </form>
+{#                    <tr><td><textarea class="col-12">{{ urn.name }}</textarea></td><td><textarea class="col-12">{{ urn.urn }}</textarea></td></tr>#}
+                {% endif %}
             {% endfor %}
-        </table>
-    {% endif %}
+
+        {% endif %}
+        </div>
 
     </div>
-    </div>
+
+
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
@@ -34,26 +89,37 @@
     $("#insertRow").on("click", function (event) {
         event.preventDefault();
         console.log("recieve")
-        let newRow = $("<tr>");
-        let cols = '';
+        let form = `
+       <form class="col-12" action="/update_urn" method="post">
+                          <div class="form-row col-12">
+                              <input hidden="hidden" class="urn_id" value="{{ urn.id }}">
+                            <div class="col-2">
+                              <input type="text" class="form-control urn_name" value="{{ urn.name }}" required>
+                            </div>
+                            <div class="col-10">
+                              <input type="text" class="form-control urn_urn" value="{{ urn.urn }}" required>
+                            </div>
+                          </div>
+                              <div class="form-row col-12">
+                            <button class="btn btn-primary col-2 .offset-2" type="submit">Submit form</button>
+                            <button class="btn btn-danger col-2 .offset-2" type="button">Delete form</button>
+                          </div>
 
-        // Table columns
-        cols += '<td><input class="form-control rounded-0" type="text" name="type" placeholder="Раздел"></td>';
-        cols += '<td><input class="form-control rounded-0" type="text" name="urn" placeholder="URN"></td>';
-        cols += '<td><button class="btn btn-danger rounded-0" id ="deleteRow"><i class="fa fa-trash"></i></button</td>';
+                        </form>
+                    `
 
         // Insert the columns inside a row
-        newRow.append(cols);
+        {#newRow.append(cols);#}
 
         // Insert the row inside a table
-        $("table").append(newRow);
+        $("#table").append(form);
 
         // Increase counter after each row insertion
         counter++;
     });
 
     // Remove row when delete btn is clicked
-    $("table").on("click", "#deleteRow", function (event) {
+    $("#table").on("click", "#deleteRow", function (event) {
         $(this).closest("tr").remove();
         counter -= 1
     });

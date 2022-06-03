@@ -7,3 +7,10 @@ class WorkForm(ModelForm):
     class Meta:
         model = Work
         fields = ['id', 'name']
+
+
+class URNForm(forms.Form):
+    id = forms.IntegerField()
+    type = forms.CharField()
+    urn = forms.CharField()
+
