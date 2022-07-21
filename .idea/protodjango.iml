@@ -24,6 +24,8 @@
     <orderEntry type="library" name="jquery-1.11.0" level="application" />
     <orderEntry type="library" name="jquery-3.1.1" level="application" />
     <orderEntry type="library" name="neovis" level="application" />
+    <orderEntry type="library" name="htmx.org" level="application" />
+    <orderEntry type="library" name="neovis.js" level="application" />
   </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_CONFIGURATION" value="Django" />

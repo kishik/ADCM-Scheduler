@@ -24,20 +24,19 @@ urlpatterns = [
     # path('search', views.search),
 
     path('models/', views.urn_show),
-    path('families/', views.work_in_progress),
-    path('sdr/', views.work_in_progress),
-    path('volumes/', views.work_in_progress),
+    path('families/', views.families),
+    path('sdr/', views.sdr),
+    path('volumes/', views.volumes),
     path('timetable/', views.work_in_progress),
 
     path('graph/', views.graph_show),
-    path('rules/', views.work_in_progress),
-    path('settings/', views.work_in_progress),
+    path('rules/', views.rule_create),
 
     # path('work/', views.get_works),
     path('work_index/', views.works_index),
     path('graph_info/', views.graph),
     path('work/<str:id>', views.work_by_id),
-    path('search', views.search),
+    path('search/', views.search),
     path('new_graph/', views.new_graph),
     path('model_load/', views.urn_show),
     path('file_upload/', views.file_upload),
@@ -49,5 +48,11 @@ urlpatterns = [
     path('urn_create/', views.urn_create),
     path('urn_edit/<int:id>/', views.urn_edit),
     path('urn_delete/<int:id>/', views.urn_delete),
-
+    path('index/', views.index),
+    path('upload/', views.upload, name="upload"),
+    path('families/<int:id>/', views.family),
+    path('settings/', views.settings, name="settings"),
+    path('save_model/', views.saveModel),
+    path('family_delete/<int:id>/', views.rule_delete),
+    path('sdr_delete/<int:id>/', views.sdr_delete),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

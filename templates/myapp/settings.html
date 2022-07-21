@@ -1,0 +1,26 @@
+{% extends "myapp/beta_base.html" %}
+{% load crispy_forms_filters %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+    <div class="container">
+        <p>Текущий проект {{ userId }}</p>
+    <form class="col-12" action="/save_model/" method="post">
+{#                        {% csrf_token %}#}
+                            <div class="form-row col-12">
+                              <p>Ссылка на модель</p>
+                          </div>
+                          <div class="form-row col-12">
+                              <p>Проект:{{ projectId}} Модель:{{ modelId }}</p>
+                            <div class="col-9">
+                              <input type="text" class="form-control" required name="link">
+                            </div>
+                            <button class="btn btn-primary col-2" type="submit">Выбрать модель</button>
+{#                            <button class="btn btn-danger col-2" type="button">Delete form</button>#}
+                          </div>
+
+                        </form>
+
+    </div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "myapp/beta_base.html" %}
+{% load crispy_forms_filters %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+
+<div class="container">
+<br>
+ <p>
+  <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+    Добавить правило выгрузки
+  </button>
+</p>
+
+<div class="collapse" id="collapseExample">
+<form action="" method="post">
+    {% csrf_token %}
+    <table>
+    {{ form }}
+    </table>
+    <input type="submit" value="Submit" />
+    </form>
+</div>
+
+
+    {% if families.count > 0 %}
+    <h2>Список Семейств</h2>
+    <table class="table">
+    <thead>
+        <tr>
+            <th scope="col" class="col-4">Name</th>
+            <th scope="col">Rule</th>
+        </tr>
+    </thead>
+        {% for family in families %}
+            {% if user.id == family.userId and family.isActive %}
+            <tr><td class="">{{ family.name }}</td><td class="">{{ family.rule }}</td></tr>
+                <tr>
+{#                    <td><a href="/families/{{urn.id}}">Выбрать</a></td>#}
+{#                    <td><a href="/family_edit/{{family.id}}">Изменить</a></td>#}
+                    <td><a href="/family_delete/{{family.id}}">Удалить</a></td></tr>
+            {% endif %}
+        {% endfor %}
+    </table>
+    {% endif %}
+</div>
+
+{% endblock %}

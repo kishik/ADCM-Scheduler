@@ -31,7 +31,7 @@ NEOMODEL_MAX_CONNECTION_POOL_SIZE = 50
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition

@@ -1,6 +1,6 @@
 {% extends "myapp/beta_base.html" %}
-
-
+{% load crispy_forms_tags %}
+{% csrf_token %}
 {% block content%}
 
 {#        <style type="text/css">#}
@@ -9,22 +9,37 @@
 {#                height: 720px;#}
 {#            }#}
 {#        </style>#}
-        <script src="https://rawgit.com/neo4j-contrib/neovis.js/master/dist/neovis.js"></script>
+{#    <script src="https://unpkg.com/htmx.org@1.7.0" integrity="sha384-EzBXYPt0/T6gxNp0nuPtLkmRpmDBbjg6WmCUZRLXBBwYYmwAUxzlSGej0ARHX0Bo" crossorigin="anonymous"></script>#}
+{#    <script src="https://rawgit.com/neo4j-contrib/neovis.js/master/dist/neovis.js"></script>#}
+    <script src="https://unpkg.com/neovis.js@2.0.2"></script>
+    {% crispy form %}
 
+{#    <form id='form' hx-encoding='multipart/form-data' hx-post='/upload/'>#}
+{#        <input type='file' name='file'>#}
+{#        <button>#}
+{#            Upload#}
+{#        </button>#}
+{#        <progress id='progress' value='0' max='100'></progress>#}
+{#    </form>#}
+{#    <script>#}
+{#        htmx.on('#form', 'htmx:xhr:progress', function(evt) {#}
+{#          htmx.find('#progress').setAttribute('value', evt.detail.loaded/evt.detail.total * 100)#}
+{#        });#}
+{#    </script>#}
     <style>
             #viz {
 
-
-                height: 1080px;
+                {#1080-124#}
+                height: 736px;
             }
             </style>
     <script>
         function draw() {
-            var config = {
-                container_id: "viz",
-                server_url: "bolt://neo4j:Accelerati0n@localhost:7687",
-                server_user: "neo4j",
-                server_password: "Accelerati0n",
+            let config = {
+                containerId: "viz",
+                serverUrl: "bolt://localhost:7687",
+                serverUser: "neo4j",
+                serverPassword: "Accelerati0n",
                 labels: {
                     "Work": {
                         caption: "name",
@@ -38,10 +53,10 @@
                         thickness: "count"
                     }
                 },
-                initial_cypher: "MATCH p=(:Work)-[:FOLLOWS]->(:Work) RETURN p"
-            }
+                initialCypher: "MATCH (n)-[r:FOLLOWS]->(m) RETURN *"
+            };
 
-            var viz = new NeoVis.default(config);
+            let viz = new NeoVis.default(config);
             viz.render();
         }
     </script>
@@ -51,5 +66,7 @@
     <script>
     draw();
     </script>
+
+
 
 {% endblock content %}

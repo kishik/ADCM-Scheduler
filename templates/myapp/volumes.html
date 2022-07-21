@@ -1,0 +1,44 @@
+{% extends "myapp/beta_base.html" %}
+
+{% block content %}
+{#    {% for el in myJson %}#}
+{#        <div class="row">#}
+{#        {% for subk, subv in el.items %}#}
+{#            <p class="col-2">{{ subk }} : {{ subv }}</p>#}
+{##}
+{#        {% endfor %}#}
+{#        </div>#}
+{#    {% endfor %}#}
+
+
+
+
+<table class="table">
+  <thead>
+    <tr>
+            <th scope="col">wbs1</th>
+            <th scope="col">wbs2</th>
+            <th scope="col">wbs3_id</th>
+            <th scope="col">wbs3</th>
+            <th scope="col">name</th>
+            <th scope="col">value</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% with i=0 %}
+  {% for el in myJson %}
+  <tr>
+
+{#  <th scope="row">{{ i }}</th>#}
+  {% for subk, subv in el.items %}
+            <td>{{ subv }}</td>
+
+        {% endfor %}
+
+  </tr>
+  {% endfor %}
+    {% endwith %}
+  </tbody>
+</table>
+
+{% endblock %}
