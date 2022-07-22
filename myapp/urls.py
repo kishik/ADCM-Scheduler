@@ -25,7 +25,7 @@ urlpatterns = [
 
     path('models/', views.urn_show),
     path('families/', views.families),
-    path('sdr/', views.sdr),
+    path('sdrs/', views.sdrs),
     path('volumes/', views.volumes),
     path('timetable/', views.work_in_progress),
 
@@ -50,9 +50,10 @@ urlpatterns = [
     path('urn_delete/<int:id>/', views.urn_delete),
     path('index/', views.index),
     path('upload/', views.upload, name="upload"),
-    path('families/<int:id>/', views.family),
+    path('model/<int:id>/', views.model),
     path('settings/', views.settings, name="settings"),
     path('save_model/', views.saveModel),
     path('family_delete/<int:id>/', views.rule_delete),
     path('sdr_delete/<int:id>/', views.sdr_delete),
+    path('sdr/<int:id>/', views.sdr),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

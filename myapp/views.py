@@ -222,13 +222,42 @@ def families(request):
     return render(request, "myapp/families.html", {"families": families_all})
 
 
-def family(request, id):
+def model(request, id):
     if not request.user.is_authenticated:
         return redirect('/login/')
     try:
         urn = URN.objects.get(id=id)
         if urn.userId != request.user.id:
             return HttpResponseNotFound("<h2>It's not your URN</h2>")
+        request.session['urn'] = id
+        request.session['model_type'] = urn.type
+        request.session['model'] = 'urn%' + urn.urn
+        return redirect('/families/')
+        # if request.method == "POST":
+        #     urn.type = request.POST.get("type")
+        #     urn.urn = request.POST.get("urn")
+        #     urn.save()
+        #     return HttpResponseRedirect("/urn_index/")
+        # else:
+        #     project_id = """"""
+        #     # return render(request, "myapp/urn_edit.html", {"urn": urn})
+        #     res = requests.get('https://4d-model.acceleration.ru:8000/acc/viewer/project/' +
+        #                        project_id + '/model/' + model_id)
+        #     json = res.json()
+
+    except URN.DoesNotExist:
+        return HttpResponseNotFound("<h2>URN not found</h2>")
+
+
+def family(request, id):
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    try:
+        family = Rule.objects.get(id=id)
+        if family.userId != request.user.id:
+            return HttpResponseNotFound("<h2>It's not your URN</h2>")
+        request.session['urn'] = id
+        return redirect('/families/')
         # if request.method == "POST":
         #     urn.type = request.POST.get("type")
         #     urn.urn = request.POST.get("urn")
@@ -273,9 +302,9 @@ def saveModel(request):
 
 def volumes(request):
     project = ActiveLink.objects.filter(userId=request.user.id).last()
-    res = requests.get('https://4d-model.acceleration.ru:8000/acc/get_spec/' +
-                       'SIN_KJ_base' + '/project/' + project.projectId +
-                       '/model/' + project.modelId)
+    res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
+                       request.session['specs'] + '/project/' + project.projectId +
+                       '/model/' + request.session['model'])
 
     myJson = res.json()
     myJson = json.loads(myJson)
@@ -295,8 +324,7 @@ def volumes(request):
     })
 
 
-def sdr(request):
-
+def sdrs(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
     form = WbsForm()
@@ -320,7 +348,7 @@ def sdr(request):
             # process the data in form.cleaned_data as required
             # ...
             # redirect to a new URL:
-            return HttpResponseRedirect('/sdr/')
+            return HttpResponseRedirect('/sdrs/')
 
     return render(request, "myapp/sdr.html", {"form": form, "sdrs_all": sdrs_all})
 
@@ -472,18 +500,44 @@ def sdr(request):
     ]
 
 
+def sdr(request, id):
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    try:
+        wbs = Wbs.objects.get(id=id)
+        if wbs.userId != request.user.id:
+            return HttpResponseNotFound("<h2>It's not your WBS</h2>")
+        request.session['wbs'] = id
+        request.session['specs'] = wbs.specs[2:-2]
+        print(request.session['specs'])
+        return redirect('/volumes/')
+        # if request.method == "POST":
+        #     urn.type = request.POST.get("type")
+        #     urn.urn = request.POST.get("urn")
+        #     urn.save()
+        #     return HttpResponseRedirect("/urn_index/")
+        # else:
+        #     project_id = """"""
+        #     # return render(request, "myapp/urn_edit.html", {"urn": urn})
+        #     res = requests.get('https://4d-model.acceleration.ru:8000/acc/viewer/project/' +
+        #                        project_id + '/model/' + model_id)
+        #     json = res.json()
+
+    except URN.DoesNotExist:
+        return HttpResponseNotFound("<h2>WBS not found</h2>")
+
+
 def sdr_delete(request, id):
     if not request.user.is_authenticated:
         return redirect('/login/')
     try:
-        wbs = Rule.objects.get(id=id)
+        wbs = Wbs.objects.get(id=id)
         if wbs.userId != request.user.id:
             return HttpResponseNotFound("<h2>It's not your WBS</h2>")
         wbs.delete()
-        return HttpResponseRedirect("/sdr/")
+        return HttpResponseRedirect("/sdrs/")
     except Wbs.DoesNotExist:
         return HttpResponseNotFound("<h2>WBS not found</h2>")
-
 
 
 def rules(request):
