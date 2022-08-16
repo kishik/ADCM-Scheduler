@@ -16,6 +16,7 @@ Including another URLconf
 from django.urls import path, include
 from myapp import views
 from django.conf import settings
+from django.conf.urls import url
 from django.conf.urls.static import static
 from registration import views as v
 
@@ -56,4 +57,7 @@ urlpatterns = [
     path('family_delete/<int:id>/', views.rule_delete),
     path('sdr_delete/<int:id>/', views.sdr_delete),
     path('sdr/<int:id>/', views.sdr),
+    # path('file_send/', views.file_send()),
+    # url(r'^django-webix/', include('django_webix.urls')),
+
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

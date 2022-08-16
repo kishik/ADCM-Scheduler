@@ -1,6 +1,33 @@
 {% extends "myapp/beta_base.html" %}
-
+{% load static %}
 {% block content %}
+
+<script src="https://use.fontawesome.com/27c34d562b.js"></script>
+
+{#<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" rel="stylesheet">#}
+{#<link href="https://cdn.jsdelivr.net/npm/jquery-treegrid@0.3.0/css/jquery.treegrid.css" rel="stylesheet">#}
+{#<link href="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.css" rel="stylesheet">#}
+{#<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>#}
+{#<script src="https://cdn.jsdelivr.net/npm/jquery-treegrid@0.3.0/js/jquery.treegrid.min.js"></script>#}
+{#<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.js"></script>#}
+{#<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/treegrid/bootstrap-table-treegrid.min.js"></script>#}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+{#<link href="https://cdn.jsdelivr.net/npm/jquery-treegrid@0.3.0/css/jquery.treegrid.css" rel="stylesheet">#}
+{#<link href="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.css" rel="stylesheet">#}
+{##}
+{#<script src="https://cdn.jsdelivr.net/npm/jquery-treegrid@0.3.0/js/jquery.treegrid.min.js"></script>#}
+{#<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.js"></script>#}
+{#<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/treegrid/bootstrap-table-treegrid.min.js"></script>#}
+{##}
+{##}
+{##}
+<link rel="stylesheet" href="{%  static 'myapp/css/bootstrap-treefy.css' %}"/>
+{#<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>#}
+<script src="{%  static 'myapp/js/bootstrap-treefy.js' %}"></script>
+{#<link rel="stylesheet" href="{%  static 'myapp/css/all.css' %}">#}
+<script src="{%  static 'myapp/js/javascript.js' %}"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+
 {#    {% for el in myJson %}#}
 {#        <div class="row">#}
 {#        {% for subk, subv in el.items %}#}
@@ -9,36 +36,398 @@
 {#        {% endfor %}#}
 {#        </div>#}
 {#    {% endfor %}#}
+{#<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>#}
+{#<link href="https://cdn.jsdelivr.net/npm/jquery-treegrid@0.3.0/css/jquery.treegrid.css" rel="stylesheet">#}
+{#<link href="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.css" rel="stylesheet">#}
+{##}
+{#<script src="https://cdn.jsdelivr.net/npm/jquery-treegrid@0.3.0/js/jquery.treegrid.min.js"></script>#}
+{#<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.js"></script>#}
+{#<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/extensions/treegrid/bootstrap-table-treegrid.min.js"></script>#}
+{##}
+
+
+
+{#<p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>#}
+
+{#      <table class="table" id="table">#}
+{#    <thead>#}
+{#    <tr>#}
+{#        <th></th><th>Column A</th><th>Column B</th><th>Column C</th><th>Column D</th>#}
+{#    </tr>#}
+{#    </thead>#}
+{#    <tbody>#}
+{#    <tr data-node="treetable-1">#}
+{#        <td><input type="checkbox" name="row.id"/></td>#}
+{#        <td>Node</td><td>1</td><td>c</td><td>info</td>#}
+{#    </tr>#}
+{#    <tr data-node="treetable-2" data-pnode="treetable-parent-1">#}
+{#        <td><input type="checkbox" name="row.id"/></td>#}
+{#        <td>Node</td> <td>1-1</td><td>c</td> <td>info</td>#}
+{#    </tr>#}
+{#    <tr data-node="treetable-3" data-pnode="treetable-parent-1">#}
+{#        <td><input type="checkbox" name="row.id"/></td>#}
+{#        <td>Node</td><td>1-2</td><td>c</td><td>info</td>#}
+{#    </tr>#}
+{#    <tr data-node="treetable-4">#}
+{#        <td><input type="checkbox" name="row.id"/></td>#}
+{#        <td>Node</td><td>2</td><td>c</td><td>info</td>#}
+{#    </tr>#}
+{#    </tbody>#}
+{#</table>#}
+{##}
+{#<script>#}
+{#    $(function() {#}
+{#        $("#table").treeFy({#}
+{#            treeColumn: 2#}
+{#        });#}
+{#    });#}
+{#</script>#}
+
+{##}
+{#<link href="{%  static 'myapp/css/jquery.treetable.css' %}" rel="stylesheet" type="text/css" />#}
+{#<script src="{%  static 'myapp/js/jquery.treetable.js' %}"></script>#}
+{#<script>#}
+{#$("#tree-table").treetable();#}
+{#</script>#}
+{##}
+{##}
+{#<table id="tree-table" class="table table-hover table-bordered">#}
+{#  <tbody>#}
+{#  <th>#</th>#}
+{#    <th>Test</th>#}
+{#  <tr data-id="1" data-parent="0" data-level="1">#}
+{#    <td data-column="name">Node 1</td>#}
+{#    <td>Additional info</td>#}
+{#  </tr>#}
+{#  <tr data-id="2" data-parent="1" data-level="2">#}
+{#    <td data-column="name">Node 1</td>#}
+{#    <td>Additional info</td>#}
+{#  </tr>#}
+{#  <tr data-id="3" data-parent="1" data-level="2">#}
+{#    <td data-column="name">Node 1</td>#}
+{#    <td>Additional info</td>#}
+{#  </tr>#}
+{#  <tr data-id="4" data-parent="3" data-level="3">#}
+{#    <td data-column="name">Node 1</td>#}
+{#    <td>Additional info</td>#}
+{#  </tr>#}
+{#  <tr data-id="5" data-parent="3" data-level="3">#}
+{#    <td data-column="name">Node 1</td>#}
+{#    <td>Additional info</td>#}
+{#  </tr>#}
+{#    </tbody>#}
+{##}
+{#</table>#}
+
+{##}
+{#      <table class="table" id="table">#}
+{#    <thead>#}
+{#    <tr>#}
+{#        <th></th><th>Column A</th><th>Column B</th><th>Column C</th><th>Column D</th>#}
+{#    </tr>#}
+{#    </thead>#}
+{#    <tbody>#}
+{#    <tr data-node="treetable-1">#}
+{#        <td><input type="checkbox" name="row.id"/></td>#}
+{#        <td>Node</td><td>1</td><td>c</td><td>info</td>#}
+{#    </tr>#}
+{#    <tr data-node="treetable-2" data-pnode="treetable-parent-1">#}
+{#        <td><input type="checkbox" name="row.id"/></td>#}
+{#        <td>Node</td> <td>1-1</td><td>c</td> <td>info</td>#}
+{#    </tr>#}
+{#    <tr data-node="treetable-3" data-pnode="treetable-parent-1">#}
+{#        <td><input type="checkbox" name="row.id"/></td>#}
+{#        <td>Node</td><td>1-2</td><td>c</td><td>info</td>#}
+{#    </tr>#}
+{#    <tr data-node="treetable-4">#}
+{#        <td><input type="checkbox" name="row.id"/></td>#}
+{#        <td>Node</td><td>2</td><td>c</td><td>info</td>#}
+{#    </tr>#}
+{#    </tbody>#}
+{#</table>#}
+{##}
+{#<script>#}
+{#    $(function() {#}
+{#        $("#table").treeFy({#}
+{#            treeColumn: 1#}
+{#        });#}
+{#    });#}
+{#</script>#}
+
+
+{##}
+{##}
+{#<div class="bootstrap-table bootstrap5">#}
+{#      <div class="fixed-table-toolbar"><div class="columns columns-right btn-group float-right"><div class="keep-open btn-group" title="Columns">#}
+{#            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-label="Columns" title="Columns" aria-expanded="false">#}
+{#            <i class="bi bi-list-ul"></i>#}
+{##}
+{#            <span class="caret"></span>#}
+{#            </button>#}
+{#            <div class="dropdown-menu dropdown-menu-right" style=""><label class="dropdown-item dropdown-item-marker"><input type="checkbox" data-field="name" value="1" checked="checked"> <span>名称</span></label><label class="dropdown-item dropdown-item-marker"><input type="checkbox" data-field="status" value="2" checked="checked"> <span>状态</span></label><label class="dropdown-item dropdown-item-marker"><input type="checkbox" data-field="permissionValue" value="3" checked="checked"> <span>权限值</span></label></div></div></div></div>#}
+{##}
+{#      <div class="fixed-table-container" style="padding-bottom: 0px;">#}
+{#      <div class="fixed-table-header" style="display: none;"><table></table></div>#}
+{#      <div class="fixed-table-body">#}
+{#      <div class="fixed-table-loading table table-bordered table-hover" style="top: 51px;">#}
+{#      <span class="loading-wrap">#}
+{#      <span class="loading-text" style="font-size: 32px;">Loading, please wait</span>#}
+{#      <span class="animation-wrap"><span class="animation-dot"></span></span>#}
+{#      </span>#}
+{##}
+{##}
+{##}
+{#<script>#}
+{#  var $table = $('#table')#}
+{##}
+{#  $(function() {#}
+{#    $table.bootstrapTable({#}
+{#      url: 'json/treegrid.json',#}
+{#      idField: 'id',#}
+{#      showColumns: true,#}
+{#      columns: [#}
+{#        {#}
+{#          field: 'ck',#}
+{#          checkbox: true#}
+{#        },#}
+{#        {#}
+{#          field: 'name',#}
+{#          title: '名称'#}
+{#        },#}
+{#        {#}
+{#          field: 'status',#}
+{#          title: '状态',#}
+{#          sortable: true,#}
+{#          align: 'center',#}
+{#          formatter: 'statusFormatter'#}
+{#        },#}
+{#        {#}
+{#          field: 'permissionValue',#}
+{#          title: '权限值'#}
+{#        }#}
+{#      ],#}
+{#      treeShowField: 'name',#}
+{#      parentIdField: 'pid',#}
+{#      onPostBody: function() {#}
+{#        var columns = $table.bootstrapTable('getOptions').columns#}
+{##}
+{#        if (columns && columns[0][1].visible) {#}
+{#          $table.treegrid({#}
+{#            treeColumn: 1,#}
+{#            onChange: function() {#}
+{#              $table.bootstrapTable('resetView')#}
+{#            }#}
+{#          })#}
+{#        }#}
+{#      }#}
+{#    })#}
+{#  })#}
+{##}
+{#  function typeFormatter(value, row, index) {#}
+{#    if (value === 'menu') {#}
+{#      return '菜单'#}
+{#    }#}
+{#    if (value === 'button') {#}
+{#      return '按钮'#}
+{#    }#}
+{#    if (value === 'api') {#}
+{#      return '接口'#}
+{#    }#}
+{#    return '-'#}
+{#  }#}
+{##}
+{#  function statusFormatter(value, row, index) {#}
+{#    if (value === 1) {#}
+{#      return '<span class="label label-success">正常</span>'#}
+{#    }#}
+{#    return '<span class="label label-default">锁定</span>'#}
+{#  }#}
+{#</script>#}
+{##}
+{#          </div>#}
+{#      <table id="table" class="table table-bordered table-hover"><thead class=""><tr><th class="bs-checkbox " style="width: 36px; " data-field="ck"><div class="th-inner "><label><input name="btSelectAll" type="checkbox"><span></span></label></div><div class="fht-cell"></div></th><th style="" data-field="name"><div class="th-inner ">名称</div><div class="fht-cell"></div></th><th style="text-align: center; " data-field="status"><div class="th-inner sortable both">状态</div><div class="fht-cell"></div></th><th style="" data-field="permissionValue"><div class="th-inner ">权限值</div><div class="fht-cell"></div></th></tr></thead><tbody><tr class="treegrid-1 treegrid-collapsed" data-index="0"><td class="bs-checkbox " style="width: 36px; "><label>#}
+{#            <input data-index="0" name="btSelectItem" type="checkbox" value="1">#}
+{#            <span></span>#}
+{#            </label></td><td><span class="treegrid-expander treegrid-expander-collapsed"></span>系统管理</td><td style="text-align: center; "><span class="label label-success">正常</span></td><td>open:system:get</td></tr><tr class="treegrid-20 treegrid-parent-1" data-index="2" style="display: none;"><td class="bs-checkbox " style="width: 36px; "><label>#}
+{#            <input data-index="2" name="btSelectItem" type="checkbox" value="20">#}
+{#            <span></span>#}
+{#            </label></td><td><span class="treegrid-indent"></span><span class="treegrid-expander"></span>新增系统</td><td style="text-align: center; "><span class="label label-success">正常</span></td><td>open:system:add</td></tr><tr class="treegrid-21 treegrid-parent-1" data-index="3" style="display: none;"><td class="bs-checkbox " style="width: 36px; "><label>#}
+{#            <input data-index="3" name="btSelectItem" type="checkbox" value="21">#}
+{#            <span></span>#}
+{#            </label></td><td><span class="treegrid-indent"></span><span class="treegrid-expander"></span>编辑系统</td><td style="text-align: center; "><span class="label label-success">正常</span></td><td>open:system:edit</td></tr><tr class="treegrid-22 treegrid-parent-1" data-index="4" style="display: none;"><td class="bs-checkbox " style="width: 36px; "><label>#}
+{#            <input data-index="4" name="btSelectItem" type="checkbox" value="22">#}
+{#            <span></span>#}
+{#            </label></td><td><span class="treegrid-indent"></span><span class="treegrid-expander"></span>删除系统</td><td style="text-align: center; "><span class="label label-success">正常</span></td><td>open:system:delete</td></tr><tr class="treegrid-2 treegrid-expanded" data-index="1"><td class="bs-checkbox " style="width: 36px; "><label>#}
+{#            <input data-index="1" name="btSelectItem" type="checkbox" value="2">#}
+{#            <span></span>#}
+{#            </label></td><td><span class="treegrid-expander treegrid-expander-expanded"></span>字典管理</td><td style="text-align: center; "><span class="label label-success">正常</span></td><td>open:dict:get</td></tr><tr class="treegrid-33 treegrid-parent-2 treegrid-expanded" data-index="5"><td class="bs-checkbox " style="width: 36px; "><label>#}
+{#            <input data-index="5" name="btSelectItem" type="checkbox" value="33">#}
+{#            <span></span>#}
+{#            </label></td><td><span class="treegrid-indent"></span><span class="treegrid-expander treegrid-expander-expanded"></span>系统环境</td><td style="text-align: center; "><span class="label label-success">正常</span></td><td>open:env:get</td></tr><tr class="treegrid-333 treegrid-parent-33" data-index="6"><td class="bs-checkbox " style="width: 36px; "><label>#}
+{#            <input data-index="6" name="btSelectItem" type="checkbox" value="333">#}
+{#            <span></span>#}
+{#            </label></td><td><span class="treegrid-indent"></span><span class="treegrid-indent"></span><span class="treegrid-expander"></span>新增环境</td><td style="text-align: center; "><span class="label label-success">正常</span></td><td>open:env:add</td></tr><tr class="treegrid-3333 treegrid-parent-33" data-index="7"><td class="bs-checkbox " style="width: 36px; "><label>#}
+{#            <input data-index="7" name="btSelectItem" type="checkbox" value="3333">#}
+{#            <span></span>#}
+{#            </label></td><td><span class="treegrid-indent"></span><span class="treegrid-indent"></span><span class="treegrid-expander"></span>编辑环境</td><td style="text-align: center; "><span class="label label-success">正常</span></td><td>open:env:edit</td></tr><tr class="treegrid-233332 treegrid-parent-33" data-index="8"><td class="bs-checkbox " style="width: 36px; "><label>#}
+{#            <input data-index="8" name="btSelectItem" type="checkbox" value="233332">#}
+{#            <span></span>#}
+{#            </label></td><td><span class="treegrid-indent"></span><span class="treegrid-indent"></span><span class="treegrid-expander"></span>删除环境</td><td style="text-align: center; "><span class="label label-default">锁定</span></td><td>open:env:delete</td></tr></tbody></table></div>#}
+{#      <div class="fixed-table-footer"></div>#}
+{#      </div>#}
+{#      <div class="fixed-table-pagination" style="display: none;"></div>#}
+{#      </div>#}
+{##}
+{#    <div class="clearfix"></div>#}
 
 
 
 
-<table class="table">
+
+{#<table class="table table-striped" id="table">#}
+{#  <thead>#}
+{#    <tr>#}
+{#            <th data-field="check" class="bs-checkbox " scope="col"><label>#}
+{#                <input name="btSelectAll" type="checkbox">#}
+{#            </label></th>#}
+{#            <th data-field="wbs1" scope="col">wbs1</th>#}
+{#            <th data-field="wbs2" scope="col">wbs2</th>#}
+{#            <th data-field="wbs3_id" scope="col">wbs3_id</th>#}
+{#            <th data-field="wbs3" scope="col">wbs3</th>#}
+{#            <th data-field="name" scope="col">name</th>#}
+{#            <th data-field="value" scope="col">value</th>#}
+{#    </tr>#}
+{#  </thead>#}
+{#  <tbody>#}
+{#  {% with i=0 %}#}
+{##}
+{#  {% for el in myJson %}#}
+{##}
+{#  <tr>#}
+{#  #}
+{#  #}
+{#      <td class="bs-checkbox "><label>#}
+{#                <input data-index="0" name="btSelectItem" type="checkbox" value="1">#}
+{#            <span></span>#}
+{#            </label></td>#}
+{#  <th scope="row">{{ i }}</th>#}
+{#  #}
+{#  #}
+{#  #}
+{#  {% for subk, subv in el.items %}#}
+{#            <td>{{ subv }}</td>#}
+{##}
+{#        {% endfor %}#}
+{##}
+{#  </tr>#}
+{#  {% endfor %}#}
+{#  {% endwith %}#}
+{#  </tbody>#}
+{#</table>#}
+
+
+
+
+{% regroup myJson by wbs1 as myList %}
+{#{{ myList }}#}
+<table class="table table-striped" id="table">
   <thead>
     <tr>
-            <th scope="col">wbs1</th>
-            <th scope="col">wbs2</th>
-            <th scope="col">wbs3_id</th>
-            <th scope="col">wbs3</th>
-            <th scope="col">name</th>
-            <th scope="col">value</th>
+{#            <th data-field="check" class="bs-checkbox " scope="col"><label>#}
+{#                <input name="btSelectAll" type="checkbox">#}
+{#            </label></th>#}
+            <th data-field="wbs1" scope="col">wbs1</th>
+            <th data-field="wbs2" scope="col">wbs2</th>
+            <th data-field="wbs3_id" scope="col">wbs3_id</th>
+            <th data-field="wbs3" scope="col">wbs3</th>
+            <th data-field="name" scope="col">name</th>
+            <th data-field="value" scope="col">value</th>
     </tr>
   </thead>
   <tbody>
   {% with i=0 %}
-  {% for el in myJson %}
-  <tr>
 
+  {% for grouper, el in myList %}
+      <tr data-node="treetable-{{ grouper }}">
+      <td>{{ grouper }}</td>
+
+      </tr>
+
+
+{#      <td class="bs-checkbox "><label>#}
+{#                <input data-index="0" name="btSelectItem" type="checkbox" value="1">#}
+{#            <span></span>#}
+{#            </label></td>#}
 {#  <th scope="row">{{ i }}</th>#}
-  {% for subk, subv in el.items %}
+  {% for subel in el %}
+<tr data-node="treetable-999" data-pnode="treetable-parent-{{ grouper }}">
+
+  {% for subk, subv in subel.items %}
             <td>{{ subv }}</td>
+
 
         {% endfor %}
 
+{#print(subel)#}
+{#    <td><a href="/urn_edit/{{subv.id}}">Изменить</a></td><td><a href="/urn_delete/{{subv.id}}">Удалить</a></td>#}
   </tr>
+{% endfor %}
   {% endfor %}
-    {% endwith %}
+  {% endwith %}
   </tbody>
 </table>
+
+
+{#<table class="table table-striped" id="table">#}
+{#  <thead>#}
+{#    <tr>#}
+{#      <th>Column A</th>#}
+{#      <th>Column B</th>#}
+{#      <th>Column C</th>#}
+{#      <th>Column D</th>#}
+{#    </tr>#}
+{#  </thead>#}
+{#  <tbody>#}
+{#    <tr data-node="treetable-1">#}
+{#      <td>Node</td>#}
+{#      <td>1</td>#}
+{#      <td>c</td>#}
+{#      <td>info</td>#}
+{#    </tr>#}
+{#    <tr data-node="treetable-2" data-pnode="treetable-parent-1">#}
+{#      <td>Node</td>#}
+{#      <td>1-1</td>#}
+{#      <td>c</td>#}
+{#      <td>info</td>#}
+{#    </tr>#}
+{#    <tr data-node="treetable-3" data-pnode="treetable-parent-1">#}
+{#      <td>Node</td>#}
+{#      <td>1-2</td>#}
+{#      <td>c</td>#}
+{#      <td>info</td>#}
+{#    </tr>#}
+{#  </tbody>#}
+{#</table>#}
+
+<script>$("#table").treeFy({
+
+// Custom template
+expanderTemplate: '<span class="treetable-expander"></span>',
+indentTemplate: '<span class="treetable-indent"></span>',
+
+// CSS classes for expander
+expanderExpandedClass: 'fa fa-angle-down',
+expanderCollapsedClass: 'fa fa-angle-right',
+
+// Index of the column which expander should be added to.
+treeColumn: 0,
+
+// Initial CSS class
+initStatusClass: 'treetable-expanded'
+
+});
+</script>
+
+
 
 {% endblock %}

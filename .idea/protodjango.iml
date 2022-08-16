@@ -26,6 +26,12 @@
     <orderEntry type="library" name="neovis" level="application" />
     <orderEntry type="library" name="htmx.org" level="application" />
     <orderEntry type="library" name="neovis.js" level="application" />
+    <orderEntry type="library" name="jquery-treegrid" level="application" />
+    <orderEntry type="library" name="bootstrap-table" level="application" />
+    <orderEntry type="library" name="jquery-3.2.1" level="application" />
+    <orderEntry type="library" name="jquery-1.11.3" level="application" />
+    <orderEntry type="library" name="font-awesome" level="application" />
+    <orderEntry type="library" name="27c34d562b" level="application" />
   </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_CONFIGURATION" value="Django" />

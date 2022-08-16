@@ -2,7 +2,7 @@
 {% load crispy_forms_tags %}
 {% csrf_token %}
 {% block content%}
-
+<meta charset="utf-8"/>
 {#        <style type="text/css">#}
 {#            #viz {#}
 {#                width: 1280px;#}
@@ -11,7 +11,12 @@
 {#        </style>#}
 {#    <script src="https://unpkg.com/htmx.org@1.7.0" integrity="sha384-EzBXYPt0/T6gxNp0nuPtLkmRpmDBbjg6WmCUZRLXBBwYYmwAUxzlSGej0ARHX0Bo" crossorigin="anonymous"></script>#}
 {#    <script src="https://rawgit.com/neo4j-contrib/neovis.js/master/dist/neovis.js"></script>#}
-    <script src="https://unpkg.com/neovis.js@2.0.2"></script>
+
+    <script src="https://unpkg.com/neovis.js"></script>
+    <script
+            src="https://code.jquery.com/jquery-3.2.1.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+            crossorigin="anonymous"></script>
     {% crispy form %}
 
 {#    <form id='form' hx-encoding='multipart/form-data' hx-post='/upload/'>#}
@@ -33,33 +38,72 @@
                 height: 736px;
             }
             </style>
-    <script>
-        function draw() {
-            let config = {
-                containerId: "viz",
-                serverUrl: "bolt://localhost:7687",
-                serverUser: "neo4j",
-                serverPassword: "Accelerati0n",
-                labels: {
-                    "Work": {
-                        caption: "name",
-                        size: "pagerank",
-                        community: "Purple"
-                    }
-                },
-                relationships: {
-                    "FOLLOWS": {
-                        caption: false,
-                        thickness: "count"
-                    }
-                },
-                initialCypher: "MATCH (n)-[r:FOLLOWS]->(m) RETURN *"
-            };
 
-            let viz = new NeoVis.default(config);
-            viz.render();
-        }
+    <script>
+
+		// define config car
+		// instantiate nodevis object
+		// draw
+
+
+		var viz;
+
+		function draw() {
+			var config = {
+                encrypted:"ENCRYPTION_ON",
+                trust: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
+				containerId: 'viz',
+				neo4j: {
+					serverUrl: 'neo4j://174cd36c.databases.neo4j.io:7687',
+					serverUser: 'neo4j',
+					serverPassword: 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
+				},
+				visConfig: {
+					nodes: {
+						shape: 'square'
+					},
+					edges: {
+						arrows: {
+							to: {enabled: true}
+						}
+					},
+				},
+				labels: {
+					Work: {
+						label: 'name',
+						group: 'community',
+						[NeoVis.NEOVIS_ADVANCED_CONFIG]: {
+							cypher: {
+								{#value: "MATCH (n) WHERE id(n) = $id RETURN n.size"#}
+							},
+							function: {
+								title: NeoVis.objectToTitleHtml
+							},
+						}
+					}
+				},
+				relationships: {
+					INTERACTS: {
+						value: 'weight',
+						[NeoVis.NEOVIS_ADVANCED_CONFIG]: {
+							function: {
+								title: NeoVis.objectToTitleHtml
+							},
+						}
+					}
+				},
+				initialCypher: 'MATCH (n)-[r]->(m) RETURN n,r,m'
+			};
+
+			viz = new NeoVis.default(config);
+			viz.render();
+			console.log(viz);
+
+		}
+
+
     </script>
+
 
         <div class="container-fluid" onload="draw()" id="viz"></div>
 

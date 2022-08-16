@@ -309,8 +309,8 @@ def volumes(request):
     myJson = res.json()
     myJson = json.loads(myJson)
     # myJson = json.loads(res.json())
-    print(type(myJson))
-    print(myJson['data'])
+    # print(type(myJson))
+    # print(myJson['data'])
     # for el in myJson['data']:
 
     # for k, v in myJson['data'].items():
@@ -319,9 +319,43 @@ def volumes(request):
 
     #                        project_id + '/model/' + model_id)
     #     json = res.json()
+
+    # Import `xlwt`
+    import xlwt
+
+    # Initialize a workbook
+    book = xlwt.Workbook(encoding="utf-8")
+
+    # Add a sheet to the workbook
+    sheet1 = book.add_sheet("Python Sheet 1")
+    if len(myJson['data']) > 0:
+        i = 0
+        for k, v in myJson['data'][0].items():
+            sheet1.write(0, i, k)
+            i = i + 1
+        i = 1
+        j = 0
+        for element in myJson['data']:
+            for k, v in element.items():
+                sheet1.write(i, j, v)
+                j = j + 1
+            j = 0
+            i = i + 1
+        name = r"C:\Users\kishi\PycharmProjects\protodjango\spreadsheet.xls"
+        book.save(name)
+    # Write to the sheet of the workbook
+    # sheet1.write(0, 0, "This is the First Cell of the First Sheet")
+    #
+    # # Save the workbook
+    # book.save("spreadsheet.xls")
+
+    # for i in range(len(myJson['data'])):
+    #     myJson['data'][i][id] = i
+    print(myJson['data'])
     return render(request, 'myapp/volumes.html', {
-        "myJson": myJson['data']
+        "myJson": myJson['data'],
     })
+
 
 
 def sdrs(request):
@@ -509,7 +543,7 @@ def sdr(request, id):
             return HttpResponseNotFound("<h2>It's not your WBS</h2>")
         request.session['wbs'] = id
         request.session['specs'] = wbs.specs[2:-2]
-        print(request.session['specs'])
+        # print(request.session['specs'])
         return redirect('/volumes/')
         # if request.method == "POST":
         #     urn.type = request.POST.get("type")
