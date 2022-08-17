@@ -1,15 +1,17 @@
+import json
+import re
+from datetime import date
+
+import requests
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render, redirect
 # Create your views here.
 from django.views.decorators.csrf import csrf_exempt
 
-import myapp.forms
+from myapp.forms import UploadFileForm, RuleForm, WbsForm
 from myapp.models import Work, URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
-from myapp.forms import UploadFileForm, RuleForm, WbsForm
-import requests
-import re
-import json
+import simplejson
 
 
 def login(request):
@@ -305,7 +307,9 @@ def volumes(request):
     res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
                        request.session['specs'] + '/project/' + project.projectId +
                        '/model/' + request.session['model'])
-
+    print('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
+                       request.session['specs'] + '/project/' + project.projectId +
+                       '/model/' + request.session['model'])
     myJson = res.json()
     myJson = json.loads(myJson)
     # myJson = json.loads(res.json())
@@ -617,3 +621,14 @@ def rule_delete(request, id):
         return HttpResponseRedirect("/families/")
     except Rule.DoesNotExist:
         return HttpResponseNotFound("<h2>Rule not found</h2>")
+
+
+def schedule(request):
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+
+    result = []
+    for i in range(10):
+        result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, None])
+    json_list = simplejson.dumps(result)
+    return render(request, 'myapp/schedule.html', {'json_list': json_list})

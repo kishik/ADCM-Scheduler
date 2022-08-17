@@ -28,7 +28,7 @@ urlpatterns = [
     path('families/', views.families),
     path('sdrs/', views.sdrs),
     path('volumes/', views.volumes),
-    path('timetable/', views.work_in_progress),
+    path('schedule/', views.schedule),
 
     path('graph/', views.graph_show),
     path('rules/', views.rule_create),
