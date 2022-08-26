@@ -83,6 +83,7 @@
         </tr>
     </thead>
     <tbody>
+
         {% for grouper, sdr in myList %}
 {#            {% if user.id == family.userId and family.isActive %}#}
             <tr data-node="treetable-{{ grouper }}"><td>{{ grouper }}</td></tr>
@@ -108,6 +109,7 @@
 {#            {% endif %}#}
             {% endfor %}
         {% endfor %}
+    <tr><td><a href="/sdr/0">Выбрать всё</a></td></tr>
     </tbody>
     </table>
     {% endif %}

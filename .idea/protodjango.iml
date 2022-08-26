@@ -33,6 +33,8 @@
     <orderEntry type="library" name="font-awesome" level="application" />
     <orderEntry type="library" name="27c34d562b" level="application" />
     <orderEntry type="library" name="loader" level="application" />
+    <orderEntry type="library" name="jquery.dataTables" level="application" />
+    <orderEntry type="library" name="dataTables.bootstrap4" level="application" />
   </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_CONFIGURATION" value="Django" />

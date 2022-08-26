@@ -7,6 +7,7 @@ from django.http import JsonResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render, redirect
 # Create your views here.
 from django.views.decorators.csrf import csrf_exempt
+from neo4j import GraphDatabase
 
 from myapp.forms import UploadFileForm, RuleForm, WbsForm
 from myapp.models import Work, URN, ActiveLink, Rule, Wbs
@@ -303,15 +304,44 @@ def saveModel(request):
 
 
 def volumes(request):
+    flag = False
     project = ActiveLink.objects.filter(userId=request.user.id).last()
-    res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
-                       request.session['specs'] + '/project/' + project.projectId +
-                       '/model/' + request.session['model'])
-    print('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
-                       request.session['specs'] + '/project/' + project.projectId +
-                       '/model/' + request.session['model'])
-    myJson = res.json()
-    myJson = json.loads(myJson)
+
+    if request.session['wbs'] != 0:
+        res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
+                           request.session['specs'] + '/project/' + project.projectId +
+                           '/model/' + request.session['model'])
+        print('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
+              request.session['specs'] + '/project/' + project.projectId +
+              '/model/' + request.session['model'])
+    else:
+
+        # print(len(Wbs.objects.all()))
+        for wbs in Wbs.objects.all():
+
+            print(wbs.specs[2:-2])
+            res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
+                               wbs.specs[2:-2] + '/project/' + project.projectId +
+                               '/model/' + request.session['model'])
+            print("hi")
+            res = res.json()
+            res = json.loads(res)
+            if flag == False:
+                data = res
+            # print(json.loads(res))
+            else:
+                print(data['data'])
+                print(res['data'])
+                data['data'].extend(res['data'])
+            flag = True
+        res = data
+
+    if flag:
+        data['data'] = sorted(data['data'], key=lambda x: x['wbs1'])
+        myJson = data
+    else:
+        myJson = res.json()
+        myJson = json.loads(myJson)
     # myJson = json.loads(res.json())
     # print(type(myJson))
     # print(myJson['data'])
@@ -326,27 +356,27 @@ def volumes(request):
 
     # Import `xlwt`
     import xlwt
-
+    print(myJson)
     # Initialize a workbook
     book = xlwt.Workbook(encoding="utf-8")
 
     # Add a sheet to the workbook
     sheet1 = book.add_sheet("Python Sheet 1")
-    if len(myJson['data']) > 0:
-        i = 0
-        for k, v in myJson['data'][0].items():
-            sheet1.write(0, i, k)
-            i = i + 1
-        i = 1
-        j = 0
-        for element in myJson['data']:
-            for k, v in element.items():
-                sheet1.write(i, j, v)
-                j = j + 1
-            j = 0
-            i = i + 1
-        name = r"C:\Users\kishi\PycharmProjects\protodjango\spreadsheet.xls"
-        book.save(name)
+    # if len(myJson['data']) > 0:
+    #     i = 0
+    #     for k, v in myJson['data'][0].items():
+    #         sheet1.write(0, i, k)
+    #         i = i + 1
+    #     i = 1
+    #     j = 0
+    #     for element in myJson['data']:
+    #         for k, v in element.items():
+    #             sheet1.write(i, j, v)
+    #             j = j + 1
+    #         j = 0
+    #         i = i + 1
+    #     name = r"C:\Users\kishi\PycharmProjects\protodjango\spreadsheet.xls"
+    #     book.save(name)
     # Write to the sheet of the workbook
     # sheet1.write(0, 0, "This is the First Cell of the First Sheet")
     #
@@ -355,11 +385,11 @@ def volumes(request):
 
     # for i in range(len(myJson['data'])):
     #     myJson['data'][i][id] = i
-    print(myJson['data'])
+    # print(myJson['data'])
+
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
     })
-
 
 
 def sdrs(request):
@@ -542,12 +572,17 @@ def sdr(request, id):
     if not request.user.is_authenticated:
         return redirect('/login/')
     try:
+        if id == 0:
+            request.session['wbs'] = 0
+            request.session['specs'] = 0
+            return redirect('/volumes/')
+
         wbs = Wbs.objects.get(id=id)
         if wbs.userId != request.user.id:
             return HttpResponseNotFound("<h2>It's not your WBS</h2>")
         request.session['wbs'] = id
         request.session['specs'] = wbs.specs[2:-2]
-        # print(request.session['specs'])
+        # print("specs " + request.session['specs'])
         return redirect('/volumes/')
         # if request.method == "POST":
         #     urn.type = request.POST.get("type")
@@ -623,12 +658,132 @@ def rule_delete(request, id):
         return HttpResponseNotFound("<h2>Rule not found</h2>")
 
 
+def deepSearch(din, family, session):
+    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
+    serverUser = 'neo4j'
+    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
+    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    session = driver.session(database="neo4j")
+    din = str(din)
+    q_data_obtain = f'''
+                MATCH (a)-[r]->(c)
+                WHERE a.DIN = $din
+                RETURN c
+                '''
+
+    print(q_data_obtain)
+    result = session.run(q_data_obtain, din=din).data()
+    print(result)
+    subFamily = [result[i]['c']['DIN'] for i in range(len(result))]
+    family.append(subFamily)
+    print("deepSearch")
+    print(subFamily)
+    print(family)
+    print(din)
+
+
+def nodes():
+    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
+    serverUser = 'neo4j'
+    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
+    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    session = driver.session(database="neo4j")
+
+    q_data_obtain = f'''
+                MATCH (top) // though you should use labels if possible)
+                WHERE NOT ()-[]->(top)
+                RETURN top
+                '''
+    result = session.run(q_data_obtain).data()
+    elements = [result[i]['top']['DIN'] for i in range(len(result))]
+    nodes = {}
+
+    q_data_obtain = f'''
+                    MATCH (a)-[r]->(c)
+                    RETURN c
+                    '''
+    result = session.run(q_data_obtain).data()
+    # print(result)
+    children = [result[i]['c']['DIN'] for i in range(len(result))]
+    # print("children")
+    # print(children)
+
+    for element in children:
+        q_data_obtain = f'''
+                MATCH (a)-[r]->(c)
+                WHERE c.DIN = $din
+                RETURN a
+                '''
+        result = session.run(q_data_obtain, din=element).data()
+        # print("result")
+        print(element)
+        # print(result)
+        nodes[element] = [result[i]['a']['DIN'] for i in range(len(result))]
+        print("nodes")
+        print(nodes)
+    return nodes
+
+
 def schedule(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
 
     result = []
+    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
+    serverUser = 'neo4j'
+    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
+    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    session = driver.session(database="neo4j")
+    parents = nodes()
+
+    # q_data_obtain = f'''
+    #         MATCH (top) // though you should use labels if possible)
+    #         WHERE NOT ()-[]->(top)
+    #         RETURN top
+    #         '''
+    # result = session.run(q_data_obtain).data()
+    #
+    # print(result)
+    # family = [[result[i]['top']['DIN'] for i in range(len(result))]]
+    # print(family)
+    # deepSearch(345, family, session)
+    #
+    # heads = [[result[i]['top']['DIN'], result[i]['top']['name']] for i in range(len(result))]
+
+    # print(heads)
+    # for element in heads:
+    #     q_data_obtain = f'''
+    #                 MATCH (top) // though you should use labels if possible)
+    #                 WHERE NOT ()-[]->(top)
+    #                 RETURN top
+    #                 '''
+
+    q_data_obtain = f'''
+                    MATCH (n) RETURN n
+                    '''
+    result = session.run(q_data_obtain).data()
+    print(result)
+    allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
+    print(allNodes)
+    elements = []
+    for element in allNodes:
+        if element not in parents:
+            elements.append(
+                [str(element), "name " + str(element), "res " + str(element), 2014, 2, 3 + 1, 2014, 2, 3 + 3, None, element, None])
+        else:
+            elements.append(
+                [str(element), "name " + str(element), "res " + str(element), 2014, 2, 3 + 1, 2014, 2, 3 + 3, None,
+                 element, ','.join(parents[element])])
+
+
+    result = []
     for i in range(10):
-        result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, None])
-    json_list = simplejson.dumps(result)
+        if i != 0:
+            result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, str(i % 2)])
+        else:
+            result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, None])
+
+    print(elements)
+    json_list = simplejson.dumps(elements)
+    print(json_list)
     return render(request, 'myapp/schedule.html', {'json_list': json_list})
