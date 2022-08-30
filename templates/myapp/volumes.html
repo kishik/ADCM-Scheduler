@@ -371,7 +371,7 @@ table.dataTable thead .sorting_desc_disabled:before {
   {% for grouper, el in myList %}
       <tr data-node="treetable-{{ grouper }}">
       <td>{{ grouper }}</td>
-          <td style="visibility: hidden">{{ grouper }}</td><td style="visibility: hidden">{{ grouper }}</td><td style="visibility: hidden">{{ el.0.wbs3_id }}</td>
+          <td style="visibility: hidden">{{ grouper }}</td><td style="visibility: hidden">{{ el.0.wbs3_id }}</td><td style="visibility: hidden">{{ el.0.wbs3 }}</td>
           <td style="visibility: hidden">{{ grouper }}</td><td style="visibility: hidden">{{ grouper }}</td>
       </tr>
 
@@ -382,7 +382,7 @@ table.dataTable thead .sorting_desc_disabled:before {
 {#            </label></td>#}
 {#  <th scope="row">{{ i }}</th>#}
   {% for subel in el %}
-<tr data-node="treetable-999" data-pnode="treetable-parent-{{ grouper }}">
+<tr data-node="treetable-{{ subel.wbs3_id }}" data-pnode="treetable-parent-{{ grouper }}">
 
   {% for subk, subv in subel.items %}
             <td>{{ subv }}</td>
@@ -398,38 +398,6 @@ table.dataTable thead .sorting_desc_disabled:before {
   {% endwith %}
   </tbody>
 </table>
-
-
-{#<table class="table table-striped" id="table">#}
-{#  <thead>#}
-{#    <tr>#}
-{#      <th>Column A</th>#}
-{#      <th>Column B</th>#}
-{#      <th>Column C</th>#}
-{#      <th>Column D</th>#}
-{#    </tr>#}
-{#  </thead>#}
-{#  <tbody>#}
-{#    <tr data-node="treetable-1">#}
-{#      <td>Node</td>#}
-{#      <td>1</td>#}
-{#      <td>c</td>#}
-{#      <td>info</td>#}
-{#    </tr>#}
-{#    <tr data-node="treetable-2" data-pnode="treetable-parent-1">#}
-{#      <td>Node</td>#}
-{#      <td>1-1</td>#}
-{#      <td>c</td>#}
-{#      <td>info</td>#}
-{#    </tr>#}
-{#    <tr data-node="treetable-3" data-pnode="treetable-parent-1">#}
-{#      <td>Node</td>#}
-{#      <td>1-2</td>#}
-{#      <td>c</td>#}
-{#      <td>info</td>#}
-{#    </tr>#}
-{#  </tbody>#}
-{#</table>#}
 
 <script>
 $(document).ready(function () {

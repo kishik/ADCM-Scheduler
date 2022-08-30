@@ -3,14 +3,6 @@
 {% csrf_token %}
 {% block content%}
 <meta charset="utf-8"/>
-{#        <style type="text/css">#}
-{#            #viz {#}
-{#                width: 1280px;#}
-{#                height: 720px;#}
-{#            }#}
-{#        </style>#}
-{#    <script src="https://unpkg.com/htmx.org@1.7.0" integrity="sha384-EzBXYPt0/T6gxNp0nuPtLkmRpmDBbjg6WmCUZRLXBBwYYmwAUxzlSGej0ARHX0Bo" crossorigin="anonymous"></script>#}
-{#    <script src="https://rawgit.com/neo4j-contrib/neovis.js/master/dist/neovis.js"></script>#}
 
     <script src="https://unpkg.com/neovis.js"></script>
     <script
@@ -19,18 +11,7 @@
             crossorigin="anonymous"></script>
     {% crispy form %}
 
-{#    <form id='form' hx-encoding='multipart/form-data' hx-post='/upload/'>#}
-{#        <input type='file' name='file'>#}
-{#        <button>#}
-{#            Upload#}
-{#        </button>#}
-{#        <progress id='progress' value='0' max='100'></progress>#}
-{#    </form>#}
-{#    <script>#}
-{#        htmx.on('#form', 'htmx:xhr:progress', function(evt) {#}
-{#          htmx.find('#progress').setAttribute('value', evt.detail.loaded/evt.detail.total * 100)#}
-{#        });#}
-{#    </script>#}
+
     <style>
             #viz {
 

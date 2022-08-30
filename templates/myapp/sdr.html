@@ -37,35 +37,6 @@
 </div>
 
 
-{#{% if sdrs_all.count > 0 %}#}
-{#    <h2>Список правил выгрузки</h2>#}
-{#    <table class="table">#}
-{#    <thead>#}
-{#        <tr>#}
-{#            <th scope="col" >WBS code</th>#}
-{#            <th scope="col">Docsdiv</th>#}
-{#            <th scope="col" >WBS1</th>#}
-{#            <th scope="col">WBS2</th>#}
-{#            <th scope="col" >WBS3</th>#}
-{#            <th scope="col">Specs</th>#}
-{#        </tr>#}
-{#    </thead>#}
-{#        {% for sdr in sdrs_all %}#}
-{#            {% if user.id == family.userId and family.isActive %}#}
-{#            <tr><td class="">{{ sdr.wbs_code }}</td><td class="">{{ sdr.docsdiv }}</td><td class="">{{ sdr.wbs1 }}</td>#}
-{#            <td class="">{{ sdr.wbs2 }}</td><td class="">{{ sdr.wbs2 }}</td><td class="">{{ sdr.specs }}</td></tr>#}
-{#                <tr>#}
-{#                    <td><a href="/sdr/{{sdr.id}}">Выбрать</a></td>#}
-{#                    <td><a href="/family_edit/{{family.id}}">Изменить</a></td>#}
-{#                    <td><a href="/sdr_delete/{{sdr.id}}">Удалить</a></td></tr>#}
-{#            {% endif %}#}
-{#        {% endfor %}#}
-{#    </table>#}
-{#    {% endif %}#}
-{##}
-
-
-
 {% if sdrs_all.count > 0 %}
 
     {% regroup sdrs_all by wbs_code as myList %}

@@ -319,19 +319,19 @@ def volumes(request):
         # print(len(Wbs.objects.all()))
         for wbs in Wbs.objects.all():
 
-            print(wbs.specs[2:-2])
+            # print(wbs.specs[2:-2])
             res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
                                wbs.specs[2:-2] + '/project/' + project.projectId +
                                '/model/' + request.session['model'])
-            print("hi")
+            # print("hi")
             res = res.json()
             res = json.loads(res)
             if flag == False:
                 data = res
             # print(json.loads(res))
             else:
-                print(data['data'])
-                print(res['data'])
+                # print(data['data'])
+                # print(res['data'])
                 data['data'].extend(res['data'])
             flag = True
         res = data
@@ -671,15 +671,15 @@ def deepSearch(din, family, session):
                 RETURN c
                 '''
 
-    print(q_data_obtain)
+    # print(q_data_obtain)
     result = session.run(q_data_obtain, din=din).data()
-    print(result)
+    # print(result)
     subFamily = [result[i]['c']['DIN'] for i in range(len(result))]
     family.append(subFamily)
-    print("deepSearch")
-    print(subFamily)
-    print(family)
-    print(din)
+    # print("deepSearch")
+    # print(subFamily)
+    # print(family)
+    # print(din)
 
 
 def nodes():
@@ -716,12 +716,69 @@ def nodes():
                 '''
         result = session.run(q_data_obtain, din=element).data()
         # print("result")
-        print(element)
+        # print(element)
         # print(result)
         nodes[element] = [result[i]['a']['DIN'] for i in range(len(result))]
-        print("nodes")
-        print(nodes)
+        # print("nodes")
+        # print(nodes)
     return nodes
+
+
+def children():
+    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
+    serverUser = 'neo4j'
+    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
+    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    session = driver.session(database="neo4j")
+
+    q_data_obtain = f'''
+                    MATCH (top) // though you should use labels if possible)
+                    WHERE NOT ()-[]->(top)
+                    RETURN top
+                    '''
+    result = session.run(q_data_obtain).data()
+    elements = [result[i]['top']['DIN'] for i in range(len(result))]
+    nodes = {}
+
+    q_data_obtain = f'''
+                        MATCH (a)-[r]->(c)
+                        RETURN a
+                        '''
+    result = session.run(q_data_obtain).data()
+    # print(result)
+    children = [result[i]['a']['DIN'] for i in range(len(result))]
+    # print("children")
+    # print(children)
+
+    for element in children:
+        q_data_obtain = f'''
+                    MATCH (a)-[r]->(c)
+                    WHERE a.DIN = $din
+                    RETURN c
+                    '''
+        result = session.run(q_data_obtain, din=element).data()
+        # print("result")
+        # print(element)
+        # print(result)
+        nodes[element] = [result[i]['c']['DIN'] for i in range(len(result))]
+        # print("nodes")
+        # print(nodes)
+    return nodes
+
+def maxValue(parents, value, lenNodes, child):
+    max_val = [0]
+    for el in parents[child]:
+        if value[el] > max(max_val):
+            max_val.append(value[el])
+    return max(max_val)
+
+
+def absValue(children, value, lenNodes, child):
+    max_val = [2000]
+    for el in children[child]:
+        if value[el] < min(max_val):
+            max_val.append(value[el])
+    return min(max_val)
 
 
 def schedule(request):
@@ -735,7 +792,11 @@ def schedule(request):
     driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
     session = driver.session(database="neo4j")
     parents = nodes()
-
+    childs = children()
+    print("children")
+    print(childs)
+    print("parents")
+    print(parents)
     # q_data_obtain = f'''
     #         MATCH (top) // though you should use labels if possible)
     #         WHERE NOT ()-[]->(top)
@@ -762,27 +823,51 @@ def schedule(request):
                     MATCH (n) RETURN n
                     '''
     result = session.run(q_data_obtain).data()
+    print("debug")
     print(result)
     allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
+    print("allNodes")
     print(allNodes)
+    names = {result[i]['n']['DIN']: result[i]['n']['name'] for i in range(len(result))}
+    print("names")
+    print(names)
     elements = []
+    value = {}
+    for i in range(len(allNodes)):
+        value[allNodes[i]] = i + 1901
+
+    for j in range(len(allNodes)):
+        for i in range(len(allNodes)):
+            if allNodes[i] not in parents:
+                value[allNodes[i]] = 1901 + i
+            elif allNodes[i] not in childs:
+                value[allNodes[i]] = maxValue(parents, value, len(allNodes), allNodes[i]) + 2
+            else:
+                value[allNodes[i]] = (maxValue(parents, value, len(allNodes), allNodes[i]) + absValue(childs, value, len(allNodes), allNodes[i])) // 2 + 2
+
+
+    print("value")
+    print(value)
     for element in allNodes:
         if element not in parents:
             elements.append(
-                [str(element), "name " + str(element), "res " + str(element), 2014, 2, 3 + 1, 2014, 2, 3 + 3, None, element, None])
+                [str(element), names[element] + " DIN" + element, None, value[element], 2, 3 + 1, value[element] + 2, 2, 3 + 3, None, element, None])
         else:
             elements.append(
-                [str(element), "name " + str(element), "res " + str(element), 2014, 2, 3 + 1, 2014, 2, 3 + 3, None,
+                [str(element), names[element] + " DIN" + element, None, value[element], 2, 3 + 1, value[element] + 2, 2, 3 + 3, None,
                  element, ','.join(parents[element])])
 
 
-    result = []
-    for i in range(10):
-        if i != 0:
-            result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, str(i % 2)])
-        else:
-            result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, None])
+    # result = []
+    # for i in range(10):
+    #     if i != 0:
+    #         result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, str(i % 2)])
+    #     else:
+    #         result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, None])
 
+
+    # elements = sorted(elements, key=lambda x: int(x[0]))
+    print("elements")
     print(elements)
     json_list = simplejson.dumps(elements)
     print(json_list)
