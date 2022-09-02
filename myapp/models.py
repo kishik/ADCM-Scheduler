@@ -47,14 +47,3 @@ class Wbs(models.Model):
     specs = models.CharField(max_length=200)
     userId = models.IntegerField()
     isActive = models.BooleanField()
-
-# class Document(models.Model):
-#     title = models.CharField(max_length=200)
-#     uploadedFile = models.FileField(upload_to="Uploaded_Files/")
-#     dateTimeOfUpload = models.DateTimeField(auto_now=True)
-
-# def your_signal_func(sender, instance, signal, created):
-#     pass
-#
-#
-# signals.post_save.connect(your_signal_func, sender=Work)

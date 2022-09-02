@@ -7,16 +7,14 @@
     form.col-12{
         padding: 0;
     }
-    {#button.btn-primary{#}
-    {#    margin-right: 2%;#}
 
     button.btn.btn-primary{
         margin-left: 17.4%;
         margin-right: 48.5%;
     }
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
     <div class ="col-10">
     <h2 class="">Список Моделей Пользователя {{ user.username }}</h2>
     <a class="btn btn-primary rounded-0 btn-block " id="insertRow" href="#">Add new row</a>
@@ -32,8 +30,6 @@
         {% if urns.count > 0 %}
             {% for urn in urns %}
                 {% if urn.userId == 0 and urn.isActive %}
-{#                    <tr><td><p class="col-12">{{ urn.name }}</p></td><td><p class="col-12">{{ urn.urn }}</p></td></tr>#}
-
                         <form class="col-12" action="/update_urn" method="post">
                         {% csrf_token %}
                           <div class="form-row col-12">
@@ -44,8 +40,6 @@
                             <div class="col-10">
                               <input type="text" class="form-control urn_urn" readonly="readonly" value="{{ urn.urn }}" required>
                             </div>
-{#                            <button class="btn btn-primary col-2" type="submit">Submit form</button>#}
-{#                            <button class="btn btn-danger col-2" type="button">Delete form</button>#}
                           </div>
 
                         </form>
@@ -68,7 +62,6 @@
                           </div>
 
                         </form>
-{#                    <tr><td><textarea class="col-12">{{ urn.name }}</textarea></td><td><textarea class="col-12">{{ urn.urn }}</textarea></td></tr>#}
                 {% endif %}
             {% endfor %}
 
@@ -105,11 +98,8 @@
                             <button class="btn btn-danger col-2 .offset-2" type="button">Delete form</button>
                           </div>
 
-                        </form>
-                    `
+                        </form>`
 
-        // Insert the columns inside a row
-        {#newRow.append(cols);#}
 
         // Insert the row inside a table
         $("#table").append(form);

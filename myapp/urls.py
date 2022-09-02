@@ -22,7 +22,6 @@ from registration import views as v
 
 urlpatterns = [
     path('', views.work_in_progress),
-    # path('search', views.search),
 
     path('models/', views.urn_show),
     path('families/', views.families),
@@ -33,7 +32,6 @@ urlpatterns = [
     path('graph/', views.graph_show),
     path('rules/', views.rule_create),
 
-    # path('work/', views.get_works),
     path('work_index/', views.works_index),
     path('graph_info/', views.graph),
     path('work/<str:id>', views.work_by_id),
@@ -42,9 +40,8 @@ urlpatterns = [
     path('model_load/', views.urn_show),
     path('file_upload/', views.file_upload),
     path('register/', v.register, name="register"),
-    path('', include("django.contrib.auth.urls")),  # <-- added
-    # path('update_urn/', views.update_urn),
-    # path('file_upload/', views.file_upload),
+    path('', include("django.contrib.auth.urls")),
+
     path('urn_index/', views.urn_index),
     path('urn_create/', views.urn_create),
     path('urn_edit/<int:id>/', views.urn_edit),
@@ -57,7 +54,6 @@ urlpatterns = [
     path('family_delete/<int:id>/', views.rule_delete),
     path('sdr_delete/<int:id>/', views.sdr_delete),
     path('sdr/<int:id>/', views.sdr),
-    # path('file_send/', views.file_send()),
-    # url(r'^django-webix/', include('django_webix.urls')),
+
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

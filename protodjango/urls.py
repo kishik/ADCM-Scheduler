@@ -25,9 +25,5 @@ from myapp import urls
 
 urlpatterns = [
     path('', include('myapp.urls')),
-    # path('search', views.search),
-    # path('graph/', views.graph),
-    # path('movie/<str:title>', views.movie_by_title),
     path('admin/', admin.site.urls),
-    # path('accounts/', django.contrib.auth.urls),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

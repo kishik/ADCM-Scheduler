@@ -5,16 +5,6 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 from myapp.models import Rule, Wbs
 
-
-# from models import Work
-#
-#
-# class WorkForm(ModelForm):
-#     class Meta:
-#         model = Work
-#         fields = ['id', 'name']
-
-
 class URNForm(forms.Form):
     id = forms.IntegerField()
     type = forms.CharField()
@@ -44,5 +34,4 @@ class UploadFileForm(forms.Form):
         self.helper.form_action = reverse_lazy("upload")
         self.helper.add_input(Submit('submit', 'Отправить'))
 
-    # title = forms.CharField(max_length=50)
     file = forms.FileField()

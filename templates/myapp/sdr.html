@@ -9,14 +9,6 @@
 <script src="{%  static 'myapp/js/bootstrap-treefy.js' %}"></script>
 <script src="{%  static 'myapp/js/javascript.js' %}"></script>
 
-{#    {% for el in myJson %}#}
-{#        <div class="row">#}
-{#        {% for subk, subv in el.items %}#}
-{#            <p class="col-2">{{ subk }} : {{ subv }}</p>#}
-{##}
-{#        {% endfor %}#}
-{#        </div>#}
-{#    {% endfor %}#}
 <div class="container">
 
 <br>
@@ -56,7 +48,7 @@
     <tbody>
 
         {% for grouper, sdr in myList %}
-{#            {% if user.id == family.userId and family.isActive %}#}
+
             <tr data-node="treetable-{{ grouper }}"><td>{{ grouper }}</td></tr>
             {% for el in sdr %}
 
@@ -64,20 +56,10 @@
                 <td class="">{{ el.wbs_code }}</td><td class="">{{ el.docsdiv }}</td><td class="">{{ el.wbs1 }}</td>
             <td class="">{{ el.wbs2 }}</td><td class="">{{ el.wbs2 }}</td><td class="">{{ el.specs }}</td>
             <td><a href="/sdr/{{el.id}}">Выбрать</a></td>
-{#                    <td><a href="/family_edit/{{family.id}}">Изменить</a></td>#}
+
                     <td><a href="/sdr_delete/{{el.id}}">Удалить</a></td>
             </tr>
 
-
-
-
-{#                <tr>#}
-{#                    <td><a href="/sdr/{{el.id}}">Выбрать</a></td>#}
-{#                    <td><a href="/family_edit/{{family.id}}">Изменить</a></td>#}
-{#                    #}
-{#                    <td><a href="/sdr_delete/{{el.id}}">Удалить</a></td>#}
-{#                </tr>#}
-{#            {% endif %}#}
             {% endfor %}
         {% endfor %}
     <tr><td><a href="/sdr/0">Выбрать всё</a></td></tr>
