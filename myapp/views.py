@@ -11,14 +11,19 @@ from myapp.forms import UploadFileForm, RuleForm, WbsForm
 from myapp.models import Work, URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
 import simplejson
-#todo yml import do not work
+# todo yml import do not work
 from yml import get_cfg
-
 
 cfg: dict = get_cfg("neo4j")
 URL = cfg.get('url')
 USER = cfg.get('user')
 PASS = cfg.get('password')
+
+
+def authentication(url=URL, user=USER, password=PASS, database="neo4j"):
+    driver = GraphDatabase.driver(url, auth=(user, password))
+    session = driver.session(database=database)
+    return session
 
 
 def login(request):
@@ -309,7 +314,6 @@ def volumes(request):
     else:
         myJson = res.json()
         myJson = json.loads(myJson)
-
 
     # import xlwt
     #
@@ -618,9 +622,3 @@ def schedule(request):
     json_list = simplejson.dumps(elements)
 
     return render(request, 'myapp/schedule.html', {'json_list': json_list})
-
-
-def authentication(url=URL, user=USER, password=PASS, database="neo4j"):
-    driver = GraphDatabase.driver(url, auth=(user, password))
-    session = driver.session(database=database)
-    return session
