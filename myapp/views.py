@@ -222,17 +222,7 @@ def model(request, id):
         request.session['model_type'] = urn.type
         request.session['model'] = 'urn%' + urn.urn
         return redirect('/families/')
-        # if request.method == "POST":
-        #     urn.type = request.POST.get("type")
-        #     urn.urn = request.POST.get("urn")
-        #     urn.save()
-        #     return HttpResponseRedirect("/urn_index/")
-        # else:
-        #     project_id = """"""
-        #     # return render(request, "myapp/urn_edit.html", {"urn": urn})
-        #     res = requests.get('https://4d-model.acceleration.ru:8000/acc/viewer/project/' +
-        #                        project_id + '/model/' + model_id)
-        #     json = res.json()
+
 
     except URN.DoesNotExist:
         return HttpResponseNotFound("<h2>URN not found</h2>")
@@ -247,17 +237,6 @@ def family(request, id):
             return HttpResponseNotFound("<h2>It's not your URN</h2>")
         request.session['urn'] = id
         return redirect('/families/')
-        # if request.method == "POST":
-        #     urn.type = request.POST.get("type")
-        #     urn.urn = request.POST.get("urn")
-        #     urn.save()
-        #     return HttpResponseRedirect("/urn_index/")
-        # else:
-        #     project_id = """"""
-        #     # return render(request, "myapp/urn_edit.html", {"urn": urn})
-        #     res = requests.get('https://4d-model.acceleration.ru:8000/acc/viewer/project/' +
-        #                        project_id + '/model/' + model_id)
-        #     json = res.json()
 
     except URN.DoesNotExist:
         return HttpResponseNotFound("<h2>URN not found</h2>")
