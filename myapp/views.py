@@ -1,11 +1,9 @@
 import json
 import re
-from datetime import date
 
 import requests
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render, redirect
-# Create your views here.
 from django.views.decorators.csrf import csrf_exempt
 from neo4j import GraphDatabase
 
@@ -69,25 +67,23 @@ def graph(request):
         nodes.append({'id': work.id, 'name': work.name})
 
         for job in work.incoming:
-            print(job)
             rels.append({"source": job.id, "target": work.id})
         for job in work.outcoming:
             rels.append({"source": work.id, "target": job.id})
-    print(rels)
+
     return JsonResponse({"nodes": nodes, "links": rels})
 
 
 def work_by_id(request, id):
     if not request.user.is_authenticated:
         return redirect('/login/')
-    print(id, "id")
+
     for node in Work.nodes.all():
         if int(id) == node.id:
             return JsonResponse({
                 'id': node.id,
                 'name': node.name,
             })
-    # work = Work.nodes.get(id=int(id))
 
 
 def search(request):
@@ -95,21 +91,15 @@ def search(request):
         return redirect('/login/')
     try:
         q = request.GET["q"]
-        print(q, "q")
-        print(request.path)
+
     except KeyError:
         return JsonResponse([])
     goodNodes = []
     for node in Work.nodes.all():
-        print(node.id)
 
         if int(q) == node.id:
             goodNodes.append(node)
-            # return JsonResponse({
-            #     'id': node.id,
-            #     'name': node.name,
-            # })
-    # print(works[0].id, 'works')
+
     return JsonResponse([{
         'id': work.id,
         'name': work.name,
@@ -209,11 +199,7 @@ def upload(request):
         return redirect('/login/')
 
     if request.method == 'POST':
-        print(request.FILES['file'])
         historical_graph_creation.main(request.FILES['file'])
-        # if form.is_valid():
-        #     print(request.FILES['file'])
-        # return redirect('/new_graph')
 
     return redirect('/new_graph/')
 
@@ -236,17 +222,7 @@ def model(request, id):
         request.session['model_type'] = urn.type
         request.session['model'] = 'urn%' + urn.urn
         return redirect('/families/')
-        # if request.method == "POST":
-        #     urn.type = request.POST.get("type")
-        #     urn.urn = request.POST.get("urn")
-        #     urn.save()
-        #     return HttpResponseRedirect("/urn_index/")
-        # else:
-        #     project_id = """"""
-        #     # return render(request, "myapp/urn_edit.html", {"urn": urn})
-        #     res = requests.get('https://4d-model.acceleration.ru:8000/acc/viewer/project/' +
-        #                        project_id + '/model/' + model_id)
-        #     json = res.json()
+
 
     except URN.DoesNotExist:
         return HttpResponseNotFound("<h2>URN not found</h2>")
@@ -261,17 +237,6 @@ def family(request, id):
             return HttpResponseNotFound("<h2>It's not your URN</h2>")
         request.session['urn'] = id
         return redirect('/families/')
-        # if request.method == "POST":
-        #     urn.type = request.POST.get("type")
-        #     urn.urn = request.POST.get("urn")
-        #     urn.save()
-        #     return HttpResponseRedirect("/urn_index/")
-        # else:
-        #     project_id = """"""
-        #     # return render(request, "myapp/urn_edit.html", {"urn": urn})
-        #     res = requests.get('https://4d-model.acceleration.ru:8000/acc/viewer/project/' +
-        #                        project_id + '/model/' + model_id)
-        #     json = res.json()
 
     except URN.DoesNotExist:
         return HttpResponseNotFound("<h2>URN not found</h2>")
@@ -297,8 +262,6 @@ def saveModel(request):
     model = re.search(r'entityId=.*&viewModel', string)
     model = model[0][9:-10]
     link.modelId = model
-    # print(string)
-    # print(project, model)
     link.save()
     return redirect('/settings/')
 
@@ -311,27 +274,18 @@ def volumes(request):
         res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
                            request.session['specs'] + '/project/' + project.projectId +
                            '/model/' + request.session['model'])
-        print('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
-              request.session['specs'] + '/project/' + project.projectId +
-              '/model/' + request.session['model'])
+
     else:
-
-        # print(len(Wbs.objects.all()))
         for wbs in Wbs.objects.all():
-
-            # print(wbs.specs[2:-2])
             res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
                                wbs.specs[2:-2] + '/project/' + project.projectId +
                                '/model/' + request.session['model'])
-            # print("hi")
+
             res = res.json()
             res = json.loads(res)
             if not flag:
                 data = res
-            # print(json.loads(res))
             else:
-                # print(data['data'])
-                # print(res['data'])
                 data['data'].extend(res['data'])
             flag = True
 
@@ -344,25 +298,13 @@ def volumes(request):
         myJson = res.json()
         myJson = json.loads(myJson)
 
-    # myJson = json.loads(res.json())
-    # print(type(myJson))
-    # print(myJson['data'])
-    # for el in myJson['data']:
-
-    # for k, v in myJson['data'].items():
-    #     print(k, v)
-    # project = re.search(r'projects.*folderUrn', myJson)
-
-    #                        project_id + '/model/' + model_id)
-    #     json = res.json()
-    # Import `xlwt`
-    import xlwt
-
-    # Initialize a workbook
-    book = xlwt.Workbook(encoding="utf-8")
-
-    # Add a sheet to the workbook
-    sheet1 = book.add_sheet("Python Sheet 1")
+    # import xlwt
+    #
+    # # Initialize a workbook
+    # book = xlwt.Workbook(encoding="utf-8")
+    #
+    # # Add a sheet to the workbook
+    # sheet1 = book.add_sheet("Python Sheet 1")
     # if len(myJson['data']) > 0:
     #     i = 0
     #     for k, v in myJson['data'][0].items():
@@ -384,13 +326,9 @@ def volumes(request):
     # # Save the workbook
     # book.save("spreadsheet.xls")
 
-    # for i in range(len(myJson['data'])):
-    #     myJson['data'][i][id] = i
-    # print(myJson['data'])
-
     for el in myJson['data']:
         el["wbs"] = el["wbs1"] + el["wbs3_id"]
-    print(myJson['data'])
+
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
     })
@@ -424,153 +362,6 @@ def sdrs(request):
 
     return render(request, "myapp/sdr.html", {"form": form, "sdrs_all": sdrs_all})
 
-    SINARA_WBS = [
-        {
-            'wbs_code': "СМР.1.КЖ.0.",
-            'docsdiv': "KJ",
-            'wbs1': "СМР",
-            'wbs2': "Конструкции железобетонные",
-            'wbs3': "Ниже отм. 0.0",
-            'specs': ["SIN_KJ_base"]
-        },
-        {
-            'wbs_code': "СМР.1.КЖ.1.",
-            'docsdiv': "KJ",
-            'wbs1': "СМР",
-            'wbs2': "Конструкции железобетонные",
-            'wbs3': "Выше отм. 0.0",
-            'specs': ["SIN_KJ_karkas"]
-        },
-        {
-            'wbs_code': "СМР.2.АС.1.",
-            'docsdiv': "AR",
-            'wbs1': "СМР",
-            'wbs2': "Архитектурно-строительные решения",
-            'wbs3': "Устройство наружных стен",
-            'specs': ["SIN_AR_ext_walls"]
-        },
-        {
-            'wbs_code': "СМР.2.АС.2.",
-            'docsdiv': "AR",
-            'wbs1': "СМР",
-            'wbs2': "Архитектурно-строительные решения",
-            'wbs3': "Устройство перегородок",
-            'specs': ["SIN_AR_int_walls"]
-        },
-        {
-            'wbs_code': "СМР.2.АС.3.",
-            'docsdiv': "AR",
-            'wbs1': "СМР",
-            'wbs2': "Архитектурно-строительные решения",
-            'wbs3': "Устройство кровель",
-            'specs': ["SIN_AR_roofs"]
-        },
-        {
-            'wbs_code': "СМР.2.АС.3.",
-            'docsdiv': "AR",
-            'wbs1': "СМР",
-            'wbs2': "Архитектурно-строительные решения",
-            'wbs3': "Устройство фасадов",
-            'specs': ["SIN_AR_facade"]
-        },
-        {
-            'wbs_code': "СМР.2.АС.4.",
-            'docsdiv': "AR",
-            'wbs1': "СМР",
-            'wbs2': "Архитектурно-строительные решения",
-            'wbs3': "Устройство окон",
-            'specs': ["SIN_AR_windows"]
-        },
-        {
-            'wbs_code': "СМР.2.АС.5.",
-            'docsdiv': "AR",
-            'wbs1': "СМР",
-            'wbs2': "Архитектурно-строительные решения",
-            'wbs3': "Устройство витражей",
-            'specs': ["SIN_stained"]
-        },
-        {
-            'wbs_code': "СМР.2.АС.6.",
-            'docsdiv': "AR",
-            'wbs1': "СМР",
-            'wbs2': "Черновая отделка",
-            'wbs3': "Черновая отделка стен",
-            'specs': ["SIN_wall_finish"]
-        },
-        {
-            'wbs_code': "СМР.2.АС.7.",
-            'docsdiv': "AR",
-            'wbs1': "СМР",
-            'wbs2': "Черновая отделка",
-            'wbs3': "Устройство полов",
-            'specs': ["SIN_AR_floor"]
-        },
-        {
-            'wbs_code': "СМР.2.АС.8.",
-            'docsdiv': "AR",
-            'wbs1': "СМР",
-            'wbs2': "Черновая отделка",
-            'wbs3': "Устройство потолков",
-            'specs': ["SIN_ceiling"]
-        },
-        {
-            'wbs_code': "СМР.3.ОВ.1.",
-            'docsdiv': "OV",
-            'wbs1': "СМР",
-            'wbs2': "Системы вентиляции",
-            'wbs3': "Монтаж воздуховодов",
-            'specs': ["SIN_OV_ducts"]
-        },
-        {
-            'wbs_code': "СМР.3.ОВ.2.",
-            'docsdiv': "OV",
-            'wbs1': "СМР",
-            'wbs2': "Система отопления",
-            'wbs3': "Монтаж трубопроводов",
-            'specs': ["SIN_pipes"]
-        },
-        {
-            'wbs_code': "СМР.3.ОВ.3.",
-            'docsdiv': "OV",
-            'wbs1': "СМР",
-            'wbs2': "Системы отопления и вентиляции",
-            'wbs3': "Монтаж оборудования",
-            'specs': ["SIN_equip"]
-        },
-        {
-            'wbs_code': "СМР.3.ПТ.1.",
-            'docsdiv': "PT",
-            'wbs1': "СМР",
-            'wbs2': "Система пожаротушения",
-            'wbs3': "Монтаж трубопроводов",
-            'specs': ["SIN_pipes"]
-        },
-        {
-            'wbs_code': "СМР.3.ПТ.2.",
-            'docsdiv': "PT",
-            'wbs1': "СМР",
-            'wbs2': "Система пожаротушения",
-            'wbs3': "Монтаж оборудования",
-            'specs': ["SIN_equip"]
-        },
-        {
-            'wbs_code': "СМР.3.ЭМ.1.",
-            'docsdiv': "EM",
-            'wbs1': "СМР",
-            'wbs2': "Система электроснабжения",
-            'wbs3': "Прокладка лотковых трасс",
-            'specs': ["SIN_EM_lotki"]
-        },
-        {
-            'wbs_code': "СМР.3.ЭМ.2.",
-            'docsdiv': "EM",
-            'wbs1': "СМР",
-            'wbs2': "Система электроснабжения",
-            'wbs3': "Монтаж оборудования",
-            'specs': ["SIN_EM_equip"]
-        },
-    ]
-
 
 def sdr(request, id):
     if not request.user.is_authenticated:
@@ -586,19 +377,8 @@ def sdr(request, id):
             return HttpResponseNotFound("<h2>It's not your WBS</h2>")
         request.session['wbs'] = id
         request.session['specs'] = wbs.specs[2:-2]
-        # print("specs " + request.session['specs'])
+
         return redirect('/volumes/')
-        # if request.method == "POST":
-        #     urn.type = request.POST.get("type")
-        #     urn.urn = request.POST.get("urn")
-        #     urn.save()
-        #     return HttpResponseRedirect("/urn_index/")
-        # else:
-        #     project_id = """"""
-        #     # return render(request, "myapp/urn_edit.html", {"urn": urn})
-        #     res = requests.get('https://4d-model.acceleration.ru:8000/acc/viewer/project/' +
-        #                        project_id + '/model/' + model_id)
-        #     json = res.json()
 
     except URN.DoesNotExist:
         return HttpResponseNotFound("<h2>WBS not found</h2>")
@@ -641,8 +421,6 @@ def rule_create(request):
             rule.userId = request.user.id
             rule.isActive = True
             rule.save()
-            # process the data in form.cleaned_data as required
-            # ...
             # redirect to a new URL:
             return HttpResponseRedirect('/families/')
 
@@ -675,15 +453,9 @@ def deepSearch(din, family, session):
                 RETURN c
                 '''
 
-    # print(q_data_obtain)
     result = session.run(q_data_obtain, din=din).data()
-    # print(result)
     subFamily = [result[i]['c']['DIN'] for i in range(len(result))]
     family.append(subFamily)
-    # print("deepSearch")
-    # print(subFamily)
-    # print(family)
-    # print(din)
 
 
 def nodes():
@@ -693,13 +465,6 @@ def nodes():
     driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
     session = driver.session(database="neo4j")
 
-    q_data_obtain = f'''
-                MATCH (top) // though you should use labels if possible)
-                WHERE NOT ()-[]->(top)
-                RETURN top
-                '''
-    result = session.run(q_data_obtain).data()
-    elements = [result[i]['top']['DIN'] for i in range(len(result))]
     nodes = {}
 
     q_data_obtain = f'''
@@ -707,10 +472,7 @@ def nodes():
                     RETURN c
                     '''
     result = session.run(q_data_obtain).data()
-    # print(result)
     children = [result[i]['c']['DIN'] for i in range(len(result))]
-    # print("children")
-    # print(children)
 
     for element in children:
         q_data_obtain = f'''
@@ -719,12 +481,9 @@ def nodes():
                 RETURN a
                 '''
         result = session.run(q_data_obtain, din=element).data()
-        # print("result")
-        # print(element)
-        # print(result)
+
         nodes[element] = [result[i]['a']['DIN'] for i in range(len(result))]
-        # print("nodes")
-        # print(nodes)
+
     return nodes
 
 
@@ -749,10 +508,7 @@ def children():
                         RETURN a
                         '''
     result = session.run(q_data_obtain).data()
-    # print(result)
     children = [result[i]['a']['DIN'] for i in range(len(result))]
-    # print("children")
-    # print(children)
 
     for element in children:
         q_data_obtain = f'''
@@ -761,12 +517,8 @@ def children():
                     RETURN c
                     '''
         result = session.run(q_data_obtain, din=element).data()
-        # print("result")
-        # print(element)
-        # print(result)
         nodes[element] = [result[i]['c']['DIN'] for i in range(len(result))]
-        # print("nodes")
-        # print(nodes)
+
     return nodes
 
 
@@ -777,49 +529,19 @@ def parentsByDin(din, session):
                             RETURN c
                             '''
     result = session.run(q_data_obtain, din=din).data()
-    # print("result")
-    # print(element)
-    # print(result)
+
     return [result[i]['c']['DIN'] for i in range(len(result))]
 
 
 def childrenByDin(din, session):
-
     q_data_obtain = f'''
                         MATCH (a)-[r]->(c)
                         WHERE a.DIN = $din
                         RETURN c
                         '''
     result = session.run(q_data_obtain, din=din).data()
-    # print("result")
-    # print(element)
-    # print(result)
+
     return [result[i]['c']['DIN'] for i in range(len(result))]
-
-
-def maxValue(parents, value, lenNodes, child):
-    max_val = 0
-    for el in parents[child]:
-        try:
-            if value[el] > max_val:
-                max_val = value[el]
-        except Exception:
-            print("ERROR")
-            print(value[el], max_val)
-    return max_val
-
-
-def absValue(children, value, lenNodes, child):
-    max_val = 2000
-    for el in children[child]:
-        try:
-            if value[el] < max_val:
-                max_val = value[el]
-        except Exception:
-            print("ERROR")
-            print(value[el], max_val)
-
-    return max_val
 
 
 def calculateDistance():
@@ -831,16 +553,13 @@ def calculateDistance():
     distances = {}
     for node in allNodes():
         if parentsByDin(node, session):
-            print(parentsByDin(node, session))
             continue
         prohod(start_din=node, distances=distances, session=session, cur_level=0)
-        # if no parents then distance 0
+
     return distances
 
 
 def prohod(start_din, distances, session, cur_level=0):
-
-    print(start_din, ' level ', cur_level)
     if start_din not in distances:
         distances[start_din] = 0
 
@@ -861,7 +580,7 @@ def allNodes():
                         '''
     result = session.run(q_data_obtain).data()
     allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
-    print(allNodes)
+
     return allNodes
 
 
@@ -877,92 +596,35 @@ def schedule(request):
     serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
     driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
     session = driver.session(database="neo4j")
-
-    print("distances")
     distances = calculateDistance()
-    print(distances)
     parents = nodes()
-    childs = children()
-    print("children")
-    print(childs)
-    print("parents")
-    print(parents)
-
-    # q_data_obtain = f'''
-    #         MATCH (top) // though you should use labels if possible)
-    #         WHERE NOT ()-[]->(top)
-    #         RETURN top
-    #         '''
-    # result = session.run(q_data_obtain).data()
-    #
-    # print(result)
-    # family = [[result[i]['top']['DIN'] for i in range(len(result))]]
-    # print(family)
-    # deepSearch(345, family, session)
-    #
-    # heads = [[result[i]['top']['DIN'], result[i]['top']['name']] for i in range(len(result))]
-
-    # print(heads)
-    # for element in heads:
-    #     q_data_obtain = f'''
-    #                 MATCH (top) // though you should use labels if possible)
-    #                 WHERE NOT ()-[]->(top)
-    #                 RETURN top
-    #                 '''
 
     q_data_obtain = f'''
                     MATCH (n) RETURN n
                     '''
     result = session.run(q_data_obtain).data()
-    print("debug")
-    print(result)
+
     allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
-    print("allNodes")
-    print(allNodes)
+
     names = {result[i]['n']['DIN']: result[i]['n']['name'] for i in range(len(result))}
-    print("names")
-    print(names)
+
     elements = []
-    value = {}
-    curTime = 2
-    # for i in range(len(allNodes)):
-    #     value[allNodes[i]] = 1901
 
-    # for j in range(len(allNodes)):
-    #     for i in range(len(allNodes)):
-    #         if allNodes[i] not in parents:
-    #             value[allNodes[i]] = 1901
-    #         elif allNodes[i] not in childs:
-    #             value[allNodes[i]] = maxValue(parents, value, len(allNodes), allNodes[i]) - curTime
-    #         else:
-    #             value[allNodes[i]] = (maxValue(parents, value, len(allNodes), allNodes[i]) + absValue(childs, value,
-    #                                                                                                   len(allNodes),
-    #                                                                                                   allNodes[
-    #                                                                                                       i])) // 2 + curTime
-
-    print("value")
-    print(value)
     for element in allNodes:
         if element not in parents:
             elements.append(
-                [str(element), names[element] + " DIN" + element, None, distances[element], 1, 1, distances[element] + 1, 1, 1,
+                [str(element), names[element] + " DIN" + element, None, distances[element], 1, 1,
+                 distances[element] + 1, 1, 1,
                  None, element, None])
         else:
             elements.append(
-                [str(element), names[element] + " DIN" + element, None, distances[element], 1, 1, distances[element] + 1, 1, 1,
+                [str(element), names[element] + " DIN" + element, None, distances[element], 1, 1,
+                 distances[element] + 1, 1, 1,
                  None,
                  element, ','.join(parents[element])])
 
-    # result = []
-    # for i in range(10):
-    #     if i != 0:
-    #         result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, str(i % 2)])
-    #     else:
-    #         result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, None])
-
     elements = sorted(elements, key=lambda x: int(x[0]))
-    print("elements")
-    print(elements)
+
     json_list = simplejson.dumps(elements)
-    print(json_list)
+
     return render(request, 'myapp/schedule.html', {'json_list': json_list})
