@@ -326,7 +326,7 @@ def volumes(request):
             # print("hi")
             res = res.json()
             res = json.loads(res)
-            if flag == False:
+            if not flag:
                 data = res
             # print(json.loads(res))
             else:
@@ -334,6 +334,7 @@ def volumes(request):
                 # print(res['data'])
                 data['data'].extend(res['data'])
             flag = True
+
         res = data
 
     if flag:
@@ -342,6 +343,7 @@ def volumes(request):
     else:
         myJson = res.json()
         myJson = json.loads(myJson)
+
     # myJson = json.loads(res.json())
     # print(type(myJson))
     # print(myJson['data'])
@@ -353,10 +355,9 @@ def volumes(request):
 
     #                        project_id + '/model/' + model_id)
     #     json = res.json()
-
     # Import `xlwt`
     import xlwt
-    print(myJson)
+
     # Initialize a workbook
     book = xlwt.Workbook(encoding="utf-8")
 
@@ -387,6 +388,9 @@ def volumes(request):
     #     myJson['data'][i][id] = i
     # print(myJson['data'])
 
+    for el in myJson['data']:
+        el["wbs"] = el["wbs1"] + el["wbs3_id"]
+    print(myJson['data'])
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
     })
@@ -765,25 +769,107 @@ def children():
         # print(nodes)
     return nodes
 
+
+def parentsByDin(din, session):
+    q_data_obtain = f'''
+                            MATCH (c)-[r]->(a)
+                            WHERE a.DIN = $din
+                            RETURN c
+                            '''
+    result = session.run(q_data_obtain, din=din).data()
+    # print("result")
+    # print(element)
+    # print(result)
+    return [result[i]['c']['DIN'] for i in range(len(result))]
+
+
+def childrenByDin(din, session):
+
+    q_data_obtain = f'''
+                        MATCH (a)-[r]->(c)
+                        WHERE a.DIN = $din
+                        RETURN c
+                        '''
+    result = session.run(q_data_obtain, din=din).data()
+    # print("result")
+    # print(element)
+    # print(result)
+    return [result[i]['c']['DIN'] for i in range(len(result))]
+
+
 def maxValue(parents, value, lenNodes, child):
-    max_val = [0]
+    max_val = 0
     for el in parents[child]:
-        if value[el] > max(max_val):
-            max_val.append(value[el])
-    return max(max_val)
+        try:
+            if value[el] > max_val:
+                max_val = value[el]
+        except Exception:
+            print("ERROR")
+            print(value[el], max_val)
+    return max_val
 
 
 def absValue(children, value, lenNodes, child):
-    max_val = [2000]
+    max_val = 2000
     for el in children[child]:
-        if value[el] < min(max_val):
-            max_val.append(value[el])
-    return min(max_val)
+        try:
+            if value[el] < max_val:
+                max_val = value[el]
+        except Exception:
+            print("ERROR")
+            print(value[el], max_val)
+
+    return max_val
+
+
+def calculateDistance():
+    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
+    serverUser = 'neo4j'
+    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
+    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    session = driver.session(database="neo4j")
+    distances = {}
+    for node in allNodes():
+        if parentsByDin(node, session):
+            print(parentsByDin(node, session))
+            continue
+        prohod(start_din=node, distances=distances, session=session, cur_level=0)
+        # if no parents then distance 0
+    return distances
+
+
+def prohod(start_din, distances, session, cur_level=0):
+
+    print(start_din, ' level ', cur_level)
+    if start_din not in distances:
+        distances[start_din] = 0
+
+    distances[start_din] = max(cur_level, distances[start_din])
+
+    for element in childrenByDin(start_din, session):
+        prohod(element, distances, session, cur_level + 1)
+
+
+def allNodes():
+    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
+    serverUser = 'neo4j'
+    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
+    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    session = driver.session(database="neo4j")
+    q_data_obtain = f'''
+                        MATCH (n) RETURN n
+                        '''
+    result = session.run(q_data_obtain).data()
+    allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
+    print(allNodes)
+    return allNodes
 
 
 def schedule(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
+
+    calculateDistance()
 
     result = []
     serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
@@ -791,12 +877,17 @@ def schedule(request):
     serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
     driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
     session = driver.session(database="neo4j")
+
+    print("distances")
+    distances = calculateDistance()
+    print(distances)
     parents = nodes()
     childs = children()
     print("children")
     print(childs)
     print("parents")
     print(parents)
+
     # q_data_obtain = f'''
     #         MATCH (top) // though you should use labels if possible)
     #         WHERE NOT ()-[]->(top)
@@ -833,30 +924,34 @@ def schedule(request):
     print(names)
     elements = []
     value = {}
-    for i in range(len(allNodes)):
-        value[allNodes[i]] = i + 1901
+    curTime = 2
+    # for i in range(len(allNodes)):
+    #     value[allNodes[i]] = 1901
 
-    for j in range(len(allNodes)):
-        for i in range(len(allNodes)):
-            if allNodes[i] not in parents:
-                value[allNodes[i]] = 1901 + i
-            elif allNodes[i] not in childs:
-                value[allNodes[i]] = maxValue(parents, value, len(allNodes), allNodes[i]) + 2
-            else:
-                value[allNodes[i]] = (maxValue(parents, value, len(allNodes), allNodes[i]) + absValue(childs, value, len(allNodes), allNodes[i])) // 2 + 2
-
+    # for j in range(len(allNodes)):
+    #     for i in range(len(allNodes)):
+    #         if allNodes[i] not in parents:
+    #             value[allNodes[i]] = 1901
+    #         elif allNodes[i] not in childs:
+    #             value[allNodes[i]] = maxValue(parents, value, len(allNodes), allNodes[i]) - curTime
+    #         else:
+    #             value[allNodes[i]] = (maxValue(parents, value, len(allNodes), allNodes[i]) + absValue(childs, value,
+    #                                                                                                   len(allNodes),
+    #                                                                                                   allNodes[
+    #                                                                                                       i])) // 2 + curTime
 
     print("value")
     print(value)
     for element in allNodes:
         if element not in parents:
             elements.append(
-                [str(element), names[element] + " DIN" + element, None, value[element], 2, 3 + 1, value[element] + 2, 2, 3 + 3, None, element, None])
+                [str(element), names[element] + " DIN" + element, None, distances[element], 1, 1, distances[element] + 1, 1, 1,
+                 None, element, None])
         else:
             elements.append(
-                [str(element), names[element] + " DIN" + element, None, value[element], 2, 3 + 1, value[element] + 2, 2, 3 + 3, None,
+                [str(element), names[element] + " DIN" + element, None, distances[element], 1, 1, distances[element] + 1, 1, 1,
+                 None,
                  element, ','.join(parents[element])])
-
 
     # result = []
     # for i in range(10):
@@ -865,8 +960,7 @@ def schedule(request):
     #     else:
     #         result.append([str(i), "name " + str(i), "res " + str(i), 2014, 2, i + 1, 2014, 2, i + 3, None, i, None])
 
-
-    # elements = sorted(elements, key=lambda x: int(x[0]))
+    elements = sorted(elements, key=lambda x: int(x[0]))
     print("elements")
     print(elements)
     json_list = simplejson.dumps(elements)
