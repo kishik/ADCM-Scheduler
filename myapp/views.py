@@ -11,6 +11,14 @@ from myapp.forms import UploadFileForm, RuleForm, WbsForm
 from myapp.models import Work, URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
 import simplejson
+#todo yml import do not work
+from yml import get_cfg
+
+
+cfg: dict = get_cfg("neo4j")
+URI = cfg.get('uri')
+USER = cfg.get('user')
+PASS = cfg.get('password')
 
 
 def login(request):
@@ -442,10 +450,7 @@ def rule_delete(request, id):
 
 
 def deepSearch(din, family, session):
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
     session = driver.session(database="neo4j")
     din = str(din)
     q_data_obtain = f'''
@@ -460,10 +465,7 @@ def deepSearch(din, family, session):
 
 
 def nodes():
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
     session = driver.session(database="neo4j")
 
     nodes = {}
@@ -489,10 +491,7 @@ def nodes():
 
 
 def children():
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
     session = driver.session(database="neo4j")
 
     q_data_obtain = f'''
@@ -546,10 +545,7 @@ def childrenByDin(din, session):
 
 
 def calculateDistance():
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
     session = driver.session(database="neo4j")
     distances = {}
     for node in allNodes():
@@ -571,10 +567,7 @@ def prohod(start_din, distances, session, cur_level=0):
 
 
 def allNodes():
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
     session = driver.session(database="neo4j")
     q_data_obtain = f'''
                         MATCH (n) RETURN n
@@ -592,10 +585,7 @@ def schedule(request):
     calculateDistance()
 
     result = []
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
     session = driver.session(database="neo4j")
     distances = calculateDistance()
     parents = nodes()
