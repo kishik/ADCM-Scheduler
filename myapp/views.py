@@ -243,7 +243,12 @@ def family(request, id):
 
 
 def settings(request):
+
     project = ActiveLink.objects.filter(userId=request.user.id).last()
+    if not project:
+        project = ActiveLink()
+        project.projectId = None
+        project.modelId = None
     return render(request, 'myapp/settings.html', {
         "userId": request.user.id,
         "projectId": project.projectId,
@@ -442,11 +447,7 @@ def rule_delete(request, id):
 
 
 def deepSearch(din, family, session):
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
-    session = driver.session(database="neo4j")
+    session = authentication()
     din = str(din)
     q_data_obtain = f'''
                 MATCH (a)-[r]->(c)
@@ -460,11 +461,7 @@ def deepSearch(din, family, session):
 
 
 def nodes():
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
-    session = driver.session(database="neo4j")
+    session = authentication()
 
     nodes = {}
 
@@ -489,11 +486,7 @@ def nodes():
 
 
 def children():
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
-    session = driver.session(database="neo4j")
+    session = authentication()
 
     q_data_obtain = f'''
                     MATCH (top) // though you should use labels if possible)
@@ -546,11 +539,7 @@ def childrenByDin(din, session):
 
 
 def calculateDistance():
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
-    session = driver.session(database="neo4j")
+    session = authentication()
     distances = {}
     for node in allNodes():
         if parentsByDin(node, session):
@@ -571,11 +560,7 @@ def prohod(start_din, distances, session, cur_level=0):
 
 
 def allNodes():
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
-    session = driver.session(database="neo4j")
+    session = authentication()
     q_data_obtain = f'''
                         MATCH (n) RETURN n
                         '''
@@ -592,11 +577,8 @@ def schedule(request):
     calculateDistance()
 
     result = []
-    serverUrl = 'neo4j+s://174cd36c.databases.neo4j.io'
-    serverUser = 'neo4j'
-    serverPassword = 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
-    session = driver.session(database="neo4j")
+
+    session = authentication()
     distances = calculateDistance()
     parents = nodes()
 
@@ -629,3 +611,10 @@ def schedule(request):
     json_list = simplejson.dumps(elements)
 
     return render(request, 'myapp/schedule.html', {'json_list': json_list})
+
+
+def authentication(serverUrl='neo4j+s://174cd36c.databases.neo4j.io', serverUser='neo4j',
+                   serverPassword='w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU', database="neo4j"):
+    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+    session = driver.session(database=database)
+    return session

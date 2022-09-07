@@ -5,7 +5,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 {% block content %}
     <div class="container">
-
+    {% if projectId != None %}
         <p>Текущий проект {{ userId }}</p>
 
         <form class="col-12" action="/save_model/" method="post">
@@ -14,11 +14,24 @@
                             </div>
                             <div class="form-row col-12">
                                 <p>Проект:{{ projectId}} Модель:{{ modelId }}</p>
+
                             <div class="col-9">
                                 <input type="text" class="form-control" required name="link">
                             </div>
                                 <button class="btn btn-primary col-2" type="submit">Выбрать модель</button>
                             </div>
         </form>
+
+    {% else %}
+        <form class="col-12" action="/save_model/" method="post">
+                <div>
+                       <input type="text" class="form-control" required name="link">
+                       <button class="btn btn-primary col-2" type="submit">Выбрать модель</button>
+                </div>
+
+
+
+        </form>
+    {% endif %}
     </div>
 {% endblock %}
