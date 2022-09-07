@@ -40,7 +40,7 @@
         </tr>
     </thead>
         {% for urn in urns %}
-            {% if user.id == urn.userId and urn.isActive %}
+            {% if urn.isActive %}
             <tr><td class="">{{ urn.type }}</td><td class="">{{ urn.urn }}</td></tr>
                 <tr><td><a href="/model/{{urn.id}}">Выбрать</a></td><td><a href="/urn_edit/{{urn.id}}">Изменить</a></td><td><a href="/urn_delete/{{urn.id}}">Удалить</a></td></tr>
             {% endif %}

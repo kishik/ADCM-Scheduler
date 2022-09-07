@@ -1,0 +1,24 @@
+neo4j:
+  uri: 'neo4j+s://178ff2cf.databases.neo4j.io:7687'
+  user: 'neo4j'
+  password: '231099'
+#  src_uri: 'neo4j+s://174cd36c.databases.neo4j.io:7687'
+#  src_user: 'neo4j'
+#  src_password: 'w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU'
+#  hist_link: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCt4kOwcjG9fF95DGOYgMz6_xNILBvWQGoG6HNcOCTL0rHt-ejYtCxXVZfQhxoGCWHoMr07yzidHOg/pub?output=csv'
+#
+#
+#api: # FastAPI params
+#  title: ADCM Scheduler API (beta developer version)
+#  version: 2.0.3
+#  openapi_url: '/openapi.json'
+#
+#
+#forge:
+#  client_id: 7tGoYlxWGA2Yf2UmO7Abmn5anYavyJvl
+#  client_secret: 5EH7fusEIYnBfGnT
+#  app_url: https://adcm-scheduler-api.azurewebsites.net
+#  api_host: https://developer.api.autodesk.com
+#
+#acc:
+#  acc_account_id: 8fbf4721-2b02-4db1-a461-390fd870c35f

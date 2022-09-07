@@ -11,6 +11,14 @@ from myapp.forms import UploadFileForm, RuleForm, WbsForm
 from myapp.models import Work, URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
 import simplejson
+#todo yml import do not work
+from yml import get_cfg
+
+
+cfg: dict = get_cfg("neo4j")
+URI = cfg.get('uri')
+USER = cfg.get('user')
+PASS = cfg.get('password')
 
 
 def login(request):
@@ -243,7 +251,6 @@ def family(request, id):
 
 
 def settings(request):
-
     project = ActiveLink.objects.filter(userId=request.user.id).last()
     if not project:
         project = ActiveLink()
@@ -447,7 +454,8 @@ def rule_delete(request, id):
 
 
 def deepSearch(din, family, session):
-    session = authentication()
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+    session = driver.session(database="neo4j")
     din = str(din)
     q_data_obtain = f'''
                 MATCH (a)-[r]->(c)
@@ -461,7 +469,8 @@ def deepSearch(din, family, session):
 
 
 def nodes():
-    session = authentication()
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+    session = driver.session(database="neo4j")
 
     nodes = {}
 
@@ -486,7 +495,8 @@ def nodes():
 
 
 def children():
-    session = authentication()
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+    session = driver.session(database="neo4j")
 
     q_data_obtain = f'''
                     MATCH (top) // though you should use labels if possible)
@@ -539,7 +549,8 @@ def childrenByDin(din, session):
 
 
 def calculateDistance():
-    session = authentication()
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+    session = driver.session(database="neo4j")
     distances = {}
     for node in allNodes():
         if parentsByDin(node, session):
@@ -560,7 +571,8 @@ def prohod(start_din, distances, session, cur_level=0):
 
 
 def allNodes():
-    session = authentication()
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+    session = driver.session(database="neo4j")
     q_data_obtain = f'''
                         MATCH (n) RETURN n
                         '''
@@ -577,8 +589,8 @@ def schedule(request):
     calculateDistance()
 
     result = []
-
-    session = authentication()
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+    session = driver.session(database="neo4j")
     distances = calculateDistance()
     parents = nodes()
 
