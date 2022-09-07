@@ -14,6 +14,8 @@ from pathlib import Path
 
 import os
 
+from myapp import yml
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -46,6 +48,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'myapp',
     'registration',
+    'myapp.yml'
     # 'django_webix',
 
 ]

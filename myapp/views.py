@@ -12,17 +12,17 @@ from myapp.models import URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
 import simplejson
 
-# todo yml import do not work
-# from yml import get_cfg
+import myapp.yml as yml
 
-# cfg: dict = get_cfg("neo4j")
-# URL = cfg.get('url')
-# USER = cfg.get('user')
-# PASS = cfg.get('password')
+cfg: dict = yml.get_cfg("neo4j")
 
-URL = 'neo4j+s://178ff2cf.databases.neo4j.io'
-USER = 'neo4j'
-PASS = '231099'
+URL = cfg.get('url')
+USER = cfg.get('user')
+PASS = cfg.get('password')
+
+# URL = 'neo4j+s://178ff2cf.databases.neo4j.io'
+# USER = 'neo4j'
+# PASS = '231099'
 
 
 def authentication(url=URL, user=USER, password=PASS, database="neo4j"):
@@ -98,7 +98,7 @@ def new_graph(request):
     """
     if not request.user.is_authenticated:
         return redirect('/login/')
-    context = {'form': UploadFileForm()}
+    context = {'form': UploadFileForm(), 'url': URL, 'user': USER, 'pass': PASS}
     return render(request, 'myapp/test.html', context)
 
 
