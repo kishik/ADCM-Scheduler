@@ -29,16 +29,13 @@ urlpatterns = [
     path('volumes/', views.volumes),
     path('schedule/', views.schedule),
 
-    path('graph/', views.graph_show),
+    # path('graph/', views.graph_show),
     path('rules/', views.rule_create),
 
-    path('work_index/', views.works_index),
-    path('graph_info/', views.graph),
-    path('work/<str:id>', views.work_by_id),
-    path('search/', views.search),
+    # path('graph_info/', views.graph),
     path('new_graph/', views.new_graph),
     path('model_load/', views.urn_show),
-    path('file_upload/', views.file_upload),
+    # path('file_upload/', views.file_upload),
     path('register/', v.register, name="register"),
     path('', include("django.contrib.auth.urls")),
 
@@ -46,7 +43,7 @@ urlpatterns = [
     path('urn_create/', views.urn_create),
     path('urn_edit/<int:id>/', views.urn_edit),
     path('urn_delete/<int:id>/', views.urn_delete),
-    path('index/', views.index),
+    path('easter/', views.easter),
     path('upload/', views.upload, name="upload"),
     path('model/<int:id>/', views.model),
     path('settings/', views.settings, name="settings"),

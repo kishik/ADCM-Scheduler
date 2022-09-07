@@ -8,19 +8,32 @@ from django.views.decorators.csrf import csrf_exempt
 from neo4j import GraphDatabase
 
 from myapp.forms import UploadFileForm, RuleForm, WbsForm
-from myapp.models import Work, URN, ActiveLink, Rule, Wbs
+from myapp.models import URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
 import simplejson
-# todo yml import do not work
-from yml import get_cfg
 
-cfg: dict = get_cfg("neo4j")
-URL = cfg.get('url')
-USER = cfg.get('user')
-PASS = cfg.get('password')
+# todo yml import do not work
+# from yml import get_cfg
+
+# cfg: dict = get_cfg("neo4j")
+# URL = cfg.get('url')
+# USER = cfg.get('user')
+# PASS = cfg.get('password')
+
+URL = 'neo4j+s://178ff2cf.databases.neo4j.io'
+USER = 'neo4j'
+PASS = '231099'
 
 
 def authentication(url=URL, user=USER, password=PASS, database="neo4j"):
+    """
+    Создание сессии для работы с neo4j
+    :param url:
+    :param user:
+    :param password:
+    :param database:
+    :return:
+    """
     driver = GraphDatabase.driver(url, auth=(user, password))
     session = driver.session(database=database)
     return session
@@ -33,113 +46,79 @@ def login(request):
         return render(request, 'registration/login.html')
 
 
-def get_works(request):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-    return render(request, 'myapp/index1.html', {'works': Work.nodes.all()})
-
-
-def works_index(request):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-    works = Work.nodes.all()
-    return render(request, 'myapp/index1.html', {
-        'works': works
-    })
-
-
-def graph_show(request):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-    nodes = []
-    rels = []
-    works = Work.nodes.all()
-
-    for work in works:
-        nodes.append({'id': work.id, 'name': work.name})
-
-    return render(request, 'myapp/index1.html', {
-        "nodes": nodes, "links": rels
-    })
+# def graph_show(request):
+#     if not request.user.is_authenticated:
+#         return redirect('/login/')
+#     nodes = []
+#     rels = []
+#     works = Work.nodes.all()
+#
+#     for work in works:
+#         nodes.append({'id': work.id, 'name': work.name})
+#
+#     return render(request, 'myapp/index1.html', {
+#         "nodes": nodes, "links": rels
+#     })
 
 
 def work_in_progress(request):
+    """
+    Заглушка
+    :param request:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     return render(request, 'myapp/building.html')
 
 
-def graph(request):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-    nodes = []
-    rels = []
-    works = Work.nodes.all()
-
-    for work in works:
-        nodes.append({'id': work.id, 'name': work.name})
-
-        for job in work.incoming:
-            rels.append({"source": job.id, "target": work.id})
-        for job in work.outcoming:
-            rels.append({"source": work.id, "target": job.id})
-
-    return JsonResponse({"nodes": nodes, "links": rels})
-
-
-def work_by_id(request, id):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-
-    for node in Work.nodes.all():
-        if int(id) == node.id:
-            return JsonResponse({
-                'id': node.id,
-                'name': node.name,
-            })
-
-
-def search(request):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-    try:
-        q = request.GET["q"]
-
-    except KeyError:
-        return JsonResponse([])
-    goodNodes = []
-    for node in Work.nodes.all():
-
-        if int(q) == node.id:
-            goodNodes.append(node)
-
-    return JsonResponse([{
-        'id': work.id,
-        'name': work.name,
-
-    } for work in goodNodes], safe=False)
+# def graph(request):
+#     if not request.user.is_authenticated:
+#         return redirect('/login/')
+#     nodes = []
+#     rels = []
+#     works = Work.nodes.all()
+#
+#     for work in works:
+#         nodes.append({'id': work.id, 'name': work.name})
+#
+#         for job in work.incoming:
+#             rels.append({"source": job.id, "target": work.id})
+#         for job in work.outcoming:
+#             rels.append({"source": work.id, "target": job.id})
+#
+#     return JsonResponse({"nodes": nodes, "links": rels})
 
 
 def new_graph(request):
+    """
+    Показ исторического графа
+    :param request:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     context = {'form': UploadFileForm()}
     return render(request, 'myapp/test.html', context)
 
 
-def model_load(request):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-    return render(request, 'myapp/model_load.html')
-
-
-def file_upload(request):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-    return render(request, 'myapp/model_load.html')
+# def file_upload(request):
+#     """
+#     Загрузка файла
+#     :param request:
+#     :return:
+#     """
+#     if not request.user.is_authenticated:
+#         return redirect('/login/')
+#     return render(request, 'myapp/model_load.html')
 
 
 def urn_show(request):
+    """
+    Старые модели
+    :param request:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     urns = URN.objects.all()
@@ -147,14 +126,23 @@ def urn_show(request):
 
 
 def urn_index(request):
+    """
+    Выводит все правила выгрузки
+    :param request:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     urns = URN.objects.all()
     return render(request, "myapp/urn_index.html", {"urns": urns})
 
 
-# сохранение данных в бд
 def urn_create(request):
+    """
+    Создание URN
+    :param request:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     if request.method == "POST":
@@ -167,8 +155,13 @@ def urn_create(request):
     return HttpResponseRedirect("/urn_index/")
 
 
-# изменение данных в бд
 def urn_edit(request, id):
+    """
+    Изменение URN
+    :param request:
+    :param id:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     try:
@@ -186,8 +179,13 @@ def urn_edit(request, id):
         return HttpResponseNotFound("<h2>URN not found</h2>")
 
 
-# удаление данных из бд
 def urn_delete(request, id):
+    """
+    Удаление URN
+    :param request:
+    :param id:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     try:
@@ -200,7 +198,7 @@ def urn_delete(request, id):
         return HttpResponseNotFound("<h2>URN not found</h2>")
 
 
-def index(request):
+def easter(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
     return render(request, 'myapp/WebGL Builds/index.html')
@@ -208,6 +206,11 @@ def index(request):
 
 @csrf_exempt
 def upload(request):
+    """
+    Загрузка графа в виде файла в исторический граф
+    :param request:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
 
@@ -225,6 +228,12 @@ def families(request):
 
 
 def model(request, id):
+    """
+    Выбор модели для использования
+    :param request:
+    :param id:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     try:
@@ -235,7 +244,6 @@ def model(request, id):
         request.session['model_type'] = urn.type
         request.session['model'] = 'urn%' + urn.urn
         return redirect('/families/')
-
 
     except URN.DoesNotExist:
         return HttpResponseNotFound("<h2>URN not found</h2>")
@@ -256,6 +264,11 @@ def family(request, id):
 
 
 def settings(request):
+    """
+    Настройки
+    :param request:
+    :return:
+    """
     project = ActiveLink.objects.filter(userId=request.user.id).last()
     if not project:
         project = ActiveLink()
@@ -270,6 +283,11 @@ def settings(request):
 
 @csrf_exempt
 def saveModel(request):
+    """
+    Сохранение модели в настройках(settings)
+    :param request:
+    :return:
+    """
     link = ActiveLink()
     link.userId = request.user.id
     string = request.POST.get("link")
@@ -284,6 +302,11 @@ def saveModel(request):
 
 
 def volumes(request):
+    """
+    Ведомость объемов
+    :param request:
+    :return:
+    """
     flag = False
     project = ActiveLink.objects.filter(userId=request.user.id).last()
 
@@ -352,6 +375,11 @@ def volumes(request):
 
 
 def sdrs(request):
+    """
+    Вывод правил выгрузки
+    :param request:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     form = WbsForm()
@@ -381,6 +409,12 @@ def sdrs(request):
 
 
 def sdr(request, id):
+    """
+    Выбор правила выгрузки
+    :param request:
+    :param id:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     try:
@@ -402,6 +436,12 @@ def sdr(request, id):
 
 
 def sdr_delete(request, id):
+    """
+    Удаление правила выгрузки
+    :param request:
+    :param id:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     try:
@@ -414,14 +454,12 @@ def sdr_delete(request, id):
         return HttpResponseNotFound("<h2>WBS not found</h2>")
 
 
-def rules(request):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-    urns = URN.objects.all()
-    return render(request, "myapp/urn_index.html", {"urns": urns})
-
-
 def rule_create(request):
+    """
+    Создание правила выгрузки
+    :param request:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     form = RuleForm()
@@ -445,6 +483,12 @@ def rule_create(request):
 
 
 def rule_delete(request, id):
+    """
+    Удаление правила выгрузки
+    :param request:
+    :param id:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
     try:
@@ -457,21 +501,11 @@ def rule_delete(request, id):
         return HttpResponseNotFound("<h2>Rule not found</h2>")
 
 
-def deepSearch(din, family, session):
-    session = authentication()
-    din = str(din)
-    q_data_obtain = f'''
-                MATCH (a)-[r]->(c)
-                WHERE a.DIN = $din
-                RETURN c
-                '''
-
-    result = session.run(q_data_obtain, din=din).data()
-    subFamily = [result[i]['c']['DIN'] for i in range(len(result))]
-    family.append(subFamily)
-
-
 def nodes():
+    """
+    Поиск списка родителей для каждого ребенка
+    :return:
+    """
     session = authentication()
 
     nodes = {}
@@ -497,6 +531,10 @@ def nodes():
 
 
 def children():
+    """
+    din всех детей
+    :return: list с din
+    """
     session = authentication()
 
     q_data_obtain = f'''
@@ -528,6 +566,12 @@ def children():
 
 
 def parentsByDin(din, session):
+    """
+    Возвращает всех родителей элемента din
+    :param din:
+    :param session:
+    :return:
+    """
     q_data_obtain = f'''
                             MATCH (c)-[r]->(a)
                             WHERE a.DIN = $din
@@ -539,6 +583,12 @@ def parentsByDin(din, session):
 
 
 def childrenByDin(din, session):
+    """
+    Возвращает всех детей элемента din
+    :param din:
+    :param session:
+    :return: list динов
+    """
     q_data_obtain = f'''
                         MATCH (a)-[r]->(c)
                         WHERE a.DIN = $din
@@ -550,6 +600,10 @@ def childrenByDin(din, session):
 
 
 def calculateDistance():
+    """
+    Запускает проход по всем нодам, не имеющим родителей
+    :return: dict нодов с их глубиной в графе
+    """
     session = authentication()
     distances = {}
     for node in allNodes():
@@ -561,6 +615,14 @@ def calculateDistance():
 
 
 def prohod(start_din, distances, session, cur_level=0):
+    """
+    Проходит рекурсивный путь по своим детям, указывая максимальную глубину рекурсии,
+    сравнивая текущую и полученную сейчас
+    :param start_din:
+    :param distances:
+    :param session:
+    :param cur_level:
+    """
     if start_din not in distances:
         distances[start_din] = 0
 
@@ -571,6 +633,10 @@ def prohod(start_din, distances, session, cur_level=0):
 
 
 def allNodes():
+    """
+    Возвращает все ноды
+    :return: список нодов
+    """
     session = authentication()
     q_data_obtain = f'''
                         MATCH (n) RETURN n
@@ -582,6 +648,11 @@ def allNodes():
 
 
 def schedule(request):
+    """
+    Диаграмма Ганта
+    :param request:
+    :return:
+    """
     if not request.user.is_authenticated:
         return redirect('/login/')
 
