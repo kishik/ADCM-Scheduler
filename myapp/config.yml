@@ -1,5 +1,5 @@
 neo4j:
-  uri: 'neo4j+s://178ff2cf.databases.neo4j.io:7687'
+  url: 'neo4j+s://178ff2cf.databases.neo4j.io:7687'
   user: 'neo4j'
   password: '231099'
 #  src_uri: 'neo4j+s://174cd36c.databases.neo4j.io:7687'

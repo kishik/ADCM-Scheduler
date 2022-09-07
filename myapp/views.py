@@ -16,7 +16,7 @@ from yml import get_cfg
 
 
 cfg: dict = get_cfg("neo4j")
-URI = cfg.get('uri')
+URL = cfg.get('url')
 USER = cfg.get('user')
 PASS = cfg.get('password')
 
@@ -454,8 +454,7 @@ def rule_delete(request, id):
 
 
 def deepSearch(din, family, session):
-    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
-    session = driver.session(database="neo4j")
+    session = authentication()
     din = str(din)
     q_data_obtain = f'''
                 MATCH (a)-[r]->(c)
@@ -469,8 +468,7 @@ def deepSearch(din, family, session):
 
 
 def nodes():
-    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
-    session = driver.session(database="neo4j")
+    session = authentication()
 
     nodes = {}
 
@@ -495,8 +493,7 @@ def nodes():
 
 
 def children():
-    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
-    session = driver.session(database="neo4j")
+    session = authentication()
 
     q_data_obtain = f'''
                     MATCH (top) // though you should use labels if possible)
@@ -549,8 +546,7 @@ def childrenByDin(din, session):
 
 
 def calculateDistance():
-    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
-    session = driver.session(database="neo4j")
+    session = authentication()
     distances = {}
     for node in allNodes():
         if parentsByDin(node, session):
@@ -571,8 +567,7 @@ def prohod(start_din, distances, session, cur_level=0):
 
 
 def allNodes():
-    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
-    session = driver.session(database="neo4j")
+    session = authentication()
     q_data_obtain = f'''
                         MATCH (n) RETURN n
                         '''
@@ -589,8 +584,8 @@ def schedule(request):
     calculateDistance()
 
     result = []
-    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
-    session = driver.session(database="neo4j")
+
+    session = authentication()
     distances = calculateDistance()
     parents = nodes()
 
@@ -625,8 +620,7 @@ def schedule(request):
     return render(request, 'myapp/schedule.html', {'json_list': json_list})
 
 
-def authentication(serverUrl='neo4j+s://174cd36c.databases.neo4j.io', serverUser='neo4j',
-                   serverPassword='w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU', database="neo4j"):
-    driver = GraphDatabase.driver(serverUrl, auth=(serverUser, serverPassword))
+def authentication(url=URL, user=USER, password=PASS, database="neo4j"):
+    driver = GraphDatabase.driver(url, auth=(user, password))
     session = driver.session(database=database)
     return session
