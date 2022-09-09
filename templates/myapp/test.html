@@ -13,15 +13,17 @@
 	<script src="https://unpkg.com/neo4j-driver"></script>
     {% crispy form %}
 
-<body onload="init_simplified()">
-        <div id="mynetwork"></div>
     <style>
-            #viz {
+            #mynetwork #viz {
 
                 {#1080-124#}
                 height: 736px;
             }
-            </style>
+    </style>
+
+    <body onload="init_simplified()">
+        <div id="mynetwork"></div>
+
 
     <script>
 
@@ -33,13 +35,13 @@
                 trust: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
                 containerId: 'viz',
                 neo4j: {
-                    serverUrl: 'neo4j+s://178ff2cf.databases.neo4j.io',
+                    serverUrl: 'neo4j://178ff2cf.databases.neo4j.io',
                     serverUser: 'neo4j',
                     serverPassword: '231099'
                 },
                 visConfig: {
                     nodes: {
-                        shape: 'square'
+                        shape: 'point'
                     },
                     edges: {
                         arrows: {
@@ -99,7 +101,7 @@
                 server_url: "neo4j+s://178ff2cf.databases.neo4j.io:7687",
                 server_user: "neo4j",
 				server_password: "231099",
-                initial_cypher: "MATCH (n) return n"
+                initial_cypher: "MATCH (n) OPTIONAL MATCH (n)-[r]->(m) RETURN n, r, m"
 			}
 				events = new EventController();	//see events.js !!
             viz = new NeoVis_simplified({
@@ -194,6 +196,7 @@ console.log("render_completed 1st ERROR "+e);
 				node.label=item.raw.properties.name ||  item.raw.properties.title;
 				node.title=item.raw.properties.plot || node.label;
 				node.labels=item.raw.labels;
+                console.log(node.label);
 				node.connections=(node.connections && node.connections.low) ? node.connections.low : 0;
 				node.group=(node.group &&node.group.low) ? node.group.low : 0;
 			}else{
@@ -378,7 +381,8 @@ console.log("cypher-query:"+query_simplified);
 
 		node.id = neo4jNode.identity.toInt();
 		node.raw = neo4jNode;
-
+        node.label = neo4jNode.properties.name;
+        {#console.log(neo4jNode.properties.name)#}
 		return node;
 	}
 
@@ -394,8 +398,8 @@ console.log("cypher-query:"+query_simplified);
 		edge.from = r.start.toInt();
 		edge.to = r.end.toInt();
 		edge.raw = r;
-
-		edge.label = r.type;
+        {#console.log(r)#}
+		{#edge.label = r.type;#}
 		return edge;
 	}
 
@@ -477,7 +481,7 @@ console.log("cypher-query:"+query_simplified);
 					} else {
 						let options = {
 							nodes: {
-								//shape: 'dot',
+								shape: 'dot',
 								font: {
 									size: 26,
 									strokeWidth: 7
@@ -611,7 +615,7 @@ console.log("cypher-query:"+query_simplified);
 	 * @param query
 	 */
 	renderWithCypher(query) {
-		// this._config.initial_cypher = query;
+		this._config.initial_cypher = query;
 		this.clearNetwork();
 		this._query = query;
 		this.render();
@@ -630,13 +634,19 @@ console.log("cypher-query:"+query_simplified);
 
 </script>
 
-        <div class="container-fluid" onload="draw()" id="viz"></div>
+{#        <div class="container-fluid" onload="draw()" id="viz"></div>#}
 
     <script>
-    draw();
+    {#draw();#}
     init_simplified();
     </script>
+    <style>
+            #mynetwork {
 
+                {#1080-124#}
+                height: 84%;
+            }
+    </style>
 
 
 {% endblock content %}

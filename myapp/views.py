@@ -11,6 +11,7 @@ from myapp.forms import UploadFileForm, RuleForm, WbsForm
 from myapp.models import URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
 import simplejson
+from .graph_creation import add_info
 
 import myapp.yml as yml
 
@@ -19,6 +20,7 @@ cfg: dict = yml.get_cfg("neo4j")
 URL = cfg.get('url')
 USER = cfg.get('user')
 PASS = cfg.get('password')
+
 
 # URL = 'neo4j+s://178ff2cf.databases.neo4j.io'
 # USER = 'neo4j'
@@ -98,7 +100,7 @@ def new_graph(request):
     """
     if not request.user.is_authenticated:
         return redirect('/login/')
-    context = {'form': UploadFileForm(), 'url': URL, 'user': USER, 'pass': PASS}
+    context = {'form': UploadFileForm(), 'url': URL, 'user_graph': USER, 'pass': PASS}
     return render(request, 'myapp/test.html', context)
 
 
@@ -215,7 +217,8 @@ def upload(request):
         return redirect('/login/')
 
     if request.method == 'POST':
-        historical_graph_creation.main(request.FILES['file'])
+        # historical_graph_creation.main(request.FILES['file'])
+        add_info.add_info(request.FILES['file'])
 
     return redirect('/new_graph/')
 
@@ -501,6 +504,7 @@ def rule_delete(request, id):
         return HttpResponseNotFound("<h2>Rule not found</h2>")
 
 
+#########
 def nodes():
     """
     Поиск списка родителей для каждого ребенка
@@ -631,6 +635,8 @@ def prohod(start_din, distances, session, cur_level=0):
     for element in childrenByDin(start_din, session):
         prohod(element, distances, session, cur_level + 1)
 
+
+#################
 
 def allNodes():
     """

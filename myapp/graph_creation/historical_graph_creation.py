@@ -1,5 +1,13 @@
 from neo4j import GraphDatabase, Transaction
 import pandas as pd
+import myapp.yml as yml
+
+cfg: dict = yml.get_cfg("neo4j")
+
+URL = cfg.get('url')
+USER = cfg.get('user')
+PASS = cfg.get('password')
+FILE = cfg.get('file')
 
 
 def read_graph_data(file_name: str) -> pd.DataFrame:
@@ -46,7 +54,7 @@ def clear_database(tx: Transaction):
            "DETACH DELETE n")
 
 
-def main(file="data/2021-11-19 Roder связи.xlsx"):  # Проверяй базу данных atabase=
+def main(file=FILE):  # Проверяй базу данных atabase=
 
     data = read_graph_data(file)
     # data2 = read_graph_data("data/Родер - КТК.xlsx")
@@ -61,7 +69,7 @@ def main(file="data/2021-11-19 Roder связи.xlsx"):  # Проверяй ба
     # pswd = "w21V4bw-6kTp9hceHMbnlt5L9X1M4upuuq2nD7tD_xU"
     # driver = GraphDatabase.driver(uri, auth=(user, pswd))
 
-    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "Accelerati0n"))
+    driver = GraphDatabase.driver(URL, auth=(USER, PASS))
     with driver.session() as session:
         # session.write_transaction(clear_database)
         session.write_transaction(make_graph, data)
