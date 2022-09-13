@@ -2,14 +2,23 @@ from neo4j import GraphDatabase, Transaction, Session
 
 import pandas as pd
 
-Q_DATA_OBTAIN = '''
+Q_NODES_OBTAIN = '''
     MATCH (n)-[r]->(m) 
-    RETURN n.name AS n_name, n.DIN AS n_din, properties(r).weight AS weight, m.name AS m_name, m.DIN AS m_din
+    RETURN n.name AS n_name, n.DIN AS n_din
     '''
-Q_CREATE = '''
+Q_NODES_CREATE = '''
     MERGE (n:Work {DIN: $n_din, name: $n_name})
-    MERGE (m:Work {DIN: $m_din, name: $m_name})
-    CREATE (n)-[r:FOLLOWS {weight: $wght}]->(m);
+    '''
+Q_RELS_OBTAIN = '''
+    MATCH (n)-[r]->(m) 
+    RETURN n.DIN AS n_din, m.DIN AS m_din, properties(r).weight AS weight
+    '''
+Q_RELS_CREATE = '''
+    MATCH (n)
+    WHERE n.DIN = $n_din
+    MATCH (m)
+    WHERE m.DIN = $m_din
+    MERGE (n)-[r:FOLLOWS {weight: $wght}]->(m);
     '''
 
 
@@ -23,13 +32,20 @@ def graph_copy(in_session: Session, out_session: Session):
     # Clearing destination (output) database
     out_session.write_transaction(clear_database)
 
-    graph_df = pd.DataFrame(in_session.run(Q_DATA_OBTAIN).data())
-    graph_df.apply(
+    node_df = pd.DataFrame(in_session.run(Q_NODES_OBTAIN).data())
+    node_df.apply(
         lambda row: out_session.run(
-            Q_CREATE,
-            n_din=row['n_din'], n_name=row['n_name'],
-            m_din=row['m_din'], m_name=row['m_name'],
-            wght=row['weight']
+            Q_NODES_CREATE,
+            n_din=row['n_din'], n_name=row['n_name']
+        ),
+        axis=1
+    )
+
+    rel_df = pd.DataFrame(in_session.run(Q_RELS_OBTAIN).data())
+    rel_df.apply(
+        lambda row: out_session.run(
+            Q_RELS_CREATE,
+            n_din=row['n_din'], m_din=row['m_din'], wght=row['weight']
         ),
         axis=1
     )
@@ -48,3 +64,7 @@ def main():
     graph_copy(in_ses, out_ses)
     in_ses.close()
     out_ses.close()
+
+
+if __name__ == "__main__":
+    main()
