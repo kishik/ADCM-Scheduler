@@ -11,15 +11,18 @@ from myapp.forms import UploadFileForm, RuleForm, WbsForm
 from myapp.models import URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
 import simplejson
-from .graph_creation import add_info
-
+from .graph_creation import add_info, neo4jexplorer
 import myapp.yml as yml
+
 
 cfg: dict = yml.get_cfg("neo4j")
 
 URL = cfg.get('url')
 USER = cfg.get('user')
 PASS = cfg.get('password')
+NEW_URL = cfg.get('new_url')
+NEW_USER = cfg.get('new_user')
+NEW_PASS = cfg.get('new_pass')
 
 
 # URL = 'neo4j+s://178ff2cf.databases.neo4j.io'
@@ -368,9 +371,18 @@ def volumes(request):
     #
     # # Save the workbook
     # book.save("spreadsheet.xls")
-
+    dins = []
     for el in myJson['data']:
         el["wbs"] = el["wbs1"] + el["wbs3_id"]
+        dins.append(el["wbs3_id"])
+
+    # add async
+    user_graph = neo4jexplorer.Neo4jExplorer()
+
+    # заменить функцией copy
+    user_graph.load_historical_graph()
+
+    user_graph.create_new_graph_algo(dins)
 
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
@@ -505,12 +517,11 @@ def rule_delete(request, id):
 
 
 #########
-def nodes():
+def nodes(session):
     """
     Поиск списка родителей для каждого ребенка
     :return:
     """
-    session = authentication()
 
     nodes = {}
 
@@ -603,12 +614,11 @@ def childrenByDin(din, session):
     return [result[i]['c']['DIN'] for i in range(len(result))]
 
 
-def calculateDistance():
+def calculateDistance(session):
     """
     Запускает проход по всем нодам, не имеющим родителей
     :return: dict нодов с их глубиной в графе
     """
-    session = authentication()
     distances = {}
     for node in allNodes():
         if parentsByDin(node, session):
@@ -631,7 +641,7 @@ def prohod(start_din, distances, session, cur_level=0):
         distances[start_din] = 0
 
     distances[start_din] = max(cur_level, distances[start_din])
-
+    print(cur_level)
     for element in childrenByDin(start_din, session):
         prohod(element, distances, session, cur_level + 1)
 
@@ -662,13 +672,9 @@ def schedule(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
 
-    calculateDistance()
-
-    result = []
-
-    session = authentication()
-    distances = calculateDistance()
-    parents = nodes()
+    session = authentication(NEW_URL, NEW_USER, NEW_PASS)
+    distances = calculateDistance(session=session)
+    parents = nodes(session=session)
 
     q_data_obtain = f'''
                     MATCH (n) RETURN n
