@@ -11,7 +11,7 @@ from myapp.forms import UploadFileForm, RuleForm, WbsForm
 from myapp.models import URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
 import simplejson
-from .graph_creation import add_info, neo4jexplorer
+from .graph_creation import add_info, neo4jexplorer, graph_copy
 import myapp.yml as yml
 
 
@@ -22,7 +22,7 @@ USER = cfg.get('user')
 PASS = cfg.get('password')
 NEW_URL = cfg.get('new_url')
 NEW_USER = cfg.get('new_user')
-NEW_PASS = cfg.get('new_pass')
+NEW_PASS = cfg.get('new_password')
 
 
 # URL = 'neo4j+s://178ff2cf.databases.neo4j.io'
@@ -380,9 +380,9 @@ def volumes(request):
     user_graph = neo4jexplorer.Neo4jExplorer()
 
     # заменить функцией copy
-    # user_graph.load_historical_graph()
+    graph_copy.main()
     #
-    # user_graph.create_new_graph_algo(dins)
+    user_graph.create_new_graph_algo(dins)
 
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
@@ -671,8 +671,8 @@ def schedule(request):
     """
     if not request.user.is_authenticated:
         return redirect('/login/')
-
-    session = authentication(URL, USER, PASS)
+    print(NEW_URL, NEW_USER, NEW_PASS)
+    session = authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS)
     distances = calculateDistance(session=session)
     parents = nodes(session=session)
 
