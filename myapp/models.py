@@ -1,21 +1,5 @@
 from django.db import models
 from django.db.models import signals
-# Create your models here.
-from datetime import datetime
-from django_neomodel import DjangoNode
-from neomodel import StructuredNode, StringProperty, DateTimeProperty, UniqueIdProperty, RelationshipFrom, \
-    RelationshipTo
-
-
-class Work(DjangoNode):
-    id = StringProperty(unique_index=True)
-    name = StringProperty()
-    incoming = RelationshipFrom('Work', 'WORK')
-    outcoming = RelationshipFrom('Work', 'WORK')
-    isActive = models.BooleanField()
-
-    class Meta:
-        app_label = 'myapp'
 
 
 class URN(models.Model):

@@ -5,6 +5,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 from myapp.models import Rule, Wbs
 
+
 class URNForm(forms.Form):
     id = forms.IntegerField()
     type = forms.CharField()
