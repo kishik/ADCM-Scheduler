@@ -27,13 +27,13 @@ class Neo4jExplorer:
 
         q_data_obtain = '''
             MATCH (n)-[r]->(m)
-            RETURN n.name AS n_name, n.id AS n_id, properties(r).weight AS weight, m.name AS m_name, m.id AS m_id
+            RETURN n.name AS n_name, n.DIN AS n_id, properties(r).weight AS weight, m.name AS m_name, m.DIN AS m_id
             '''
         lnk = self.cfg.get('hist_link')
         q_create = f'''
             LOAD CSV WITH HEADERS FROM '{lnk}' AS row
-            MERGE (n:Work {{id: row.n_id, name: row.n_name}})
-            MERGE (m:Work {{id: row.m_id, name: row.m_name}})
+            MERGE (n:Work {{DIN: row.n_id, name: row.n_name}})
+            MERGE (m:Work {{DIN: row.m_id, name: row.m_name}})
             CREATE (n)-[r:FOLLOWS {{weight: row.weight}}]->(m);
             '''
 
@@ -52,32 +52,32 @@ class Neo4jExplorer:
     def removing_node(self, id: str):
         income_data_obtain = '''
             MATCH (n)-[]->(m)
-            WHERE m.id = $id
+            WHERE m.DIN = $id
             RETURN n
             '''
         outcome_data_obtain = '''
             MATCH (n)-[]->(m)
-            WHERE n.id = $id
+            WHERE n.DIN = $id
             RETURN m
             '''
         with self.driver.session() as session:
             incoming = session.run(income_data_obtain, id=id).data()
             outcoming = session.run(outcome_data_obtain, id=id).data()
             # преобразование результатов запроса в numpy.array
-            incoming = np.array([row['n']['id'] for row in incoming])
-            outcoming = np.array([row['m']['id'] for row in outcoming])
+            incoming = np.array([row['n']['DIN'] for row in incoming])
+            outcoming = np.array([row['m']['DIN'] for row in outcoming])
 
             for element in incoming:
                 for subelement in outcoming:
                     session.run('''
-                                        MERGE (n:Work {id: $id1})
-                                        MERGE (m:Work {id: $id2})
+                                        MERGE (n:Work {DIN: $id1})
+                                        MERGE (m:Work {DIN: $id2})
                                         MERGE (n)-[r:FOLLOWS]->(m)
                                         ''',
                                 id1=element,
                                 id2=subelement
                                 )
-            session.run("MATCH (n) WHERE n.id = $id DETACH DELETE n", id=id)
+            session.run("MATCH (n) WHERE n.DIN = $id DETACH DELETE n", id=id)
 
     def get_all_id(self):
         q_data_obtain = '''
@@ -87,7 +87,7 @@ class Neo4jExplorer:
         result = self.driver.session().run(q_data_obtain).data()
         id_lst = []
         for i in result:
-            id_lst.append((i['n']['id']))
+            id_lst.append((i['n']['DIN']))
         return list(set(id_lst))
 
     def create_new_graph_algo(self, target_ids: list):
@@ -105,7 +105,7 @@ class Neo4jExplorer:
     def add_pred_and_flw(self, data_to_order: pd.DataFrame):
         q_data_obtain = '''
         MATCH (n)-[]->(m)
-        RETURN n.id AS n_id, m.id AS m_id
+        RETURN n.DIN AS n_id, m.DIN AS m_id
         '''
         data_to_order.drop(['Unnamed: 0'], axis=1, errors='ignore', inplace=True)
         data_to_order = data_to_order.astype('str')

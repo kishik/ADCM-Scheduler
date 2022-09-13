@@ -380,9 +380,9 @@ def volumes(request):
     user_graph = neo4jexplorer.Neo4jExplorer()
 
     # заменить функцией copy
-    user_graph.load_historical_graph()
-
-    user_graph.create_new_graph_algo(dins)
+    # user_graph.load_historical_graph()
+    #
+    # user_graph.create_new_graph_algo(dins)
 
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
@@ -672,7 +672,7 @@ def schedule(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
 
-    session = authentication(NEW_URL, NEW_USER, NEW_PASS)
+    session = authentication(URL, USER, PASS)
     distances = calculateDistance(session=session)
     parents = nodes(session=session)
 
@@ -680,7 +680,7 @@ def schedule(request):
                     MATCH (n) RETURN n
                     '''
     result = session.run(q_data_obtain).data()
-
+    session.close()
     allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
 
     names = {result[i]['n']['DIN']: result[i]['n']['name'] for i in range(len(result))}
@@ -700,8 +700,10 @@ def schedule(request):
                  None,
                  element, ','.join(parents[element])])
 
-    elements = sorted(elements, key=lambda x: int(x[0]))
+    # elements = sorted(elements, key=lambda x: int(x[0]))
 
     json_list = simplejson.dumps(elements)
+    height = 40
 
-    return render(request, 'myapp/schedule.html', {'json_list': json_list})
+    return render(request, 'myapp/schedule.html', {'json_list': json_list, 'total_height': (len(elements) + 2) * height,
+                                                   'height': height})
