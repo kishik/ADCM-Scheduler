@@ -1,0 +1,8 @@
+PyYAML~=6.0
+Django~=3.2
+django-crispy-forms~=1.14.0
+requests~=2.27.1
+simplejson~=3.17.6
+neo4j~=4.4.7
+pandas~=1.4.2
+numpy~=1.22.4
