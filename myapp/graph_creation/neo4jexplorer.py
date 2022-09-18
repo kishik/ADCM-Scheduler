@@ -90,7 +90,7 @@ class Neo4jExplorer:
             id_lst.append((i['n']['DIN']))
         return list(set(id_lst))
 
-    def create_new_graph_algo(self, target_ids: list):
+    def create_new_graph_algo(self, target_ids: set):
         for element in self.get_all_id():
             if element not in target_ids:
                 self.removing_node(element)

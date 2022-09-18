@@ -14,7 +14,6 @@ import simplejson
 from .graph_creation import add_info, neo4jexplorer, graph_copy
 import myapp.yml as yml
 
-
 cfg: dict = yml.get_cfg("neo4j")
 
 URL = cfg.get('url')
@@ -23,6 +22,8 @@ PASS = cfg.get('password')
 NEW_URL = cfg.get('new_url')
 NEW_USER = cfg.get('new_user')
 NEW_PASS = cfg.get('new_password')
+
+graph_data = []
 
 
 # URL = 'neo4j+s://178ff2cf.databases.neo4j.io'
@@ -371,17 +372,20 @@ def volumes(request):
     #
     # # Save the workbook
     # book.save("spreadsheet.xls")
-    dins = []
+    dins = set()
     for el in myJson['data']:
         el["wbs"] = el["wbs1"] + el["wbs3_id"]
-        dins.append(el["wbs3_id"])
+        dins.add(el["wbs3_id"])
 
     # add async
     user_graph = neo4jexplorer.Neo4jExplorer()
-
+    print(dins)
     # заменить функцией copy
     graph_copy.main()
     #
+    global graph_data
+    graph_data = myJson['data']
+
     user_graph.create_new_graph_algo(dins)
 
     return render(request, 'myapp/volumes.html', {
@@ -623,8 +627,9 @@ def calculateDistance(session):
     for node in allNodes():
         if parentsByDin(node, session):
             continue
+        # print("preprohod")
         prohod(start_din=node, distances=distances, session=session, cur_level=0)
-
+        # print("prohod")
     return distances
 
 
@@ -641,7 +646,7 @@ def prohod(start_din, distances, session, cur_level=0):
         distances[start_din] = 0
 
     distances[start_din] = max(cur_level, distances[start_din])
-    print(cur_level)
+
     for element in childrenByDin(start_din, session):
         prohod(element, distances, session, cur_level + 1)
 
@@ -671,20 +676,36 @@ def schedule(request):
     """
     if not request.user.is_authenticated:
         return redirect('/login/')
-    print(NEW_URL, NEW_USER, NEW_PASS)
-    session = authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS)
-    distances = calculateDistance(session=session)
-    parents = nodes(session=session)
 
+    session = authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS)
+    # print(1)
+    distances = calculateDistance(session=session)
+    # print(2)
+    parents = nodes(session=session)
+    # print(3)
     q_data_obtain = f'''
                     MATCH (n) RETURN n
                     '''
+    # print("preresult")
     result = session.run(q_data_obtain).data()
+    # print("preclose")
     session.close()
     allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
 
     names = {result[i]['n']['DIN']: result[i]['n']['name'] for i in range(len(result))}
 
+    unique_wbs1 = set()
+    global graph_data
+    result = {}
+    # print(graph_data)
+    for el in graph_data:
+        if el['wbs1'] in result:
+            result[el['wbs1']].append(el['wbs3_id'])
+        else:
+            result[el['wbs1']] = [el['wbs3_id']]
+        unique_wbs1.add(el['wbs1'])
+
+    print('result', result)
     elements = []
 
     for element in allNodes:
@@ -701,9 +722,11 @@ def schedule(request):
                  element, ','.join(parents[element])])
 
     # elements = sorted(elements, key=lambda x: int(x[0]))
-
+    print(result)
     json_list = simplejson.dumps(elements)
+    # result = simplejson.dumps(result)
     height = 40
-
+    # print(unique_wbs1)
+    print(result)
     return render(request, 'myapp/schedule.html', {'json_list': json_list, 'total_height': (len(elements) + 2) * height,
-                                                   'height': height})
+                                                   'height': height, 'wbs1': unique_wbs1, 'result': result})
