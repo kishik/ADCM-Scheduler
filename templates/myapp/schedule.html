@@ -7,8 +7,12 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
 
-  <script type="text/javascript">
-    let YOUR_JS_LIST = {{json_list|safe}};
+
+{% for el in wbs1 %}
+
+    <script type="text/javascript">
+    console.log('{{ el }}')
+    let YOUR_JS_LIST{{ el }} = {{json_list|safe}};
     google.charts.load('current', {'packages':['gantt']});
     google.charts.setOnLoadCallback(drawChart);
 
@@ -25,21 +29,37 @@
       data.addColumn('string', 'Dependencies');
 
 
-      for(let i = 0; i<YOUR_JS_LIST.length; i++){
+      for(let i = 0; i<YOUR_JS_LIST{{ el }}.length; i++) {
 
-            console.log(YOUR_JS_LIST[i][0]);
+          {#необходимо проверить наличие din для el(wbs1)#}
+          {#console.log(YOUR_JS_LIST{{ el }}[i][0]);#}
+          {#console.log({{ result|safe }})#}
 
-            data.addRow([YOUR_JS_LIST[i][0], YOUR_JS_LIST[i][1], YOUR_JS_LIST[i][2],
-                new Date(YOUR_JS_LIST[i][3], YOUR_JS_LIST[i][4], YOUR_JS_LIST[i][5]),
-                new Date(YOUR_JS_LIST[i][6], YOUR_JS_LIST[i][7], YOUR_JS_LIST[i][8]),
-                null, 50,
-                YOUR_JS_LIST[i][11]]);
+          if ({{ result|safe }}['{{ el }}'].includes(YOUR_JS_LIST{{ el }}[i][0])) {
+            if ({{ result|safe }}['{{ el }}'].includes(YOUR_JS_LIST{{ el }}[i][11]))
+              {
+                  console.log(YOUR_JS_LIST{{ el }}[i][0])
+                  console.log({{ result|safe }}['{{ el }}'])
+                  data.addRow([YOUR_JS_LIST{{ el }}[i][0], YOUR_JS_LIST{{ el }}[i][1], YOUR_JS_LIST{{ el }}[i][2],
+                      new Date(YOUR_JS_LIST{{ el }}[i][3], YOUR_JS_LIST{{ el }}[i][4], YOUR_JS_LIST{{ el }}[i][5]),
+                      new Date(YOUR_JS_LIST{{ el }}[i][6], YOUR_JS_LIST{{ el }}[i][7], YOUR_JS_LIST{{ el }}[i][8]),
+                      null, 50,
+                      YOUR_JS_LIST{{ el }}[i][11]]);
+              }
+            else {
+                console.log(YOUR_JS_LIST{{ el }}[i][0])
+                  console.log({{ result|safe }}['{{ el }}'])
+                  data.addRow([YOUR_JS_LIST{{ el }}[i][0], YOUR_JS_LIST{{ el }}[i][1], YOUR_JS_LIST{{ el }}[i][2],
+                      new Date(YOUR_JS_LIST{{ el }}[i][3], YOUR_JS_LIST{{ el }}[i][4], YOUR_JS_LIST{{ el }}[i][5]),
+                      new Date(YOUR_JS_LIST{{ el }}[i][6], YOUR_JS_LIST{{ el }}[i][7], YOUR_JS_LIST{{ el }}[i][8]),
+                      null, 50,
+                      null]);
 
+            }
 
-
-            console.log(i);
-        }
-
+              {#console.log(i);#}
+          }
+      }
         console.log(data)
 
 
@@ -52,14 +72,16 @@
         }
       };
 
-      var chart = new google.visualization.Gantt(document.getElementById('chart_div'));
+      var chart = new google.visualization.Gantt(document.getElementById('chart_div{{ el }}'));
 
       chart.draw(data, options);
     }
   </script>
 
+    <div id="chart_div{{ el }}"></div>
+{% endfor %}
 
-<div id="chart_div"></div>
+
 
 
 
