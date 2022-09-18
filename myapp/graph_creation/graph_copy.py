@@ -3,7 +3,7 @@ from neo4j import GraphDatabase, Transaction, Session
 import pandas as pd
 
 Q_NODES_OBTAIN = '''
-    MATCH (n)-[r]->(m) 
+    MATCH (n)
     RETURN n.name AS n_name, n.DIN AS n_din
     '''
 Q_NODES_CREATE = '''
@@ -49,22 +49,3 @@ def graph_copy(in_session: Session, out_session: Session):
         ),
         axis=1
     )
-
-
-def main():
-    SRC_URI = "neo4j+s://178ff2cf.databases.neo4j.io:7687"
-    SRC_USER = "neo4j"
-    SRC_PSWD = "231099"
-    DEST_URI = "neo4j+s://99c1a702.databases.neo4j.io"
-    DEST_USER = "neo4j"
-    DEST_PSWD = "231099"
-
-    in_ses = GraphDatabase.driver(SRC_URI, auth=(SRC_USER, SRC_PSWD)).session()
-    out_ses = GraphDatabase.driver(DEST_URI, auth=(DEST_USER, DEST_PSWD)).session()
-    graph_copy(in_ses, out_ses)
-    in_ses.close()
-    out_ses.close()
-
-
-if __name__ == "__main__":
-    main()
