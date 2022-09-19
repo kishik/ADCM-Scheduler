@@ -230,8 +230,9 @@ def upload(request):
 def families(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
-    families_all = Rule.objects.all()
-    return render(request, "myapp/families.html", {"families": families_all})
+    return redirect('/sdrs/')
+    # families_all = Rule.objects.all()
+    # return render(request, "myapp/families.html", {"families": families_all})
 
 
 def model(request, id):
@@ -381,7 +382,8 @@ def volumes(request):
     user_graph = neo4jexplorer.Neo4jExplorer()
     print(dins)
     # заменить функцией copy
-    graph_copy.main()
+    graph_copy.graph_copy(authentication(url=URL, user=USER, password=PASS),
+                          authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS))
     #
     global graph_data
     graph_data = myJson['data']
