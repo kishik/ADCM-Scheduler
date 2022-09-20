@@ -11,7 +11,7 @@
 {% for el in wbs1 %}
 
     <script type="text/javascript">
-    console.log('{{ el }}')
+    {#console.log('{{ el }}')#}
     let YOUR_JS_LIST{{ el }} = {{json_list|safe}};
     google.charts.load('current', {'packages':['gantt']});
     google.charts.setOnLoadCallback(drawChart);
@@ -29,41 +29,41 @@
       data.addColumn('string', 'Dependencies');
 
 
-      for(let i = 0; i<YOUR_JS_LIST{{ el }}.length; i++) {
-
-          {#необходимо проверить наличие din для el(wbs1)#}
-          {#console.log(YOUR_JS_LIST{{ el }}[i][0]);#}
-          {#console.log({{ result|safe }})#}
+      for(let i = 0; i < YOUR_JS_LIST{{ el }}.length; i++) {
 
           if ({{ result|safe }}['{{ el }}'].includes(YOUR_JS_LIST{{ el }}[i][0])) {
-            if ({{ result|safe }}['{{ el }}'].includes(YOUR_JS_LIST{{ el }}[i][11]))
-              {
-                  console.log(YOUR_JS_LIST{{ el }}[i][0])
-                  console.log({{ result|safe }}['{{ el }}'])
-                  data.addRow([YOUR_JS_LIST{{ el }}[i][0], YOUR_JS_LIST{{ el }}[i][1], YOUR_JS_LIST{{ el }}[i][2],
-                      new Date(YOUR_JS_LIST{{ el }}[i][3], YOUR_JS_LIST{{ el }}[i][4], YOUR_JS_LIST{{ el }}[i][5]),
-                      new Date(YOUR_JS_LIST{{ el }}[i][6], YOUR_JS_LIST{{ el }}[i][7], YOUR_JS_LIST{{ el }}[i][8]),
-                      null, 50,
-                      YOUR_JS_LIST{{ el }}[i][11]]);
-              }
-            else {
-                console.log(YOUR_JS_LIST{{ el }}[i][0])
-                  console.log({{ result|safe }}['{{ el }}'])
-                  data.addRow([YOUR_JS_LIST{{ el }}[i][0], YOUR_JS_LIST{{ el }}[i][1], YOUR_JS_LIST{{ el }}[i][2],
-                      new Date(YOUR_JS_LIST{{ el }}[i][3], YOUR_JS_LIST{{ el }}[i][4], YOUR_JS_LIST{{ el }}[i][5]),
-                      new Date(YOUR_JS_LIST{{ el }}[i][6], YOUR_JS_LIST{{ el }}[i][7], YOUR_JS_LIST{{ el }}[i][8]),
-                      null, 50,
-                      null]);
 
-            }
+                    if (YOUR_JS_LIST{{ el }}[i][11])
+                      {
+                          let messageParts = YOUR_JS_LIST{{ el }}[i][11].split(",");
 
-              {#console.log(i);#}
+                          for (let i=0; i <messageParts.length; i++){
+                                if (!{{ result|safe }}['{{ el }}'].includes(messageParts[i])){
+                                    messageParts.splice(i, 1);
+                                }
+                          }
+                          YOUR_JS_LIST{{ el }}[i][11] = messageParts.join(',');
+
+                          data.addRow([YOUR_JS_LIST{{ el }}[i][0], YOUR_JS_LIST{{ el }}[i][1], YOUR_JS_LIST{{ el }}[i][2],
+                              new Date(YOUR_JS_LIST{{ el }}[i][3], YOUR_JS_LIST{{ el }}[i][4] - 1, YOUR_JS_LIST{{ el }}[i][5]),
+                              new Date(YOUR_JS_LIST{{ el }}[i][6], YOUR_JS_LIST{{ el }}[i][7] - 1, YOUR_JS_LIST{{ el }}[i][8]),
+                              null, 50,
+                              YOUR_JS_LIST{{ el }}[i][11]]);
+
+                      }
+                    else {
+                          data.addRow([YOUR_JS_LIST{{ el }}[i][0], YOUR_JS_LIST{{ el }}[i][1], YOUR_JS_LIST{{ el }}[i][2],
+                              new Date(YOUR_JS_LIST{{ el }}[i][3], YOUR_JS_LIST{{ el }}[i][4] - 1, YOUR_JS_LIST{{ el }}[i][5]),
+                              new Date(YOUR_JS_LIST{{ el }}[i][6], YOUR_JS_LIST{{ el }}[i][7] - 1, YOUR_JS_LIST{{ el }}[i][8]),
+                              null, 50,
+                              null]);
+
+                    }
           }
       }
-        console.log(data)
 
 
-      var options = {
+      const options = {
         height: {{total_height}},
         gantt: {
             trackHeight: {{height}},
@@ -72,7 +72,7 @@
         }
       };
 
-      var chart = new google.visualization.Gantt(document.getElementById('chart_div{{ el }}'));
+      let chart = new google.visualization.Gantt(document.getElementById('chart_div{{ el }}'));
 
       chart.draw(data, options);
     }

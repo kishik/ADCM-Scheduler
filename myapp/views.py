@@ -1,6 +1,6 @@
 import json
 import re
-
+from datetime import timedelta, datetime
 import requests
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render, redirect
@@ -322,7 +322,6 @@ def volumes(request):
         res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
                            request.session['specs'] + '/project/' + project.projectId +
                            '/model/' + request.session['model'])
-
     else:
         for wbs in Wbs.objects.all():
             res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
@@ -380,6 +379,7 @@ def volumes(request):
 
     # add async
     user_graph = neo4jexplorer.Neo4jExplorer()
+    print("DINS")
     print(dins)
     # заменить функцией copy
     graph_copy.graph_copy(authentication(url=URL, user=USER, password=PASS),
@@ -707,28 +707,29 @@ def schedule(request):
             result[el['wbs1']] = [el['wbs3_id']]
         unique_wbs1.add(el['wbs1'])
 
-    print('result', result)
     elements = []
 
+    cur_date = datetime.now()
+
     for element in allNodes:
+        end_date = timedelta(14)
+        new_date = cur_date + end_date * int(distances[element])
+        end_date = new_date + end_date
         if element not in parents:
             elements.append(
-                [str(element), names[element] + " DIN" + element, None, distances[element], 1, 1,
-                 distances[element] + 1, 1, 1,
+                [str(element), names[element] + " DIN" + element, None, new_date.year, new_date.month, new_date.day,
+                 end_date.year, end_date.month, end_date.day,
                  None, element, None])
         else:
             elements.append(
-                [str(element), names[element] + " DIN" + element, None, distances[element], 1, 1,
-                 distances[element] + 1, 1, 1,
+                [str(element), names[element] + " DIN" + element, None, new_date.year, new_date.month, new_date.day,
+                 end_date.year, end_date.month, end_date.day,
                  None,
                  element, ','.join(parents[element])])
 
-    # elements = sorted(elements, key=lambda x: int(x[0]))
-    print(result)
     json_list = simplejson.dumps(elements)
-    # result = simplejson.dumps(result)
+
     height = 40
-    # print(unique_wbs1)
-    print(result)
+
     return render(request, 'myapp/schedule.html', {'json_list': json_list, 'total_height': (len(elements) + 2) * height,
                                                    'height': height, 'wbs1': unique_wbs1, 'result': result})
