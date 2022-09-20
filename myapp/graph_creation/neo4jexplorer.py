@@ -91,8 +91,11 @@ class Neo4jExplorer:
         return list(set(id_lst))
 
     def create_new_graph_algo(self, target_ids: set):
+        print(self.get_all_id())
         for element in self.get_all_id():
             if element not in target_ids:
+                if element == '390':
+                    print("390")
                 self.removing_node(element)
 
     def del_extra_rel(self):
