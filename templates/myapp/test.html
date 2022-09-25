@@ -25,67 +25,67 @@
         <div id="mynetwork"></div>
 
 
-    <script>
-
-        var viz;
-
-        function draw() {
-            var config = {
-                encrypted: "ENCRYPTION_ON",
-                trust: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
-                containerId: 'viz',
-                neo4j: {
-                    serverUrl: 'neo4j://178ff2cf.databases.neo4j.io',
-                    serverUser: 'neo4j',
-                    serverPassword: '231099'
-                },
-                visConfig: {
-                    nodes: {
-                        shape: 'point'
-                    },
-                    edges: {
-                        arrows: {
-                            to: {
-                                enabled: true
-                            }
-                        }
-                    },
-                },
-                labels: {
-                    Work: {
-                        label: 'name',
-                        group: 'community',
-                        [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                            cypher: {
-                                value: "MATCH (n) WHERE id(n) = $id RETURN n.size"
-                            },
-                            function: {
-                                title: NeoVis.objectToTitleHtml
-                            },
-                        }
-                    }
-                },
-                relationships: {
-                    INTERACTS: {
-                        value: 'weight',
-                        [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                            function: {
-                                title: NeoVis.objectToTitleHtml
-                            },
-                        }
-                    }
-                },
-                initialCypher: 'MATCH (n)-[r]->(m) RETURN n,r,m'
-            };
-
-            viz = new NeoVis.default(config);
-			viz.render();
-			console.log(viz);
-
-		}
-
-
-    </script>
+{#    <script>#}
+{##}
+{#        var viz;#}
+{##}
+{#        function draw() {#}
+{#            var config = {#}
+{#                encrypted: "ENCRYPTION_ON",#}
+{#                trust: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",#}
+{#                containerId: 'viz',#}
+{#                neo4j: {#}
+{#                    serverUrl: 'neo4j://178ff2cf.databases.neo4j.io',#}
+{#                    serverUser: 'neo4j',#}
+{#                    serverPassword: '231099'#}
+{#                },#}
+{#                visConfig: {#}
+{#                    nodes: {#}
+{#                        shape: 'point'#}
+{#                    },#}
+{#                    edges: {#}
+{#                        arrows: {#}
+{#                            to: {#}
+{#                                enabled: true#}
+{#                            }#}
+{#                        }#}
+{#                    },#}
+{#                },#}
+{#                labels: {#}
+{#                    Work: {#}
+{#                        label: 'DIN',#}
+{#                        group: 'community',#}
+{#                        [NeoVis.NEOVIS_ADVANCED_CONFIG]: {#}
+{#                            cypher: {#}
+{#                                value: "MATCH (n) WHERE id(n) = $id RETURN n.size"#}
+{#                            },#}
+{#                            function: {#}
+{#                                title: NeoVis.objectToTitleHtml#}
+{#                            },#}
+{#                        }#}
+{#                    }#}
+{#                },#}
+{#                relationships: {#}
+{#                    INTERACTS: {#}
+{#                        value: 'weight',#}
+{#                        [NeoVis.NEOVIS_ADVANCED_CONFIG]: {#}
+{#                            function: {#}
+{#                                title: NeoVis.objectToTitleHtml#}
+{#                            },#}
+{#                        }#}
+{#                    }#}
+{#                },#}
+{#                initialCypher: 'MATCH (n)-[r]->(m) RETURN n,r,m'#}
+{#            };#}
+{##}
+{#            viz = new NeoVis.default(config);#}
+{#			viz.render();#}
+{#			console.log(viz);#}
+{##}
+{#		}#}
+{##}
+{##}
+{#    </script>#}
 
     <script  type="text/javascript" >
 //global viz,network,data,config;
@@ -110,7 +110,7 @@
 				server_user: config_neo4j.server_user,
 				server_password: config_neo4j.server_password,
 			});   // must be without trust!
-console.log("dummy viz=NeoVis_simplified(...) created without trust and driver");
+{#console.log("dummy viz=NeoVis_simplified(...) created without trust and driver");#}
 			config_vis={
 					nodes: {
 					  shape: "ellipse",
@@ -155,7 +155,7 @@ console.log("dummy viz=NeoVis_simplified(...) created without trust and driver")
 						}
 					}
 				}
-console.log("dummy initial vis network");
+{#console.log("dummy initial vis network");#}
 				let data = {nodes: new vis.DataSet([{id:0,label:"root",raw:{} }]),
 							edges: new vis.DataSet([])
 					};
@@ -165,15 +165,15 @@ console.log("dummy initial vis network");
 			viz._driver= neo4j.driver(config_neo4j.server_url,
 			neo4j.auth.basic(config_neo4j.server_user, config_neo4j.server_password),{}
 			);
-console.log("driver set after new new vis.Network");
+{#console.log("driver set after new new vis.Network");#}
             viz.registerOnEvent('completed', render_completed_simplified);
 
-console.log("renderWithCypher");
+{#console.log("renderWithCypher");#}
 				viz.renderWithCypher(config_neo4j.initial_cypher);
-console.log("rendered");
+{#console.log("rendered");#}
            }   ///init_simplified
        function render_completed_simplified(param){   /// called by event in neovis
-console.log("-----------render completed with", (param.record_count)+ " records------------text: "+param.text);
+{#console.log("-----------render completed with", (param.record_count)+ " records------------text: "+param.text);#}
 			if(param.record_count===0){
 alert("no result!");
 				return;
@@ -182,9 +182,9 @@ alert("no result!");
 		  try{
 		    let nn =viz._data.nodes.length;
 			let ne =viz._data.edges.length;
-console.log("completed with nodes:"+nn+", edges:"+ne);
+{#console.log("completed with nodes:"+nn+", edges:"+ne);#}
 		  }catch(e){
-console.log("render_completed 1st ERROR "+e);
+{#console.log("render_completed 1st ERROR "+e);#}
 		  }
 		  try{
 			network=viz._network;
@@ -193,10 +193,11 @@ console.log("render_completed 1st ERROR "+e);
 			if(item.raw.properties){
 				node=item.raw.properties;
 				node.id=item.id;
-				node.label=item.raw.properties.name ||  item.raw.properties.title;
+				node.label=item.raw.properties.DIN + '\n' + item.raw.properties.name ||  item.raw.properties.title;
+                {#console.log(item.raw.properties)#}
 				node.title=item.raw.properties.plot || node.label;
 				node.labels=item.raw.labels;
-                console.log(node.label);
+                {#console.log(node.label);#}
 				node.connections=(node.connections && node.connections.low) ? node.connections.low : 0;
 				node.group=(node.group &&node.group.low) ? node.group.low : 0;
 			}else{
@@ -218,7 +219,7 @@ console.log("render_completed 1st ERROR "+e);
 			on_handlers_simplified(network);
 
 		  }catch(e){
-console.log("render_completed 2nd ERROR "+e);
+{#console.log("render_completed 2nd ERROR "+e);#}
 		  }
 		}	///render_completed
 
@@ -242,7 +243,7 @@ network.on("hold", function (params) {
             query_simplified = "match (n) where id(n)="+nodeId+" with n";
             query_simplified += " optional match (n)-[r]-(m)";
             query_simplified += " return n,r,m order by toInteger(id(m)*rand()) limit 10";
-console.log("cypher-query:"+query_simplified);
+{#console.log("cypher-query:"+query_simplified);#}
 				viz.renderWithCypher(query_simplified);
 	}   ///renderWithCypher_simplified
 
@@ -270,7 +271,7 @@ console.log("cypher-query:"+query_simplified);
 	 * @param {callback} handler - Handler to manage the event
 	 */
 	register(eventType, handler) {
-//console.log("register: "+eventType);
+{#//console.log("register: "+eventType);#}
 		if (this._handlers[eventType] === undefined) {
 			throw new Error('Unknown event: ' + eventType);
 		}
@@ -284,7 +285,7 @@ console.log("cypher-query:"+query_simplified);
 	 * @param {object} values - Values associated to the event
 	 */
 	generateEvent(eventType, values) {
-//console.log("generateEvent: "+eventType);
+{#//console.log("generateEvent: "+eventType);#}
 		if (this._handlers[eventType] === undefined) {
 			throw new Error('Unknown event: ' + eventType);
 		}
@@ -381,7 +382,7 @@ console.log("cypher-query:"+query_simplified);
 
 		node.id = neo4jNode.identity.toInt();
 		node.raw = neo4jNode;
-        node.label = neo4jNode.properties.name;
+        node.label = neo4jNode.properties.DIN + '\n' + neo4jNode.properties.name;
         {#console.log(neo4jNode.properties.name)#}
 		return node;
 	}
@@ -399,7 +400,8 @@ console.log("cypher-query:"+query_simplified);
 		edge.to = r.end.toInt();
 		edge.raw = r;
         {#console.log(r)#}
-		{#edge.label = r.type;#}
+
+		edge.label = r.type;
 		return edge;
 	}
 
@@ -491,7 +493,7 @@ console.log("cypher-query:"+query_simplified);
 							},
 							edges: {
 								arrows: {
-									to: { enabled: this._config.arrows || false } // FIXME: handle default value
+									to: { enabled: this._config.arrows || true } // FIXME: handle default value
 								},
 								length: 200
 							},
