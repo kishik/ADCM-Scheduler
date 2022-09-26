@@ -44,6 +44,8 @@ urlpatterns = [
     path('urn_delete/<int:id>/', views.urn_delete),
     path('easter/', views.easter),
     path('upload/', views.upload, name="upload"),
+    path('add_link/', views.add_link, name="add_link"),
+    path('add_node/', views.add_node, name="add_node"),
     path('model/<int:id>/', views.model),
     path('settings/', views.settings, name="settings"),
     path('save_model/', views.saveModel),

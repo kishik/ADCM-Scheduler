@@ -54,8 +54,8 @@ class AddLink(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
-        self.helper.form_action = 'submit_survey'
-        self.helper.form_class = 'form-inline'
+        self.helper.form_action = 'add_link'
+        # self.helper.form_class = 'form-inline'
         self.helper.add_input(Submit('submit', 'Отправить'))
 
 
@@ -74,6 +74,6 @@ class AddNode(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
-        self.helper.form_action = 'submit_survey'
-        self.helper.form_class = 'form-inline'
+        self.helper.form_action = 'add_node'
+        # self.helper.form_class = 'form-inline'
         self.helper.add_input(Submit('submit', 'Отправить'))

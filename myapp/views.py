@@ -734,3 +734,12 @@ def schedule(request):
 
     return render(request, 'myapp/schedule.html', {'json_list': json_list, 'total_height': (len(elements) + 2) * height,
                                                    'height': height, 'wbs1': unique_wbs1, 'result': result})
+
+
+def add_link(request):
+
+    return None
+
+
+def add_node(request):
+    return None
