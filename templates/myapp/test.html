@@ -4,15 +4,13 @@
 {% block content%}
 <meta charset="utf-8"/>
 
-    <script
-            src="https://code.jquery.com/jquery-3.2.1.min.js"
-            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
-            crossorigin="anonymous"></script>
+
     <script src="https://unpkg.com/neovis.js@2.0.2"></script>
   <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 	<script src="https://unpkg.com/neo4j-driver"></script>
     {% crispy form %}
-
+    {% crispy link link.helper %}
+    {% crispy node node.helper %}
     <style>
             #mynetwork #viz {
 

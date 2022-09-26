@@ -44,8 +44,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crispy_forms',
     'myapp',
+    'bootstrap4',
     'registration',
-    'myapp.yml'
+    'myapp.yml',
     # 'django_webix',
 
 ]

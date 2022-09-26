@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from neo4j import GraphDatabase
 
-from myapp.forms import UploadFileForm, RuleForm, WbsForm
+from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
 from myapp.models import URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
 import simplejson
@@ -104,7 +104,8 @@ def new_graph(request):
     """
     if not request.user.is_authenticated:
         return redirect('/login/')
-    context = {'form': UploadFileForm(), 'url': URL, 'user_graph': USER, 'pass': PASS}
+    context = {'form': UploadFileForm(), 'url': URL, 'user_graph': USER, 'pass': PASS, 'link': AddLink(),
+               'node': AddNode()}
     return render(request, 'myapp/test.html', context)
 
 
