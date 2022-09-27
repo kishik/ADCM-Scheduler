@@ -740,9 +740,9 @@ def schedule(request):
 def add_link(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
-
-    print(request.POST['from_din'], request.POST['to_din'])
-    add_info.add_link(request.POST['from_din'], request.POST['to_din'])
+    session = authentication(url=URL, user=USER, password=PASS)
+    add_info.add_info(session=session, node_din=request.POST['from_din'], flw_din=request.POST['to_din'])
+    session.close()
     return redirect('/new_graph/')
 
 
@@ -750,7 +750,7 @@ def add_link(request):
 def add_node(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
-
-    print(request.POST['din'], request.POST['name'])
-    add_info.add_el(request.POST['din'], request.POST['name'])
+    session = authentication(url=URL, user=USER, password=PASS)
+    add_info.add_info(session=session, node_din=request.POST['din'], node_name=request.POST['name'])
+    session.close()
     return redirect('/new_graph/')

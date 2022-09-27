@@ -50,10 +50,10 @@ class AddLink(forms.Form):
         max_length=80,
         required=True,
     )
-    weight = forms.FloatField(
-        label="Weight",
-        required=True
-    )
+    # weight = forms.FloatField(
+    #     label="Weight",
+    #     required=True
+    # )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
