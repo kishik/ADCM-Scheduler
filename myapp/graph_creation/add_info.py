@@ -7,6 +7,7 @@ cfg: dict = yml.get_cfg("neo4j")
 URL = cfg.get('url')
 USER = cfg.get('user')
 PASS = cfg.get('password')
+NEW_URL = cfg.get('new_url')
 
 
 def add_node(tx: Transaction, node_din: str, node_name: str):
@@ -48,4 +49,20 @@ def add_info(file: str):
                     add_rel, row['pred'], row['flw']),
                 axis=1
             )
+    driver.close()
+
+
+def add_link(from_din, to_din):
+    driver = GraphDatabase.driver(NEW_URL, auth=(USER, PASS))
+    with driver.session() as session:
+        session.write_transaction(
+            add_rel, from_din, to_din)
+    driver.close()
+
+
+def add_el(din, name):
+    driver = GraphDatabase.driver(NEW_URL, auth=(USER, PASS))
+    with driver.session() as session:
+        session.write_transaction(
+            add_node, din, name)
     driver.close()

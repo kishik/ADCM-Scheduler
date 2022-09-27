@@ -736,10 +736,21 @@ def schedule(request):
                                                    'height': height, 'wbs1': unique_wbs1, 'result': result})
 
 
+@csrf_exempt
 def add_link(request):
+    if not request.user.is_authenticated:
+        return redirect('/login/')
 
-    return None
+    print(request.POST['from_din'], request.POST['to_din'])
+    add_info.add_link(request.POST['from_din'], request.POST['to_din'])
+    return redirect('/new_graph/')
 
 
+@csrf_exempt
 def add_node(request):
-    return None
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+
+    print(request.POST['din'], request.POST['name'])
+    add_info.add_el(request.POST['din'], request.POST['name'])
+    return redirect('/new_graph/')
