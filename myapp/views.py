@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from neo4j import GraphDatabase
 
-from myapp.forms import UploadFileForm, RuleForm, WbsForm
+from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
 from myapp.models import URN, ActiveLink, Rule, Wbs
 from .graph_creation import historical_graph_creation
 import simplejson
@@ -104,7 +104,8 @@ def new_graph(request):
     """
     if not request.user.is_authenticated:
         return redirect('/login/')
-    context = {'form': UploadFileForm(), 'url': URL, 'user_graph': USER, 'pass': PASS}
+    context = {'form': UploadFileForm(), 'url': URL, 'user_graph': USER, 'pass': PASS, 'link': AddLink(),
+               'node': AddNode()}
     return render(request, 'myapp/test.html', context)
 
 
@@ -379,7 +380,7 @@ def volumes(request):
 
     # add async
     user_graph = neo4jexplorer.Neo4jExplorer()
-    print("DINS")
+    # print("DINS")
     print(dins)
     # заменить функцией copy
     graph_copy.graph_copy(authentication(url=URL, user=USER, password=PASS),
@@ -733,3 +734,27 @@ def schedule(request):
 
     return render(request, 'myapp/schedule.html', {'json_list': json_list, 'total_height': (len(elements) + 2) * height,
                                                    'height': height, 'wbs1': unique_wbs1, 'result': result})
+
+
+@csrf_exempt
+def add_link(request):
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    session = authentication(url=URL, user=USER, password=PASS)
+    add_info.add_info(session=session, node_din=request.POST['from_din'], flw_din=request.POST['to_din'])
+    session.close()
+    return redirect('/new_graph/')
+
+
+@csrf_exempt
+def add_node(request):
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    session = authentication(url=URL, user=USER, password=PASS)
+    add_info.add_info(session=session, node_din=request.POST['din'], node_name=request.POST['name'])
+    session.close()
+    return redirect('/new_graph/')
+
+
+def new_schedule(request):
+    return render(request, 'myapp/new_schedule.html')
