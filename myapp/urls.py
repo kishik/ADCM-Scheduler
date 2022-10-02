@@ -52,6 +52,6 @@ urlpatterns = [
     path('family_delete/<int:id>/', views.rule_delete),
     path('sdr_delete/<int:id>/', views.sdr_delete),
     path('sdr/<int:id>/', views.sdr),
-
+    path('new_gantt/', views.new_gantt),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

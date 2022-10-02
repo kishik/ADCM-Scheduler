@@ -1,4 +1,4 @@
-import utils
+from myapp.graph_creation.utils import clear_database, delete_cycles, make_graph
 from neo4j import Session
 import pandas as pd
 pd.options.mode.chained_assignment = None
@@ -42,9 +42,9 @@ def from_one_file(session: Session, path: str) -> None:
         axis=1
     )
 
-    session.execute_write(utils.clear_database)
-    session.execute_write(utils.make_graph, data)
-    session.execute_write(utils.delete_cycles)
+    session.execute_write(clear_database)
+    session.execute_write(make_graph, data)
+    session.execute_write(delete_cycles)
 
 
 def from_two_files(session: Session, node_file_path: str, edge_file_path: str) -> None:

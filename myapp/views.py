@@ -750,3 +750,7 @@ def add_node(request):
     add.node(session=session, node_din=request.POST['din'], node_name=request.POST['name'])
     session.close()
     return redirect('/new_graph/')
+
+
+def new_gantt(request):
+    return render(request, 'myapp/new_gantt.html')
