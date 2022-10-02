@@ -5,7 +5,7 @@ import yaml
 _cfg: Optional[dict] = None
 
 PATHS = [
-    "config.yml",
+    "myapp/config.yml",
 ]
 
 

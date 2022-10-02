@@ -1,18 +1,18 @@
 import json
 import re
 from datetime import timedelta, datetime
+
 import requests
-from django.http import JsonResponse, HttpResponseRedirect, HttpResponseNotFound
+import simplejson
+from django.http import HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from neo4j import GraphDatabase
 
+import myapp.yml as yml
 from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
 from myapp.models import URN, ActiveLink, Rule, Wbs
-from .graph_creation import historical_graph_creation
-import simplejson
-from .graph_creation import add_info, neo4jexplorer, graph_copy
-import myapp.yml as yml
+from .graph_creation import add, neo4jexplorer, graph_copy
 
 cfg: dict = yml.get_cfg("neo4j")
 
@@ -223,7 +223,8 @@ def upload(request):
 
     if request.method == 'POST':
         # historical_graph_creation.main(request.FILES['file'])
-        add_info.add_info(request.FILES['file'])
+        session = authentication(url=URL, user=USER, password=PASS)
+        add.from_one_file(session, request.FILES['file'])
 
     return redirect('/new_graph/')
 
@@ -681,17 +682,12 @@ def schedule(request):
         return redirect('/login/')
 
     session = authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS)
-    # print(1)
     distances = calculateDistance(session=session)
-    # print(2)
     parents = nodes(session=session)
-    # print(3)
     q_data_obtain = f'''
                     MATCH (n) RETURN n
                     '''
-    # print("preresult")
     result = session.run(q_data_obtain).data()
-    # print("preclose")
     session.close()
     allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
 
@@ -740,9 +736,9 @@ def schedule(request):
 def add_link(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
-
-    print(request.POST['from_din'], request.POST['to_din'])
-    add_info.add_link(request.POST['from_din'], request.POST['to_din'])
+    session = authentication(url=URL, user=USER, password=PASS)
+    add.edge(session, request.POST['from_din'], request.POST['to_din'], request.POST['weight'])
+    session.close()
     return redirect('/new_graph/')
 
 
@@ -750,7 +746,7 @@ def add_link(request):
 def add_node(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
-
-    print(request.POST['din'], request.POST['name'])
-    add_info.add_el(request.POST['din'], request.POST['name'])
+    session = authentication(url=URL, user=USER, password=PASS)
+    add.node(session=session, node_din=request.POST['din'], node_name=request.POST['name'])
+    session.close()
     return redirect('/new_graph/')
