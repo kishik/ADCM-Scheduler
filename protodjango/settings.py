@@ -148,11 +148,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login"
 
-
-# WEBIX_LICENSE = 'FREE' # FREE
-# WEBIX_VERSION = '7.0.3'
-# WEBIX_CONTAINER_ID = 'content_right'
-# WEBIX_FONTAWESOME_CSS_URL = 'fontawesome/css/all.min.css'
-# WEBIX_FONTAWESOME_VERSION = '5.12.0'
-# WEBIX_HISTORY_ENABLE = True # optional
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+        # 'rest_framework.permissions.IsAuthenticated',
+        # 'rest_framework.permissions.IsAdminUser',
+     ),
+    'PAGE_SIZE': 100,
+    'DEFAULT_FILTER_BACKENDS': (
+        'rest_framework.filters.DjangoFilterBackend',
+    ),
+}
 

@@ -4,15 +4,22 @@ from datetime import timedelta, datetime
 
 import requests
 import simplejson
-from django.http import HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponseRedirect, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from neo4j import GraphDatabase
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.permissions import AllowAny
 
+from myapp.serializers import TaskSerializer
+from myapp.serializers import LinkSerializer
 import myapp.yml as yml
 from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
-from myapp.models import URN, ActiveLink, Rule, Wbs
+from myapp.models import URN, ActiveLink, Rule, Wbs, Task, Link
 from .graph_creation import add, neo4jexplorer, graph_copy
+
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.response import Response
 
 cfg: dict = yml.get_cfg("neo4j")
 
@@ -22,6 +29,7 @@ PASS = cfg.get('password')
 NEW_URL = cfg.get('new_url')
 NEW_USER = cfg.get('new_user')
 NEW_PASS = cfg.get('new_password')
+LAST_URL = cfg.get('last_url')
 
 graph_data = []
 
@@ -104,7 +112,7 @@ def new_graph(request):
     """
     if not request.user.is_authenticated:
         return redirect('/login/')
-    context = {'form': UploadFileForm(), 'url': URL, 'user_graph': USER, 'pass': PASS, 'link': AddLink(),
+    context = {'form': UploadFileForm(), 'url': LAST_URL, 'user_graph': USER, 'pass': PASS, 'link': AddLink(),
                'node': AddNode()}
     return render(request, 'myapp/test.html', context)
 
@@ -329,9 +337,9 @@ def volumes(request):
             res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
                                wbs.specs[2:-2] + '/project/' + project.projectId +
                                '/model/' + request.session['model'])
-
             res = res.json()
             res = json.loads(res)
+
             if not flag:
                 data = res
             else:
@@ -339,7 +347,7 @@ def volumes(request):
             flag = True
 
         res = data
-
+    print(res)
     if flag:
         data['data'] = sorted(data['data'], key=lambda x: x['wbs1'])
         myJson = data
@@ -391,7 +399,7 @@ def volumes(request):
     graph_data = myJson['data']
 
     user_graph.create_new_graph_algo(dins)
-
+    print(myJson['data'])
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
     })
@@ -725,9 +733,28 @@ def schedule(request):
                  element, ','.join(parents[element])])
 
     json_list = simplejson.dumps(elements)
-
+    t1 = Task(id=1,
+              start_date="2022-10-05 00:00:00",
+              end_date="2022-10-19 00:00:00",
+              duration=2, progress=0.5, parent="0")
+    t1.save()
+    t1 = Task(id=2,
+              start_date="2022-10-05 00:00:00",
+              end_date="2022-10-19 00:00:00",
+              duration=2, progress=0.5, parent="0")
+    t1.save()
     height = 40
-
+    for element in elements:
+        for key, value in result.items():
+            if element[0] in value:
+                t1 = Task(id=element[0],
+                          start_date=str(element[3]) + "-" + str(element[4]) + "-" + str(element[5]) + " 00:00",
+                          end_date=str(element[6]) + "-" + str(element[7]) + "-" + str(element[8]) + " 00:00",
+                          duration=2, progress=0.5, parent=key[1])
+        # for key, value in result.items():
+        #     if element[0] in value:
+        #         t1.parent = "9999" + key[:2]
+        t1.save()
     return render(request, 'myapp/schedule.html', {'json_list': json_list, 'total_height': (len(elements) + 2) * height,
                                                    'height': height, 'wbs1': unique_wbs1, 'result': result})
 
@@ -754,3 +781,89 @@ def add_node(request):
 
 def new_gantt(request):
     return render(request, 'myapp/new_gantt.html')
+
+
+@api_view(['GET'])
+@authentication_classes([BasicAuthentication])
+@permission_classes([AllowAny])
+def data_list(request, offset):
+    if request.method == 'GET':
+        tasks = Task.objects.all()
+        links = Link.objects.all()
+        task_data = TaskSerializer(tasks, many=True)
+        link_data = LinkSerializer(links, many=True)
+        return Response({
+            "tasks": task_data.data,
+            "links": link_data.data
+        })
+
+
+@api_view(['POST'])
+@authentication_classes([BasicAuthentication])
+@permission_classes([AllowAny])
+def task_add(request):
+    if request.method == 'POST':
+        serializer = TaskSerializer(data=request.data)
+        print(serializer)
+
+        if serializer.is_valid():
+            task = serializer.save()
+            return JsonResponse({'action': 'inserted', 'tid': task.id})
+        return JsonResponse({'action': 'error'})
+
+
+@api_view(['PUT', 'DELETE'])
+@authentication_classes([BasicAuthentication])
+@permission_classes([AllowAny])
+def task_update(request, pk):
+    try:
+        task = Task.objects.get(pk=pk)
+    except Task.DoesNotExist:
+        return JsonResponse({'action': 'error2'})
+
+    if request.method == 'PUT':
+        serializer = TaskSerializer(task, data=request.data)
+        print(serializer)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse({'action': 'updated'})
+        return JsonResponse({'action': 'error'})
+
+    if request.method == 'DELETE':
+        task.delete()
+        return JsonResponse({'action': 'deleted'})
+
+
+@api_view(['POST'])
+@authentication_classes([BasicAuthentication])
+@permission_classes([AllowAny])
+def link_add(request):
+    if request.method == 'POST':
+        serializer = LinkSerializer(data=request.data)
+        print(serializer)
+
+        if serializer.is_valid():
+            link = serializer.save()
+            return JsonResponse({'action': 'inserted', 'tid': link.id})
+        return JsonResponse({'action': 'error'})
+
+
+@api_view(['PUT', 'DELETE'])
+@authentication_classes([BasicAuthentication])
+@permission_classes([AllowAny])
+def link_update(request, pk):
+    try:
+        link = Link.objects.get(pk=pk)
+    except Link.DoesNotExist:
+        return JsonResponse({'action': 'error'})
+
+    if request.method == 'PUT':
+        serializer = LinkSerializer(link, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse({'action': 'updated'})
+        return JsonResponse({'action': 'error'})
+
+    if request.method == 'DELETE':
+        link.delete()
+        return JsonResponse({'action': 'deleted'})

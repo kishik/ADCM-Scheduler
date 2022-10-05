@@ -13,7 +13,9 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.urls import path, include
+from django.urls import path, include, re_path
+from rest_framework.urlpatterns import format_suffix_patterns
+
 from myapp import views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -53,5 +55,12 @@ urlpatterns = [
     path('sdr_delete/<int:id>/', views.sdr_delete),
     path('sdr/<int:id>/', views.sdr),
     path('new_gantt/', views.new_gantt),
+    re_path(r'^data/task/(?P<pk>[0-9]+)$', views.task_update),
+    re_path(r'^data/task', views.task_add),
+    re_path(r'^data/link/(?P<pk>[0-9]+)$', views.link_update),
+    re_path(r'^data/link', views.link_add),
+    re_path(r'^data/(.*)$', views.data_list),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+urlpatterns = format_suffix_patterns(urlpatterns)
