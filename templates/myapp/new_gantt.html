@@ -28,6 +28,10 @@
 {#});#}
 {#        </script>#}
     <script>
+    gantt.plugins({
+    auto_scheduling: true
+});
+    gantt.config.auto_scheduling = true;
     gantt.config.date_format = "%Y-%m-%d %H:%i";
     gantt.init("gantt_here");
     gantt.load("/data/", "json");

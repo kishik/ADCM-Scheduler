@@ -15,7 +15,7 @@ from myapp.serializers import TaskSerializer
 from myapp.serializers import LinkSerializer
 import myapp.yml as yml
 from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
-from myapp.models import URN, ActiveLink, Rule, Wbs, Task, Link
+from myapp.models import URN, ActiveLink, Rule, Wbs, Task, Link, Task2
 from .graph_creation import add, neo4jexplorer, graph_copy
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -733,28 +733,34 @@ def schedule(request):
                  element, ','.join(parents[element])])
 
     json_list = simplejson.dumps(elements)
-    t1 = Task(id=1,
-              start_date="2022-10-05 00:00:00",
-              end_date="2022-10-19 00:00:00",
-              duration=2, progress=0.5, parent="0")
+    Task2.objects.all().delete()
+    Link.objects.all().delete()
+    t1 = Task2(id=1, text="01p",
+               start_date="2022-10-05 00:00:00",
+               end_date="2022-10-19 00:00:00",
+               duration=2, progress=0.5, parent="0")
     t1.save()
-    t1 = Task(id=2,
-              start_date="2022-10-05 00:00:00",
-              end_date="2022-10-19 00:00:00",
-              duration=2, progress=0.5, parent="0")
+    t1 = Task2(id=2, text="02p",
+               start_date="2022-10-05 00:00:00",
+               end_date="2022-10-19 00:00:00",
+               duration=2, progress=0.5, parent="0")
     t1.save()
     height = 40
+    sorted(elements, key=lambda element: str(element[3]) + "-" + str(element[4]) + "-" + str(element[5]))
     for element in elements:
         for key, value in result.items():
             if element[0] in value:
-                t1 = Task(id=element[0],
-                          start_date=str(element[3]) + "-" + str(element[4]) + "-" + str(element[5]) + " 00:00",
-                          end_date=str(element[6]) + "-" + str(element[7]) + "-" + str(element[8]) + " 00:00",
-                          duration=2, progress=0.5, parent=key[1])
-        # for key, value in result.items():
-        #     if element[0] in value:
-        #         t1.parent = "9999" + key[:2]
-        t1.save()
+                t1 = Task2(id=str(key + str(element[0])), text=element[1],
+                           start_date=str(element[3]) + "-" + str(element[4]) + "-" + str(element[5]) + " 00:00",
+                           end_date=str(element[6]) + "-" + str(element[7]) + "-" + str(element[8]) + " 00:00",
+                           duration=2, progress=0.5, parent=key[1], type=key)
+                t1.save()
+                print(parents)
+                print(element[0])
+                if element[0] in parents:
+                    for el in parents[element[0]]:
+                        l1 = Link(source=str(t1.id[:3] + el), target=t1.id, type="0", lag=0)
+                        l1.save()
     return render(request, 'myapp/schedule.html', {'json_list': json_list, 'total_height': (len(elements) + 2) * height,
                                                    'height': height, 'wbs1': unique_wbs1, 'result': result})
 
@@ -788,7 +794,7 @@ def new_gantt(request):
 @permission_classes([AllowAny])
 def data_list(request, offset):
     if request.method == 'GET':
-        tasks = Task.objects.all()
+        tasks = Task2.objects.all()
         links = Link.objects.all()
         task_data = TaskSerializer(tasks, many=True)
         link_data = LinkSerializer(links, many=True)
@@ -817,8 +823,8 @@ def task_add(request):
 @permission_classes([AllowAny])
 def task_update(request, pk):
     try:
-        task = Task.objects.get(pk=pk)
-    except Task.DoesNotExist:
+        task = Task2.objects.get(pk=pk)
+    except Task2.DoesNotExist:
         return JsonResponse({'action': 'error2'})
 
     if request.method == 'PUT':
