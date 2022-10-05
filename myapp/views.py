@@ -813,7 +813,12 @@ def task_add(request):
         print(serializer)
 
         if serializer.is_valid():
-            task = serializer.save()
+            task = Task2(id=request.data['parent'][:3], text=request.data['text'],
+                         start_date=request.data['start_date'],
+                         end_date=request.data['end_date'],
+                         duration=request.data['duration'], progress=request.data['progress'],
+                         parent=request.data['parent'], type=request.data['parent'][:3])
+            task.save()
             return JsonResponse({'action': 'inserted', 'tid': task.id})
         return JsonResponse({'action': 'error'})
 
