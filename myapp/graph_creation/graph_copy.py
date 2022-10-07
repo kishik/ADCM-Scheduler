@@ -1,6 +1,5 @@
-from neo4j import GraphDatabase, Transaction, Session
-
 import pandas as pd
+from neo4j import Transaction, Session
 
 Q_NODES_OBTAIN = '''
     MATCH (n)
