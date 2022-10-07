@@ -1,7 +1,7 @@
-import pandas as pd
-from neo4j import GraphDatabase, Transaction
 import numpy as np
-import datetime
+import pandas as pd
+from neo4j import GraphDatabase
+
 import myapp.yml as yml
 
 
@@ -12,6 +12,7 @@ class Neo4jExplorer:
         _uri = self.cfg.get('new_url')
         _user = self.cfg.get('new_user')
         _pass = self.cfg.get('new_password')
+
         self.driver = GraphDatabase.driver(_uri, auth=(_user, _pass))
 
     def close(self):
@@ -25,12 +26,12 @@ class Neo4jExplorer:
         _hist_pass = self.cfg.get('password')
         _hist_driver = GraphDatabase.driver(_hist_uri, auth=(_hist_user, _hist_pass))
 
-        q_data_obtain = '''
+        Q_DATA_OBTAIN = '''
             MATCH (n)-[r]->(m)
             RETURN n.name AS n_name, n.DIN AS n_id, properties(r).weight AS weight, m.name AS m_name, m.DIN AS m_id
             '''
         lnk = self.cfg.get('hist_link')
-        q_create = f'''
+        Q_CREATE = f'''
             LOAD CSV WITH HEADERS FROM '{lnk}' AS row
             MERGE (n:Work {{DIN: row.n_id, name: row.n_name}})
             MERGE (m:Work {{DIN: row.m_id, name: row.m_name}})
@@ -38,66 +39,64 @@ class Neo4jExplorer:
             '''
 
         # obtaining data
-        result = _hist_driver.session().run(q_data_obtain).data()
+        result = _hist_driver.session().run(Q_DATA_OBTAIN).data()
         _hist_driver.close()
 
-        # to do: делать нормальную передачу CSV-файла
+        # to do: cделать нормальную передачу CSV-файла
         df = pd.DataFrame(result)
         save_path = ''
         df.to_csv(save_path + 'data.csv', index=False)
         with self.driver.session() as session:
             session.run("MATCH (n) DETACH DELETE n")  # Предварительная очистка базы данных
-            session.run(q_create)
+            session.run(Q_CREATE)
 
-    def removing_node(self, id: str):
+    def removing_node(self, din: str):
         income_data_obtain = '''
-            MATCH (n)-[]->(m)
-            WHERE m.DIN = $id
-            RETURN n
+            MATCH (n)-[:FOLLOWS]->(m)
+            WHERE m.DIN = $din
+            RETURN n.DIN AS din, n.type AS type
             '''
         outcome_data_obtain = '''
-            MATCH (n)-[]->(m)
-            WHERE n.DIN = $id
-            RETURN m
+            MATCH (n)-[:FOLLOWS]->(m)
+            WHERE n.DIN = $din
+            RETURN m.DIN AS din, m.type AS type
             '''
         with self.driver.session() as session:
-            incoming = session.run(income_data_obtain, id=id).data()
-            outcoming = session.run(outcome_data_obtain, id=id).data()
-            # преобразование результатов запроса в numpy.array
-            incoming = np.array([row['n']['DIN'] for row in incoming])
-            outcoming = np.array([row['m']['DIN'] for row in outcoming])
+            incoming = pd.DataFrame(session.run(income_data_obtain, din=din).data())
+            outcoming = pd.DataFrame(session.run(outcome_data_obtain, din=din).data())
 
-            for element in incoming:
-                for subelement in outcoming:
-                    session.run('''
-                                        MERGE (n:Work {DIN: $id1})
-                                        MERGE (m:Work {DIN: $id2})
-                                        MERGE (n)-[r:FOLLOWS]->(m)
-                                        ''',
-                                id1=element,
-                                id2=subelement
-                                )
-            session.run("MATCH (n) WHERE n.DIN = $id DETACH DELETE n", id=id)
+            for _, pred_row in incoming.iterrows():
+                for _, flw_row in outcoming.iterrows():
+                    session.run(
+                        '''
+                        MATCH (n)
+                        WHERE n.DIN = $din1 AND n.type = $type1
+                        MATCH (m)
+                        WHERE m.DIN = $din2 AND m.type = $type2
+                        MERGE (n)-[r:FOLLOWS]->(m)
+                        SET r.weight = coalesce(r.weight, 1);
+                        ''',
+                        din1=pred_row.din, type1=pred_row.type,
+                        din2=flw_row.din, type2=flw_row.type,
+                    )
+            session.run("MATCH (n) WHERE n.DIN = $din DETACH DELETE n", din=din)
 
-    def get_all_id(self):
-        q_data_obtain = '''
-            MATCH (n)
-            RETURN n
-            '''
-        result = self.driver.session().run(q_data_obtain).data()
-        id_lst = []
-        for i in result:
-            id_lst.append((i['n']['DIN']))
-        return list(set(id_lst))
+    def get_all_dins(self):
+        Q_DATA_OBTAIN = '''
+        MATCH (n)
+        RETURN n.DIN AS din
+        '''
+        result = pd.DataFrame(self.driver.session().run(Q_DATA_OBTAIN).data())
+        return result.din.unique()
 
-    def create_new_graph_algo(self, target_ids: set):
-        for element in self.get_all_id():
+    def create_new_graph_algo(self, target_ids):
+        for element in self.get_all_dins():
             if element not in target_ids:
                 self.removing_node(element)
 
     def del_extra_rel(self):
         q_delete = '''
-            match (b)<-[r]-(a)-->(c)-->(b)
+            match (b)<-[r:FOLLOWS]-(a)-[:FOLLOWS]->(c)-[:FOLLOWS]->(b)
             delete r
             '''
         self.driver.session().run(q_delete)
@@ -142,22 +141,3 @@ class Neo4jExplorer:
 
         return data_to_order
 
-
-def main():
-    starttime = datetime.datetime.now()
-
-    file_path = 'data/solution_schedule.xlsx'
-    workingDF = pd.read_excel(file_path, sheet_name="Состав работ", dtype=str, index_col=0)
-
-    app = Neo4jExplorer()
-    resultDF = app.add_pred_and_flw(workingDF)
-    print(app.cfg.get('hist_link'))
-    app.close()
-
-    with pd.ExcelWriter('data/result_ordered.xlsx', engine='openpyxl') as writer:
-        resultDF.to_excel(writer, sheet_name="Упорядоченно")
-    print('data ordered', datetime.datetime.now() - starttime)
-
-
-if __name__ == "__main__":
-    main()
