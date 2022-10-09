@@ -1,2 +1,3 @@
 .idea\
 *.xml
+db.sqlite3

@@ -1,8 +1,8 @@
-import numpy as np
 import pandas as pd
 from neo4j import GraphDatabase
 
 import myapp.yml as yml
+from myapp.graph_creation import utils
 
 
 class Neo4jExplorer:
@@ -95,49 +95,42 @@ class Neo4jExplorer:
                 self.removing_node(element)
 
     def del_extra_rel(self):
-        q_delete = '''
+        Q_DELETE = '''
             match (b)<-[r:FOLLOWS]-(a)-[:FOLLOWS]->(c)-[:FOLLOWS]->(b)
             delete r
             '''
-        self.driver.session().run(q_delete)
+        self.driver.session().run(Q_DELETE)
 
-    def add_pred_and_flw(self, data_to_order: pd.DataFrame):
-        q_data_obtain = '''
-        MATCH (n)-[]->(m)
-        RETURN n.DIN AS n_id, m.DIN AS m_id
-        '''
-        data_to_order.drop(['Unnamed: 0'], axis=1, errors='ignore', inplace=True)
-        data_to_order = data_to_order.astype('str')
-        data_to_order['predecessors'] = ''
-        data_to_order['followers'] = ''
-        data_to_order['pred_vend'] = ''
-        data_to_order['fol_vend'] = ''
-        wbs2_arr = data_to_order.wbs2.unique()
+    def restore_graph(self):
+        node_df = pd.read_excel('myapp/data/DIN-Операции.xlsx',
+                                dtype=str,
+                                usecols=[0, 3],
+                                skiprows=[1])
+        edge_df = pd.read_excel('myapp/data/DIN-Зависимости операции.xlsx',
+                                dtype=str,
+                                usecols=[0, 1, 2],
+                                skiprows=[1])
+        with self.driver.session() as session:
+            session.execute_write(utils.clear_database)
+            node_df.apply(
+                lambda row: session.execute_write(
+                    utils.add_double_node,
+                    row.task_code, row.task_name
+                ),
+                axis=1
+            )
+            edge_df.apply(
+                lambda row: session.execute_write(
+                    utils.add_typed_edge,
+                    row.pred_task_id, row.task_id, row.pred_type
+                ),
+                axis=1
+            )
 
-        for i_wbs2 in wbs2_arr:
-            wbs_df = data_to_order[data_to_order.wbs2 == i_wbs2]
-            vendors = wbs_df.vendor_code.to_numpy()
-            self.load_historical_graph()
-            self.create_new_graph_algo(vendors)
-            self.del_extra_rel()
 
-            result = self.driver.session().run(q_data_obtain).data()
-            df = pd.DataFrame(result)
-            for vend in vendors:
-                ind2 = wbs_df.index[wbs_df.vendor_code == vend].tolist()[0]
-                flwDF = df.loc[df.n_id == vend]
-                if not flwDF.empty:
-                    flw_vends = flwDF.m_id.to_numpy()
-                    flws = np.array([str(wbs_df.index[wbs_df.vendor_code == i].tolist()[0]) for i in flw_vends])
-                    data_to_order.at[ind2, 'followers'] = ', '.join(flws)
-                    data_to_order.at[ind2, 'fol_vend'] = ', '.join(flw_vends)
-
-                predDF = df.loc[df.m_id == vend]
-                if not predDF.empty:
-                    pred_vends = predDF.n_id.to_numpy()
-                    preds = np.array([str(wbs_df.index[wbs_df.vendor_code == i].tolist()[0]) for i in pred_vends])
-                    data_to_order.at[ind2, 'predecessors'] = ', '.join(preds)
-                    data_to_order.at[ind2, 'pred_vend'] = ', '.join(pred_vends)
-
-        return data_to_order
-
+if __name__ == "__main__":
+    app = Neo4jExplorer()
+    app.restore_graph()  # Only if you need to restore your graph
+    app.create_new_graph_algo(['329', '3421', '369'])
+    app.del_extra_rel()
+    app.close()

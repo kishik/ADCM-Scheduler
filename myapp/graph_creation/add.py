@@ -43,7 +43,7 @@ def from_one_file(session: Session, path: str) -> None:
     )
 
     session.execute_write(utils.clear_database)
-    session.execute_write(utils.make_graph, data)
+    session.execute_write(utils.make_old_graph, data)
     session.execute_write(utils.delete_cycles)
 
 

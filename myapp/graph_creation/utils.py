@@ -15,7 +15,7 @@ def delete_cycles(tx: Transaction):
            )
 
 
-def make_graph(tx: Transaction, data: pd.DataFrame) -> None:
+def make_old_graph(tx: Transaction, data: pd.DataFrame) -> None:
     id_lst = data.index.tolist()
     for wrk_id in id_lst:
         din1 = data.loc[wrk_id, 'ADCM_DIN']
@@ -39,3 +39,32 @@ def make_graph(tx: Transaction, data: pd.DataFrame) -> None:
                                flw_name=data.loc[flw_id, 'name']
                                )
 
+
+def add_double_node(tx: Transaction, din: str, name: str) -> None:
+    Q_CREATE_NODE = '''
+        MERGE (s:Work {DIN: $n_din, name: $n_name, type: 'start'})
+        MERGE (f:Work {DIN: $n_din, name: $n_name, type: 'finish'})
+        MERGE (s)-[r:EXCECUTION {weight: 100}]->(f)
+        '''
+    tx.run(Q_CREATE_NODE, n_din=din, n_name=name)
+
+
+def add_typed_edge(tx: Transaction, pred_din: str, flw_din: str, rel_type: str) -> None:
+    if rel_type == 'ФС':
+        pred_type = 'finish'
+        flw_type = 'start'
+    elif rel_type == 'СС':
+        pred_type = flw_type = 'start'
+    elif rel_type == 'ФФ':
+        pred_type = flw_type = 'finish'
+    elif rel_type == 'СФ':
+        pred_type = 'start'
+        flw_type = 'finish'
+    Q_CREATE_REL = f'''
+        MATCH (n:Work)
+        WHERE n.DIN = $din1 AND n.type = $type1
+        MATCH (m:Work)
+        WHERE m.DIN = $din2 AND m.type = $type2
+        MERGE (n)-[r:FOLLOWS {{weight: coalesce(r.weight, 0) + 1}}]->(m);
+        '''
+    tx.run(Q_CREATE_REL, din1=pred_din, din2=flw_din, type1=pred_type, type2=flw_type)
