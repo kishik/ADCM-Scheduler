@@ -39,7 +39,7 @@ graph_data = []
 # PASS = '231099'
 
 
-def authentication(url=URL, user=USER, password=PASS, database="neo4j"):
+def authentication(url=NEW_URL, user=USER, password=PASS, database="neo4j"):
     """
     Создание сессии для работы с neo4j
     :param url:
@@ -392,8 +392,8 @@ def volumes(request):
     print("DINS")
     print(dins)
     # заменить функцией copy
-    graph_copy.graph_copy(authentication(url=URL, user=USER, password=PASS),
-                          authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS))
+    graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
+                          authentication(url=URL, user=USER, password=PASS))
     #
     global graph_data
     graph_data = myJson['data']
@@ -689,7 +689,7 @@ def schedule(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
 
-    session = authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS)
+    session = authentication(url=URL, user=USER, password=PASS)
     distances = calculateDistance(session=session)
     parents = nodes(session=session)
     q_data_obtain = f'''
@@ -769,7 +769,7 @@ def schedule(request):
 def add_link(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
-    session = authentication(url=URL, user=USER, password=PASS)
+    session = authentication(url=NEW_URL, user=USER, password=PASS)
     add.edge(session, request.POST['from_din'], request.POST['to_din'], request.POST['weight'])
     session.close()
     return redirect('/new_graph/')
@@ -779,7 +779,7 @@ def add_link(request):
 def add_node(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
-    session = authentication(url=URL, user=USER, password=PASS)
+    session = authentication(url=NEW_URL, user=USER, password=PASS)
     add.node(session=session, node_din=request.POST['din'], node_name=request.POST['name'])
     session.close()
     return redirect('/new_graph/')

@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'myapp',
     'registration',
-    'myapp.yml',
+    # 'myapp.yml',
     # 'django_webix',
 
 ]
