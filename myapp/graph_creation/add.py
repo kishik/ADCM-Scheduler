@@ -1,4 +1,4 @@
-import utils
+from myapp.graph_creation import utils
 from neo4j import Session
 import pandas as pd
 pd.options.mode.chained_assignment = None
@@ -29,7 +29,7 @@ def from_one_file(session: Session, path: str) -> None:
                          inplace=True
                          )
     data.dropna(subset=['ADCM_DIN', 'ADCM_Level'], inplace=True)
-    din_df = pd.read_excel("data/DIN.xlsx",
+    din_df = pd.read_excel("myapp/data/DIN.xlsx",
                            dtype={'DIN': str},
                            usecols=[0, 4],
                            )
