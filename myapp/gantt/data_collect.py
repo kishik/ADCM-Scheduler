@@ -4,6 +4,7 @@ import pandas as pd
 from neo4j import GraphDatabase, Session
 
 import myapp.yml as yml
+from myapp.models import Link
 
 cfg: dict = yml.get_cfg("neo4j")
 
@@ -15,6 +16,8 @@ NEW_USER = cfg.get('new_user')
 NEW_PASS = cfg.get('new_password')
 LAST_URL = cfg.get('last_url')
 
+types_of_links = {"finish_to_start": "0", "start_to_start": "1", "finish_to_finish": "2", "start_to_finish": "3"}
+
 
 # мы должны создавать таски и связи в бд
 
@@ -23,7 +26,8 @@ def elements(all_nodes, distances, parents, names):
     cur_date = datetime.now()
     for element in all_nodes:
         end_date = timedelta(14)
-        new_date = cur_date + end_date * int(distances[element])
+        # new_date = cur_date + end_date * int(distances[element])
+        new_date = cur_date + end_date * 2
         end_date = new_date + end_date
         if element not in parents:
             elements.append(
@@ -197,6 +201,19 @@ def parents_for_nodes(session):
     return nodes
 
 
+def links_creation(session):
+    pass
+    result = []
+    # выбрать связи старт-старт result.append(start-start) (from,to) {from: to}
+    # выбрать связи старт-финиш result.append(start-finish)
+    # выбрать связи финиш-старт result.append(finish-start)
+    # выбрать связи финиш-финиш result.append(finish-finish)
+
+
+def delete_clones(session):
+    pass
+
+
 def get_typed_edges(session: Session, rel_type: str) -> pd.DataFrame:
     pred_type = flw_type = None
     if rel_type == 'FS':
@@ -219,8 +236,16 @@ def get_typed_edges(session: Session, rel_type: str) -> pd.DataFrame:
     return pd.DataFrame(result)
 
 
-def delete_clones(session):
-    pass
+def saving_typed_edges(session, unique_wbs1):
+    edges_types = ('FS', 'SS', 'FF', 'SF')
+    for i in range(len(edges_types)):
+        edges = get_typed_edges(session, edges_types[i])
+        for index, row in edges.iterrows():
+            print(row['pred_din'], row['flw_din'])
+            for wbs1 in unique_wbs1:
+                # if row['pred_din'] in  смотрим если ли этот дин с этим wbs1
+                Link(source=str(wbs1) + str(row['pred_din']), target=str(wbs1) + str(row['flw_din']),
+                     type=str(i), lag=0).save()
 
 
 if __name__ == '__main__':

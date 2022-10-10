@@ -22,7 +22,6 @@ from .graph_creation import add, neo4jexplorer, graph_copy
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 
-
 cfg: dict = yml.get_cfg("neo4j")
 
 URL = cfg.get('url')
@@ -492,13 +491,13 @@ def schedule(request):
         return redirect('/login/')
 
     session = data_collect.authentication(url=URL, user=USER, password=PASS)
-    distances = data_collect.calculateDistance(session=session)
+    # distances = data_collect.calculateDistance(session=session)
     parents = data_collect.parents_for_nodes(session=session)
     q_data_obtain = f'''
                     MATCH (n) RETURN n
                     '''
     result = session.run(q_data_obtain).data()
-    session.close()
+
     allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
 
     names = {result[i]['n']['DIN']: result[i]['n']['name'] for i in range(len(result))}
@@ -514,22 +513,21 @@ def schedule(request):
             result[el['wbs1']] = [el['wbs3_id']]
         unique_wbs1.add(el['wbs1'])
 
-    elements = data_collect.elements(allNodes, distances, parents, names)
-
-    json_list = simplejson.dumps(elements)
     Task2.objects.all().delete()
     Link.objects.all().delete()
-    t1 = Task2(id=1, text="01p",
-               start_date="2022-10-05 00:00:00",
-               end_date="2022-10-19 00:00:00",
-               duration=2, progress=0.5, parent="0")
-    t1.save()
-    t1 = Task2(id=2, text="02p",
-               start_date="2022-10-05 00:00:00",
-               end_date="2022-10-19 00:00:00",
-               duration=2, progress=0.5, parent="0")
-    t1.save()
-    height = 40
+
+    data_collect.saving_typed_edges(session, unique_wbs1)
+    # из-за подсчета дистанции нам нужно удалять двойников
+    # data_collect.delete_clones(session)
+
+    for wbs1 in unique_wbs1:
+        Task2(id=wbs1[1], text=wbs1,
+              start_date="2022-10-05 00:00:00",
+              end_date="2022-10-19 00:00:00",
+              duration=2, progress=0.5, parent="0").save()
+
+    elements = data_collect.elements(allNodes, [], parents, names)
+
     sorted(elements, key=lambda element: str(element[3]) + "-" + str(element[4]) + "-" + str(element[5]))
     for element in elements:
         for key, value in result.items():
@@ -539,14 +537,8 @@ def schedule(request):
                            end_date=str(element[6]) + "-" + str(element[7]) + "-" + str(element[8]) + " 00:00",
                            duration=2, progress=0.5, parent=key[1], type=key)
                 t1.save()
-                print(parents)
-                print(element[0])
-                if element[0] in parents:
-                    for el in parents[element[0]]:
-                        l1 = Link(source=str(t1.id[:3] + el), target=t1.id, type="0", lag=0)
-                        l1.save()
-    return render(request, 'myapp/schedule.html', {'json_list': json_list, 'total_height': (len(elements) + 2) * height,
-                                                   'height': height, 'wbs1': unique_wbs1, 'result': result})
+    session.close()
+    return render(request, 'myapp/new_gantt.html')
 
 
 @csrf_exempt
