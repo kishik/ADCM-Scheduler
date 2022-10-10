@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 
-from neo4j import GraphDatabase
+import pandas as pd
+from neo4j import GraphDatabase, Session
 
 import myapp.yml as yml
 
@@ -58,9 +59,7 @@ def allNodes(session):
     :return: список нодов
     """
 
-    q_data_obtain = f'''
-                        MATCH (n) RETURN n
-                        '''
+    q_data_obtain = 'MATCH (n) RETURN n'
     result = session.run(q_data_obtain).data()
     return [result[i]['n']['DIN'] for i in range(len(result))]
 
@@ -72,11 +71,11 @@ def parentsByDin(din, session):
     :param session:
     :return:
     """
-    q_data_obtain = f'''
-                            MATCH (c)-[r]->(a)
-                            WHERE a.DIN = $din
-                            RETURN c
-                            '''
+    q_data_obtain = '''
+    MATCH (c)-[r]->(a)
+    WHERE a.DIN = $din
+    RETURN c
+    '''
     result = session.run(q_data_obtain, din=din).data()
     dins = [result[i]['c']['DIN'] for i in range(len(result))]
     if din in dins:
@@ -92,11 +91,11 @@ def childrenByDin(din, session):
     :param session:
     :return: list динов
     """
-    q_data_obtain = f'''
-                        MATCH (a)-[r]->(c)
-                        WHERE a.DIN = $din
-                        RETURN c
-                        '''
+    q_data_obtain = '''
+    MATCH (a)-[r]->(c)
+    WHERE a.DIN = $din
+    RETURN c
+    '''
     result = session.run(q_data_obtain, din=din).data()
 
     return [result[i]['c']['DIN'] for i in range(len(result))]
@@ -142,11 +141,11 @@ def children():
     """
     session = authentication()
 
-    q_data_obtain = f'''
-                    MATCH (top) // though you should use labels if possible)
-                    WHERE NOT ()-[]->(top)
-                    RETURN top
-                    '''
+    q_data_obtain = '''
+    MATCH (top) // though you should use labels if possible)
+    WHERE NOT ()-[]->(top)
+    RETURN top
+    '''
     result = session.run(q_data_obtain).data()
     elements = [result[i]['top']['DIN'] for i in range(len(result))]
     nodes = {}
@@ -159,11 +158,11 @@ def children():
     children = [result[i]['a']['DIN'] for i in range(len(result))]
 
     for element in children:
-        q_data_obtain = f'''
-                    MATCH (a)-[r]->(c)
-                    WHERE a.DIN = $din
-                    RETURN c
-                    '''
+        q_data_obtain = '''
+        MATCH (a)-[r]->(c)
+        WHERE a.DIN = $din
+        RETURN c
+        '''
         result = session.run(q_data_obtain, din=element).data()
         nodes[element] = [result[i]['c']['DIN'] for i in range(len(result))]
 
@@ -186,11 +185,11 @@ def parents_for_nodes(session):
     children = [result[i]['c']['DIN'] for i in range(len(result))]
 
     for element in children:
-        q_data_obtain = f'''
-                MATCH (a)-[r]->(c)
-                WHERE c.DIN = $din
-                RETURN a
-                '''
+        q_data_obtain = '''
+        MATCH (a)-[r]->(c)
+        WHERE c.DIN = $din
+        RETURN a
+        '''
         result = session.run(q_data_obtain, din=element).data()
 
         nodes[element] = [result[i]['a']['DIN'] for i in range(len(result))]
@@ -198,13 +197,37 @@ def parents_for_nodes(session):
     return nodes
 
 
-def links_creation(session):
-    pass
-    # выбрать связи старт-старт
-    # выбрать связи старт-финиш
-    # выбрать связи финиш-старт
-    # выбрать связи финиш-финиш
+def get_typed_edges(session: Session, rel_type: str) -> pd.DataFrame:
+    pred_type = flw_type = None
+    if rel_type == 'FS':
+        pred_type = 'finish'
+        flw_type = 'start'
+    elif rel_type == 'SS':
+        pred_type = flw_type = 'start'
+    elif rel_type == 'FF':
+        pred_type = flw_type = 'finish'
+    elif rel_type == 'SF':
+        pred_type = 'start'
+        flw_type = 'finish'
+
+    Q_FINISH_START = f'''
+    MATCH (n)-[:FOLLOWS]->(m)
+    WHERE n.type = '{pred_type}' AND m.type = '{flw_type}' 
+    RETURN n.DIN AS pred_din, m.DIN AS flw_din
+    '''
+    result = session.run(Q_FINISH_START).data()
+    return pd.DataFrame(result)
 
 
 def delete_clones(session):
     pass
+
+
+if __name__ == '__main__':
+    url = 'neo4j+s://99c1a702.databases.neo4j.io:7687'  # NEW_URL
+    user = 'neo4j'
+    pswd = '231099'
+    driver = GraphDatabase.driver(url, auth=(user, pswd))
+    with driver.session() as session:
+        print(get_typed_edges(session, 'FS').head())
+        print(get_typed_edges(session, 'SS').head())
