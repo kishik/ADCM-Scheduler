@@ -6,10 +6,13 @@ from myapp.graph_creation import utils
 
 
 class Neo4jExplorer:
-    def __init__(self):
+    def __init__(self, uri=None):
         # read settings from config
         self.cfg: dict = yml.get_cfg('neo4j')
-        _uri = self.cfg.get('new_url')
+        if not uri:
+            _uri = self.cfg.get('new_url')
+        else:
+            _uri = uri
         _user = self.cfg.get('new_user')
         _pass = self.cfg.get('new_password')
 

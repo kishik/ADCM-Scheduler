@@ -16,10 +16,12 @@ from myapp.serializers import LinkSerializer
 import myapp.yml as yml
 from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
 from myapp.models import URN, ActiveLink, Rule, Wbs, Task, Link, Task2
+from .gantt import data_collect
 from .graph_creation import add, neo4jexplorer, graph_copy
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
+
 
 cfg: dict = yml.get_cfg("neo4j")
 
@@ -34,45 +36,11 @@ LAST_URL = cfg.get('last_url')
 graph_data = []
 
 
-# URL = 'neo4j+s://178ff2cf.databases.neo4j.io'
-# USER = 'neo4j'
-# PASS = '231099'
-
-
-def authentication(url=NEW_URL, user=USER, password=PASS, database="neo4j"):
-    """
-    Создание сессии для работы с neo4j
-    :param url:
-    :param user:
-    :param password:
-    :param database:
-    :return:
-    """
-    driver = GraphDatabase.driver(url, auth=(user, password))
-    session = driver.session(database=database)
-    return session
-
-
 def login(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
     if not request.user.is_authenticated:
         return render(request, 'registration/login.html')
-
-
-# def graph_show(request):
-#     if not request.user.is_authenticated:
-#         return redirect('/login/')
-#     nodes = []
-#     rels = []
-#     works = Work.nodes.all()
-#
-#     for work in works:
-#         nodes.append({'id': work.id, 'name': work.name})
-#
-#     return render(request, 'myapp/index1.html', {
-#         "nodes": nodes, "links": rels
-#     })
 
 
 def work_in_progress(request):
@@ -84,24 +52,6 @@ def work_in_progress(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
     return render(request, 'myapp/building.html')
-
-
-# def graph(request):
-#     if not request.user.is_authenticated:
-#         return redirect('/login/')
-#     nodes = []
-#     rels = []
-#     works = Work.nodes.all()
-#
-#     for work in works:
-#         nodes.append({'id': work.id, 'name': work.name})
-#
-#         for job in work.incoming:
-#             rels.append({"source": job.id, "target": work.id})
-#         for job in work.outcoming:
-#             rels.append({"source": work.id, "target": job.id})
-#
-#     return JsonResponse({"nodes": nodes, "links": rels})
 
 
 def new_graph(request):
@@ -231,7 +181,7 @@ def upload(request):
 
     if request.method == 'POST':
         # historical_graph_creation.main(request.FILES['file'])
-        session = authentication(url=URL, user=USER, password=PASS)
+        session = data_collect.authentication(url=URL, user=USER, password=PASS)
         add.from_one_file(session, request.FILES['file'])
 
     return redirect('/new_graph/')
@@ -388,12 +338,12 @@ def volumes(request):
         dins.add(el["wbs3_id"])
 
     # add async
-    user_graph = neo4jexplorer.Neo4jExplorer()
-    print("DINS")
-    print(dins)
+    user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+    # тут ресторю в свой граф из эксель
+    user_graph.restore_graph()
     # заменить функцией copy
-    graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
-                          authentication(url=URL, user=USER, password=PASS))
+    # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
+    #                       authentication(url=URL, user=USER, password=PASS))
     #
     global graph_data
     graph_data = myJson['data']
@@ -532,154 +482,6 @@ def rule_delete(request, id):
         return HttpResponseNotFound("<h2>Rule not found</h2>")
 
 
-#########
-def nodes(session):
-    """
-    Поиск списка родителей для каждого ребенка
-    :return:
-    """
-
-    nodes = {}
-
-    q_data_obtain = f'''
-                    MATCH (a)-[r]->(c)
-                    RETURN c
-                    '''
-    result = session.run(q_data_obtain).data()
-    children = [result[i]['c']['DIN'] for i in range(len(result))]
-
-    for element in children:
-        q_data_obtain = f'''
-                MATCH (a)-[r]->(c)
-                WHERE c.DIN = $din
-                RETURN a
-                '''
-        result = session.run(q_data_obtain, din=element).data()
-
-        nodes[element] = [result[i]['a']['DIN'] for i in range(len(result))]
-
-    return nodes
-
-
-def children():
-    """
-    din всех детей
-    :return: list с din
-    """
-    session = authentication()
-
-    q_data_obtain = f'''
-                    MATCH (top) // though you should use labels if possible)
-                    WHERE NOT ()-[]->(top)
-                    RETURN top
-                    '''
-    result = session.run(q_data_obtain).data()
-    elements = [result[i]['top']['DIN'] for i in range(len(result))]
-    nodes = {}
-
-    q_data_obtain = f'''
-                        MATCH (a)-[r]->(c)
-                        RETURN a
-                        '''
-    result = session.run(q_data_obtain).data()
-    children = [result[i]['a']['DIN'] for i in range(len(result))]
-
-    for element in children:
-        q_data_obtain = f'''
-                    MATCH (a)-[r]->(c)
-                    WHERE a.DIN = $din
-                    RETURN c
-                    '''
-        result = session.run(q_data_obtain, din=element).data()
-        nodes[element] = [result[i]['c']['DIN'] for i in range(len(result))]
-
-    return nodes
-
-
-def parentsByDin(din, session):
-    """
-    Возвращает всех родителей элемента din
-    :param din:
-    :param session:
-    :return:
-    """
-    q_data_obtain = f'''
-                            MATCH (c)-[r]->(a)
-                            WHERE a.DIN = $din
-                            RETURN c
-                            '''
-    result = session.run(q_data_obtain, din=din).data()
-
-    return [result[i]['c']['DIN'] for i in range(len(result))]
-
-
-def childrenByDin(din, session):
-    """
-    Возвращает всех детей элемента din
-    :param din:
-    :param session:
-    :return: list динов
-    """
-    q_data_obtain = f'''
-                        MATCH (a)-[r]->(c)
-                        WHERE a.DIN = $din
-                        RETURN c
-                        '''
-    result = session.run(q_data_obtain, din=din).data()
-
-    return [result[i]['c']['DIN'] for i in range(len(result))]
-
-
-def calculateDistance(session):
-    """
-    Запускает проход по всем нодам, не имеющим родителей
-    :return: dict нодов с их глубиной в графе
-    """
-    distances = {}
-    for node in allNodes():
-        if parentsByDin(node, session):
-            continue
-        # print("preprohod")
-        prohod(start_din=node, distances=distances, session=session, cur_level=0)
-        # print("prohod")
-    return distances
-
-
-def prohod(start_din, distances, session, cur_level=0):
-    """
-    Проходит рекурсивный путь по своим детям, указывая максимальную глубину рекурсии,
-    сравнивая текущую и полученную сейчас
-    :param start_din:
-    :param distances:
-    :param session:
-    :param cur_level:
-    """
-    if start_din not in distances:
-        distances[start_din] = 0
-
-    distances[start_din] = max(cur_level, distances[start_din])
-
-    for element in childrenByDin(start_din, session):
-        prohod(element, distances, session, cur_level + 1)
-
-
-#################
-
-def allNodes():
-    """
-    Возвращает все ноды
-    :return: список нодов
-    """
-    session = authentication()
-    q_data_obtain = f'''
-                        MATCH (n) RETURN n
-                        '''
-    result = session.run(q_data_obtain).data()
-    allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
-
-    return allNodes
-
-
 def schedule(request):
     """
     Диаграмма Ганта
@@ -689,9 +491,9 @@ def schedule(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
 
-    session = authentication(url=URL, user=USER, password=PASS)
-    distances = calculateDistance(session=session)
-    parents = nodes(session=session)
+    session = data_collect.authentication(url=URL, user=USER, password=PASS)
+    distances = data_collect.calculateDistance(session=session)
+    parents = data_collect.parents_for_nodes(session=session)
     q_data_obtain = f'''
                     MATCH (n) RETURN n
                     '''
@@ -712,25 +514,7 @@ def schedule(request):
             result[el['wbs1']] = [el['wbs3_id']]
         unique_wbs1.add(el['wbs1'])
 
-    elements = []
-
-    cur_date = datetime.now()
-
-    for element in allNodes:
-        end_date = timedelta(14)
-        new_date = cur_date + end_date * int(distances[element])
-        end_date = new_date + end_date
-        if element not in parents:
-            elements.append(
-                [str(element), names[element] + " DIN" + element, None, new_date.year, new_date.month, new_date.day,
-                 end_date.year, end_date.month, end_date.day,
-                 None, element, None])
-        else:
-            elements.append(
-                [str(element), names[element] + " DIN" + element, None, new_date.year, new_date.month, new_date.day,
-                 end_date.year, end_date.month, end_date.day,
-                 None,
-                 element, ','.join(parents[element])])
+    elements = data_collect.elements(allNodes, distances, parents, names)
 
     json_list = simplejson.dumps(elements)
     Task2.objects.all().delete()
@@ -769,7 +553,7 @@ def schedule(request):
 def add_link(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
-    session = authentication(url=NEW_URL, user=USER, password=PASS)
+    session = data_collect.authentication(url=NEW_URL, user=USER, password=PASS)
     add.edge(session, request.POST['from_din'], request.POST['to_din'], request.POST['weight'])
     session.close()
     return redirect('/new_graph/')
@@ -779,7 +563,7 @@ def add_link(request):
 def add_node(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
-    session = authentication(url=NEW_URL, user=USER, password=PASS)
+    session = data_collect.authentication(url=NEW_URL, user=USER, password=PASS)
     add.node(session=session, node_din=request.POST['din'], node_name=request.POST['name'])
     session.close()
     return redirect('/new_graph/')
