@@ -481,6 +481,29 @@ def rule_delete(request, id):
         return HttpResponseNotFound("<h2>Rule not found</h2>")
 
 
+def hist_gantt(request):
+    """
+        Диаграмма Ганта для исторического графа
+        :param request:
+        :return:
+        """
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    session = data_collect.authentication(url=URL, user=USER, password=PASS)
+    Task2.objects.all().delete()
+    Link.objects.all().delete()
+    distances = data_collect.calculateDistance(session=session)
+    data_collect.saving_typed_edges(session)
+    duration = 1
+    for node in data_collect.allNodes(session):
+        Task2(id=node, text=data_collect.get_name_by_din(session, node),
+              start_date=datetime.now() + distances[node],
+              end_date=datetime.now() + distances[node] + duration,
+              duration=duration, progress=0.5, parent="0").save()
+
+    return render(request, 'myapp/new_gantt.html')
+
+
 def schedule(request):
     """
     Диаграмма Ганта

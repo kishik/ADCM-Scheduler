@@ -101,8 +101,10 @@ def childrenByDin(din, session):
     RETURN c
     '''
     result = session.run(q_data_obtain, din=din).data()
-
-    return [result[i]['c']['DIN'] for i in range(len(result))]
+    children = [result[i]['din'] for i in range(len(result))]
+    if din in children:
+        children.remove(din)
+    return children
 
 
 def prohod(start_din, distances, session, cur_level=0):
@@ -118,7 +120,6 @@ def prohod(start_din, distances, session, cur_level=0):
         distances[start_din] = 0
 
     distances[start_din] = max(cur_level, distances[start_din])
-
     for element in childrenByDin(start_din, session):
         prohod(element, distances, session, cur_level + 1)
 
@@ -236,16 +237,25 @@ def get_typed_edges(session: Session, rel_type: str) -> pd.DataFrame:
     return pd.DataFrame(result)
 
 
-def saving_typed_edges(session, unique_wbs1):
+def saving_typed_edges(session):
     edges_types = ('FS', 'SS', 'FF', 'SF')
     for i in range(len(edges_types)):
         edges = get_typed_edges(session, edges_types[i])
         for index, row in edges.iterrows():
-            print(row['pred_din'], row['flw_din'])
-            for wbs1 in unique_wbs1:
-                # if row['pred_din'] in  смотрим если ли этот дин с этим wbs1
-                Link(source=str(wbs1) + str(row['pred_din']), target=str(wbs1) + str(row['flw_din']),
-                     type=str(i), lag=0).save()
+            Link(source=str(row['pred_din']), target=str(row['flw_din']),
+                 type=str(i), lag=0).save()
+
+
+# def saving_typed_edges(session, unique_wbs1):
+#     edges_types = ('FS', 'SS', 'FF', 'SF')
+#     for i in range(len(edges_types)):
+#         edges = get_typed_edges(session, edges_types[i])
+#         for index, row in edges.iterrows():
+#             print(row['pred_din'], row['flw_din'])
+#             for wbs1 in unique_wbs1:
+#                 # if row['pred_din'] in  смотрим если ли эти дины с этим wbs1
+#                 Link(source=str(wbs1) + str(row['pred_din']), target=str(wbs1) + str(row['flw_din']),
+#                      type=str(i), lag=0).save()
 
 
 if __name__ == '__main__':
