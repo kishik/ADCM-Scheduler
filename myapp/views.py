@@ -489,7 +489,7 @@ def hist_gantt(request):
         """
     if not request.user.is_authenticated:
         return redirect('/login/')
-    session = data_collect.authentication(url=URL, user=USER, password=PASS)
+    session = data_collect.authentication(url=NEW_URL, user=USER, password=PASS)
     Task2.objects.all().delete()
     Link.objects.all().delete()
     distances = data_collect.calculateDistance(session=session)
