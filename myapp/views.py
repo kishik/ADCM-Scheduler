@@ -495,11 +495,12 @@ def hist_gantt(request):
     distances = data_collect.calculateDistance(session=session)
     data_collect.saving_typed_edges(session)
     duration = 1
-    for node in data_collect.allNodes(session):
+    data = data_collect.allNodes(session)
+    data = sorted(data, key=lambda x: distances[x])
+    for node in data:
         Task2(id=node, text=data_collect.get_name_by_din(session, node),
-              start_date=datetime.now() + distances[node],
-              end_date=datetime.now() + distances[node] + duration,
-              duration=duration, progress=0.5, parent="0").save()
+              start_date=datetime.now() + timedelta(days=distances[node]),
+              duration=duration).save()
 
     return render(request, 'myapp/new_gantt.html')
 

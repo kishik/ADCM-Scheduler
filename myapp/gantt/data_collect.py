@@ -101,7 +101,7 @@ def childrenByDin(din, session):
     RETURN c
     '''
     result = session.run(q_data_obtain, din=din).data()
-    children = [result[i]['din'] for i in range(len(result))]
+    children = [result[i]['c']['DIN'] for i in range(len(result))]
     if din in children:
         children.remove(din)
     return children
@@ -121,6 +121,8 @@ def prohod(start_din, distances, session, cur_level=0):
 
     distances[start_din] = max(cur_level, distances[start_din])
     for element in childrenByDin(start_din, session):
+        if start_din == element:
+            continue
         prohod(element, distances, session, cur_level + 1)
 
 
@@ -133,9 +135,7 @@ def calculateDistance(session):
     for node in allNodes(session):
         if parentsByDin(node, session):
             continue
-        # print("preprohod")
         prohod(start_din=node, distances=distances, session=session, cur_level=0)
-        # print("prohod")
     return distances
 
 
