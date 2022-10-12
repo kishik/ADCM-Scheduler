@@ -21,6 +21,27 @@ types_of_links = {"finish_to_start": "0", "start_to_start": "1", "finish_to_fini
 
 # мы должны создавать таски и связи в бд
 
+def get_edge_type(session: Session, pred_din: str, flw_din: str) -> str:
+    q_get_rel = '''
+    MATCH (n)-[r:FOLLOWS]->(m)
+    WHERE n.DIN = $din1 AND m.DIN = $din2
+    RETURN n.type AS type1, m.type AS type2
+    '''
+    result = session.run(q_get_rel, din1=pred_din, din2=flw_din).data()
+    pred_type = result[0]['pred_type']
+    flw_type = result[0]['flw_type']
+    if pred_type == 'start':
+        if flw_type == 'start':
+            return 'SS'
+        else:
+            return 'SF'
+    else:
+        if flw_type == 'start':
+            return 'FS'
+        else:
+            return 'FF'
+
+
 def elements(all_nodes, distances, parents, names):
     elements = []
     cur_date = datetime.now()
