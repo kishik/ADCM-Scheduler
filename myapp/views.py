@@ -546,6 +546,7 @@ def schedule(request):
                   # min(start_date of levels)
                   start_date=datetime.now(),
                   # duration = max([distances[din] for din in result[wbs1]])
+                  duration=5,
                   parent=wbs1).save()
             for wbs3 in result[wbs1][wbs2]:
                 if wbs3 not in distances:
