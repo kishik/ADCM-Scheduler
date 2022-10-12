@@ -19,13 +19,22 @@ LAST_URL = cfg.get('last_url')
 types_of_links = {"finish_to_start": "0", "start_to_start": "1", "finish_to_finish": "2", "start_to_finish": "3"}
 
 
+def get_name_by_din(session: Session, din: str) -> str:
+    q_get_name = '''
+    MATCH (n) WHERE n.DIN = $din
+    RETURN n.name AS name
+    '''
+    result = session.run(q_get_name, din=din).data()
+    return result[0]['name']
+
+
 # мы должны создавать таски и связи в бд
 
 def get_edge_type(session: Session, pred_din: str, flw_din: str) -> str:
     q_get_rel = '''
     MATCH (n)-[r:FOLLOWS]->(m)
     WHERE n.DIN = $din1 AND m.DIN = $din2
-    RETURN n.type AS type1, m.type AS type2
+    RETURN n.type AS pred_type, m.type AS flw_type
     '''
     result = session.run(q_get_rel, din1=pred_din, din2=flw_din).data()
     pred_type = result[0]['pred_type']
@@ -144,7 +153,12 @@ def prohod(start_din, distances, session, cur_level=0):
     for element in childrenByDin(start_din, session):
         if start_din == element:
             continue
-        prohod(element, distances, session, cur_level + 1)
+        if get_edge_type(session, start_din, element) == "FS":
+            prohod(element, distances, session, cur_level + 1)
+            continue
+        elif get_edge_type(session, start_din, element) == "SS":
+            # если связь типа старт-старт то prohod(element, distances, session, cur_level)
+            prohod(element, distances, session, cur_level)
 
 
 def calculateDistance(session):
@@ -267,16 +281,16 @@ def saving_typed_edges(session):
                  type=str(i), lag=0).save()
 
 
-# def saving_typed_edges(session, unique_wbs1):
-#     edges_types = ('FS', 'SS', 'FF', 'SF')
-#     for i in range(len(edges_types)):
-#         edges = get_typed_edges(session, edges_types[i])
-#         for index, row in edges.iterrows():
-#             print(row['pred_din'], row['flw_din'])
-#             for wbs1 in unique_wbs1:
-#                 # if row['pred_din'] in  смотрим если ли эти дины с этим wbs1
-#                 Link(source=str(wbs1) + str(row['pred_din']), target=str(wbs1) + str(row['flw_din']),
-#                      type=str(i), lag=0).save()
+def saving_typed_edges_with_wbs(session, unique_wbs1):
+    edges_types = ('FS', 'SS', 'FF', 'SF')
+    for i in range(len(edges_types)):
+        edges = get_typed_edges(session, edges_types[i])
+        for index, row in edges.iterrows():
+            print(row['pred_din'], row['flw_din'])
+            for wbs1 in unique_wbs1:
+                # if row['pred_din'] in  смотрим если ли эти дины с этим wbs1
+                Link(source=str(wbs1) + str(row['pred_din']), target=str(wbs1) + str(row['flw_din']),
+                     type=str(i), lag=0).save()
 
 
 if __name__ == '__main__':

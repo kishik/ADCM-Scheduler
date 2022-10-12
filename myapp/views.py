@@ -496,7 +496,7 @@ def hist_gantt(request):
     data_collect.saving_typed_edges(session)
     duration = 1
     data = data_collect.allNodes(session)
-    data = sorted(data, key=lambda x: distances[x])
+    # data = sorted(data, key=lambda x: distances[x])
     for node in data:
         Task2(id=node, text=data_collect.get_name_by_din(session, node),
               start_date=datetime.now() + timedelta(days=distances[node]),
@@ -515,7 +515,7 @@ def schedule(request):
         return redirect('/login/')
 
     session = data_collect.authentication(url=URL, user=USER, password=PASS)
-    # distances = data_collect.calculateDistance(session=session)
+    distances = data_collect.calculateDistance(session=session)
     parents = data_collect.parents_for_nodes(session=session)
     q_data_obtain = f'''
                     MATCH (n) RETURN n
@@ -540,26 +540,33 @@ def schedule(request):
     Task2.objects.all().delete()
     Link.objects.all().delete()
 
-    data_collect.saving_typed_edges(session, unique_wbs1)
+    data_collect.saving_typed_edges_with_wbs(session, unique_wbs1)
     # из-за подсчета дистанции нам нужно удалять двойников
     # data_collect.delete_clones(session)
 
     for wbs1 in unique_wbs1:
         Task2(id=wbs1[1], text=wbs1,
-              start_date="2022-10-05 00:00:00",
-              end_date="2022-10-19 00:00:00",
+              # min(start_date of levels)
+              start_date=datetime.now(),
+              # duration = max([distances[din] for din in result[wbs1]])
               duration=2, progress=0.5, parent="0").save()
 
-    elements = data_collect.elements(allNodes, [], parents, names)
+        # for level in levels[wbs1]
+        # Task2(id=wbs1[1] level, text=level,
+        #       start_date= start_date(wbs1) if level = 1
+        #       ,
+        #       # duration = max([distances[din] for din in result[wbs1]])
+        #       duration=2, progress=0.5, parent="0").save()
 
+    elements = data_collect.elements(allNodes, [], parents, names)
+    duration = 1
     sorted(elements, key=lambda element: str(element[3]) + "-" + str(element[4]) + "-" + str(element[5]))
     for element in elements:
         for key, value in result.items():
             if element[0] in value:
                 t1 = Task2(id=str(key + str(element[0])), text=element[1],
-                           start_date=str(element[3]) + "-" + str(element[4]) + "-" + str(element[5]) + " 00:00",
-                           end_date=str(element[6]) + "-" + str(element[7]) + "-" + str(element[8]) + " 00:00",
-                           duration=2, progress=0.5, parent=key[1], type=key)
+                           start_date=datetime.now() + timedelta(days=distances[element[0]]),
+                           duration=duration, parent=key[1], type=key)
                 t1.save()
     session.close()
     return render(request, 'myapp/new_gantt.html')
