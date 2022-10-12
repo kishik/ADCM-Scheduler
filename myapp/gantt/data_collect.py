@@ -281,16 +281,17 @@ def saving_typed_edges(session):
                  type=str(i), lag=0).save()
 
 
-def saving_typed_edges_with_wbs(session, unique_wbs1):
+def saving_typed_edges_with_wbs(session, result):
     edges_types = ('FS', 'SS', 'FF', 'SF')
     for i in range(len(edges_types)):
         edges = get_typed_edges(session, edges_types[i])
         for index, row in edges.iterrows():
             print(row['pred_din'], row['flw_din'])
-            for wbs1 in unique_wbs1:
-                # if row['pred_din'] in  смотрим если ли эти дины с этим wbs1
-                Link(source=str(wbs1) + str(row['pred_din']), target=str(wbs1) + str(row['flw_din']),
-                     type=str(i), lag=0).save()
+            for wbs1 in result:
+                for wbs2 in result[wbs1].keys():
+                    # if row['pred_din'] in  смотрим если ли эти дины с этим wbs1
+                    Link(source=str(wbs1) + wbs2 + str(row['pred_din']), target=str(wbs1) + wbs2 + str(row['flw_din']),
+                         type=str(i), lag=0).save()
 
 
 if __name__ == '__main__':

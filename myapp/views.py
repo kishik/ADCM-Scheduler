@@ -516,58 +516,50 @@ def schedule(request):
 
     session = data_collect.authentication(url=URL, user=USER, password=PASS)
     distances = data_collect.calculateDistance(session=session)
-    parents = data_collect.parents_for_nodes(session=session)
-    q_data_obtain = f'''
-                    MATCH (n) RETURN n
-                    '''
-    result = session.run(q_data_obtain).data()
-
-    allNodes = [result[i]['n']['DIN'] for i in range(len(result))]
-
-    names = {result[i]['n']['DIN']: result[i]['n']['name'] for i in range(len(result))}
 
     unique_wbs1 = set()
     global graph_data
     result = {}
-    # print(graph_data)
+
     for el in graph_data:
-        if el['wbs1'] in result:
-            result[el['wbs1']].append(el['wbs3_id'])
-        else:
-            result[el['wbs1']] = [el['wbs3_id']]
-        unique_wbs1.add(el['wbs1'])
+        if el['wbs1'] not in result:
+            result[el['wbs1']] = {}
+        if el['wbs2'] not in result[el['wbs1']]:
+            result[el['wbs1']][el['wbs2']] = []
+        if el['wbs3_id'] not in result[el['wbs1']][el['wbs2']]:
+            result[el['wbs1']][el['wbs2']].append(el['wbs3_id'])
 
     Task2.objects.all().delete()
     Link.objects.all().delete()
 
-    data_collect.saving_typed_edges_with_wbs(session, unique_wbs1)
-    # из-за подсчета дистанции нам нужно удалять двойников
-    # data_collect.delete_clones(session)
+    data_collect.saving_typed_edges_with_wbs(session, result)
 
-    for wbs1 in unique_wbs1:
-        Task2(id=wbs1[1], text=wbs1,
+    for wbs1 in result.keys():
+        Task2(id=wbs1, text=wbs1,
               # min(start_date of levels)
               start_date=datetime.now(),
               # duration = max([distances[din] for din in result[wbs1]])
-              duration=2, progress=0.5, parent="0").save()
+              duration=10).save()
+        for wbs2 in result[wbs1].keys():
+            Task2(id=wbs1+wbs2, text=wbs2,
+                  # min(start_date of levels)
+                  start_date=datetime.now(),
+                  # duration = max([distances[din] for din in result[wbs1]])
+                  parent=wbs1).save()
+            for wbs3 in result[wbs1][wbs2]:
+                if wbs3 not in distances:
+                    Task2(id=wbs1+wbs2+wbs3, text=wbs3,
+                          # min(start_date of levels)
+                          start_date=datetime.now(),
+                          # duration = max([distances[din] for din in result[wbs1]])
+                          duration=1, parent=wbs1+wbs2).save()
+                else:
+                    Task2(id=wbs1+wbs2+wbs3, text=wbs3,
+                          # min(start_date of levels)
+                          start_date=datetime.now() + timedelta(distances[wbs3]),
+                          # duration = max([distances[din] for din in result[wbs1]])
+                          duration=1, parent=wbs1+wbs2).save()
 
-        # for level in levels[wbs1]
-        # Task2(id=wbs1[1] level, text=level,
-        #       start_date= start_date(wbs1) if level = 1
-        #       ,
-        #       # duration = max([distances[din] for din in result[wbs1]])
-        #       duration=2, progress=0.5, parent="0").save()
-
-    elements = data_collect.elements(allNodes, [], parents, names)
-    duration = 1
-    sorted(elements, key=lambda element: str(element[3]) + "-" + str(element[4]) + "-" + str(element[5]))
-    for element in elements:
-        for key, value in result.items():
-            if element[0] in value:
-                t1 = Task2(id=str(key + str(element[0])), text=element[1],
-                           start_date=datetime.now() + timedelta(days=distances[element[0]]),
-                           duration=duration, parent=key[1], type=key)
-                t1.save()
     session.close()
     return render(request, 'myapp/new_gantt.html')
 
