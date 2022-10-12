@@ -520,7 +520,7 @@ def schedule(request):
     unique_wbs1 = set()
     global graph_data
     result = {}
-
+    names = {}
     for el in graph_data:
         if el['wbs1'] not in result:
             result[el['wbs1']] = {}
@@ -528,6 +528,7 @@ def schedule(request):
             result[el['wbs1']][el['wbs2']] = []
         if el['wbs3_id'] not in result[el['wbs1']][el['wbs2']]:
             result[el['wbs1']][el['wbs2']].append(el['wbs3_id'])
+        names[el['wbs3_id']] = el['wbs3']
 
     Task2.objects.all().delete()
     Link.objects.all().delete()
@@ -548,13 +549,13 @@ def schedule(request):
                   parent=wbs1).save()
             for wbs3 in result[wbs1][wbs2]:
                 if wbs3 not in distances:
-                    Task2(id=wbs1+wbs2+wbs3, text=wbs3,
+                    Task2(id=wbs1+wbs2+wbs3, text=names[wbs3],
                           # min(start_date of levels)
                           start_date=datetime.now(),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1+wbs2).save()
                 else:
-                    Task2(id=wbs1+wbs2+wbs3, text=wbs3,
+                    Task2(id=wbs1+wbs2+wbs3, text=names[wbs3],
                           # min(start_date of levels)
                           start_date=datetime.now() + timedelta(distances[wbs3]),
                           # duration = max([distances[din] for din in result[wbs1]])
