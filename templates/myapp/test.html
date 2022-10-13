@@ -22,7 +22,7 @@
     <body onload="init_simplified()">
         <div id="mynetwork"></div>
 
-
+    <script>console.log({{ url }})</script>
 {#    <script>#}
 {##}
 {#        var viz;#}
@@ -96,7 +96,7 @@
             function init_simplified() {  /// at the beginning
 			config_neo4j={
                 container_id: "mynetwork",
-                server_url: "neo4j+s://178ff2cf.databases.neo4j.io:7687",
+                server_url: "{{ url }}",
                 server_user: "neo4j",
 				server_password: "231099",
                 initial_cypher: "MATCH (n) OPTIONAL MATCH (n)-[r]->(m) RETURN n, r, m"

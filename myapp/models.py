@@ -30,3 +30,36 @@ class Wbs(models.Model):
     specs = models.CharField(max_length=200)
     userId = models.IntegerField()
     isActive = models.BooleanField()
+
+
+class Task(models.Model):
+    my_id = models.BigAutoField(primary_key=True, editable=False)
+    id = models.CharField(blank=True, max_length=100)
+    text = models.CharField(blank=True, max_length=100)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField(blank=True)
+    duration = models.IntegerField(blank=True)
+    progress = models.FloatField(blank=True)
+    parent = models.CharField(blank=True, max_length=100)
+    type = models.CharField(blank=True, max_length=100)
+    hype = models.CharField(blank=True, max_length=100)
+
+
+class Task2(models.Model):
+    my_id = models.BigAutoField(primary_key=True, editable=False)
+    id = models.CharField(blank=True, max_length=100)
+    text = models.CharField(blank=True, max_length=100)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField(null=True, blank=True)
+    duration = models.IntegerField(null=True, blank=True)
+    progress = models.FloatField(null=True, blank=True)
+    parent = models.CharField(null=True, blank=True, max_length=100)
+    type = models.CharField(null=True, blank=True, max_length=100)
+
+
+class Link(models.Model):
+    id = models.AutoField(primary_key=True, editable=False)
+    source = models.CharField(max_length=100)
+    target = models.CharField(max_length=100)
+    type = models.CharField(max_length=100)
+    lag = models.IntegerField(blank=True, default=0)

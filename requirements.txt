@@ -7,3 +7,4 @@ neo4j==5.0.0
 pandas==1.4.4
 numpy==1.23.3
 django-bootstrap4==22.2
+djangorestframework~=3.13.1
