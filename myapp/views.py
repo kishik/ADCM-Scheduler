@@ -61,7 +61,7 @@ def new_graph(request):
     """
     if not request.user.is_authenticated:
         return redirect('/login/')
-    context = {'form': UploadFileForm(), 'url': LAST_URL, 'user_graph': USER, 'pass': PASS, 'link': AddLink(),
+    context = {'form': UploadFileForm(), 'url': NEW_URL, 'user_graph': USER, 'pass': PASS, 'link': AddLink(),
                'node': AddNode()}
     return render(request, 'myapp/test.html', context)
 
@@ -499,7 +499,7 @@ def hist_gantt(request):
     # data = sorted(data, key=lambda x: distances[x])
     for node in data:
         Task2(id=node, text=data_collect.get_name_by_din(session, node),
-              start_date=datetime.now() + timedelta(days=distances[node]),
+              start_date=datetime.today() + timedelta(days=distances[node]),
               duration=duration).save()
 
     return render(request, 'myapp/new_gantt.html')
@@ -538,13 +538,13 @@ def schedule(request):
     for wbs1 in result.keys():
         Task2(id=wbs1, text=wbs1,
               # min(start_date of levels)
-              start_date=datetime.now(),
+              start_date=datetime.today(),
               # duration = max([distances[din] for din in result[wbs1]])
               duration=10).save()
         for wbs2 in result[wbs1].keys():
             Task2(id=wbs1+wbs2, text=wbs2,
                   # min(start_date of levels)
-                  start_date=datetime.now(),
+                  start_date=datetime.today(),
                   # duration = max([distances[din] for din in result[wbs1]])
                   duration=5,
                   parent=wbs1).save()
@@ -552,13 +552,13 @@ def schedule(request):
                 if wbs3 not in distances:
                     Task2(id=wbs1+wbs2+wbs3, text=names[wbs3],
                           # min(start_date of levels)
-                          start_date=datetime.now(),
+                          start_date=datetime.today(),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1+wbs2).save()
                 else:
                     Task2(id=wbs1+wbs2+wbs3, text=names[wbs3],
                           # min(start_date of levels)
-                          start_date=datetime.now() + timedelta(distances[wbs3]),
+                          start_date=datetime.today() + timedelta(distances[wbs3]),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1+wbs2).save()
 
