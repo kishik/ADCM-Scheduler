@@ -523,7 +523,7 @@ def schedule(request):
 
     session = data_collect.authentication(url=URL, user=USER, password=PASS)
     distances = data_collect.calculateDistance(session=session)
-
+    dins = []
     unique_wbs1 = set()
     global graph_data
     result = {}
@@ -535,6 +535,7 @@ def schedule(request):
             result[el['wbs1']][el['wbs2']] = []
         if el['wbs3'] not in result[el['wbs1']][el['wbs2']]:
             result[el['wbs1']][el['wbs2']].append(el['wbs3'])
+        dins.append(el['wbs3_id'])
         names[el['wbs3']] = el['name']
 
     Task2.objects.all().delete()
@@ -558,15 +559,15 @@ def schedule(request):
                   duration=5,
                   parent=wbs1_str).save()
             for wbs3 in result[wbs1][wbs2]:
-                wbs3_str = str(wbs3)
+                wbs3_str = str(dins[wbs3])
                 if wbs3 not in distances:
-                    Task2(id=wbs1_str+wbs2_str+wbs3_str, text=names[wbs3],
+                    Task2(id=wbs1_str+wbs2_str+wbs3_str, text=wbs3_str + names[wbs3],
                           # min(start_date of levels)
                           start_date=datetime.today(),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1_str+wbs2_str).save()
                 else:
-                    Task2(id=wbs1_str+wbs2+wbs3_str, text=names[wbs3],
+                    Task2(id=wbs1_str+wbs2+wbs3_str, text=wbs3_str + names[wbs3],
                           # min(start_date of levels)
                           start_date=datetime.today() + timedelta(distances[wbs3]),
                           # duration = max([distances[din] for din in result[wbs1]])
