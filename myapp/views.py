@@ -112,7 +112,7 @@ def urn_create(request):
     if request.method == "POST":
         urn = URN()
         urn.type = request.POST.get("type")
-        urn.urn = request.POST.get("urn")
+        urn.urn = request.POST.get("urn")[3:].replace(':', '3A', 1).replace(':', '%3A')
         urn.isActive = True
         urn.userId = request.user.id
         urn.save()
@@ -134,7 +134,7 @@ def urn_edit(request, id):
             return HttpResponseNotFound("<h2>It's not your URN</h2>")
         if request.method == "POST":
             urn.type = request.POST.get("type")
-            urn.urn = request.POST.get("urn")
+            urn.urn = request.POST.get("urn")[3:].replace(':', '3A', 1).replace(':', '%3A')
             urn.save()
             return HttpResponseRedirect("/urn_index/")
         else:
@@ -276,17 +276,13 @@ def volumes(request):
     """
     flag = False
     project = ActiveLink.objects.filter(userId=request.user.id).last()
-
+    request_url = 'http://4d-model.acceleration.ru:8000/acc/get_spec/{0}/project/{1}/model/{2}'
     if request.session['wbs'] != 0:
-        res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
-                           request.session['specs'] + '/project/' + project.projectId +
-                           '/model/' + request.session['model'])
+        res = requests.get(request_url.format(request.session['specs'], project.projectId, request.session['model']))
         print(res.request.url)
     else:
         for wbs in Wbs.objects.all():
-            res = requests.get('http://4d-model.acceleration.ru:8000/acc/get_spec/' +
-                               wbs.specs[2:-2] + '/project/' + project.projectId +
-                               '/model/' + request.session['model'])
+            res = requests.get(request_url.format(wbs.specs[2:-2], project.projectId, request.session['model']))
             res = res.json()
             res = json.loads(res)
 
@@ -298,7 +294,6 @@ def volumes(request):
 
         res = data
 
-    print(res)
     if flag:
         data['data'] = sorted(data['data'], key=lambda x: x['wbs1'])
         myJson = data
@@ -552,7 +547,7 @@ def schedule(request):
               duration=10).save()
         for wbs2 in result[wbs1].keys():
             wbs2_str = str(wbs2)
-            Task2(id=wbs1_str+wbs2_str, text=wbs2,
+            Task2(id=wbs1_str + wbs2_str, text=wbs2,
                   # min(start_date of levels)
                   start_date=datetime.today(),
                   # duration = max([distances[din] for din in result[wbs1]])
@@ -561,17 +556,17 @@ def schedule(request):
             for wbs3 in result[wbs1][wbs2]:
                 wbs3_str = str(dins[wbs3])
                 if wbs3 not in distances:
-                    Task2(id=wbs1_str+wbs2_str+wbs3_str, text=wbs3_str + names[wbs3],
+                    Task2(id=wbs1_str + wbs2_str + wbs3_str, text=names[wbs3] + wbs3_str,
                           # min(start_date of levels)
                           start_date=datetime.today(),
                           # duration = max([distances[din] for din in result[wbs1]])
-                          duration=1, parent=wbs1_str+wbs2_str).save()
+                          duration=1, parent=wbs1_str + wbs2_str).save()
                 else:
-                    Task2(id=wbs1_str+wbs2+wbs3_str, text=wbs3_str + names[wbs3],
+                    Task2(id=wbs1_str + wbs2 + wbs3_str, text=names[wbs3] + wbs3_str,
                           # min(start_date of levels)
                           start_date=datetime.today() + timedelta(distances[wbs3]),
                           # duration = max([distances[din] for din in result[wbs1]])
-                          duration=1, parent=wbs1_str+wbs2_str).save()
+                          duration=1, parent=wbs1_str + wbs2_str).save()
 
     session.close()
     return render(request, 'myapp/new_gantt.html')
