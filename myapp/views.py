@@ -555,16 +555,16 @@ def schedule(request):
                   parent=wbs1_str).save()
             for wbs3 in result[wbs1][wbs2]:
                 wbs3_str = str(dins[wbs3])
-                if wbs3 not in distances:
-                    Task2(id=wbs1_str + wbs2_str + wbs3_str, text=names[wbs3] + wbs3_str,
+                if wbs3_str not in distances:
+                    Task2(id=wbs1_str + wbs2_str + wbs3_str, text=names[wbs3] + " DIN(" + wbs3_str + ")",
                           # min(start_date of levels)
                           start_date=datetime.today(),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1_str + wbs2_str).save()
                 else:
-                    Task2(id=wbs1_str + wbs2 + wbs3_str, text=names[wbs3] + wbs3_str,
+                    Task2(id=wbs1_str + wbs2 + wbs3_str, text=names[wbs3] + " DIN(" + wbs3_str + ")",
                           # min(start_date of levels)
-                          start_date=datetime.today() + timedelta(distances[wbs3]),
+                          start_date=datetime.today() + timedelta(distances[wbs3_str]),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1_str + wbs2_str).save()
 

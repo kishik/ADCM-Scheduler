@@ -113,9 +113,16 @@ gantt.ext.zoom.init(zoomConfig);
             gantt.collapse();
         }
     }, false);
-
+    gantt.config.readonly = true;
     gantt.config.date_format = "%Y-%m-%d %H:%i";
     gantt.i18n.setLocale("ru");
+    gantt.config.grid_width = 600;
+    gantt.config.columns = [
+    {name:"text",       label:"Task name",  width:"*", tree:true },
+    {name:"start_date", label:"Start time", align:"center" },
+    {name:"duration",   label:"Duration",   align:"center" },
+    {name:"add",        label:"",           width:44 }
+];
     gantt.init("gantt_here");
     gantt.load("/data/", "json");
     let dp = new gantt.dataProcessor("/data/");
