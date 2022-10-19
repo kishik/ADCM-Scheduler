@@ -1,0 +1,11 @@
+{% extends "myapp/beta_base.html" %}
+{% load crispy_forms_filters %}
+{% load static %}
+{% block content %}
+{% load crispy_forms_tags %}
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <input type="submit" value="Обновить">
+</form>
+{% endblock %}

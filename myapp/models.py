@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 
 class URN(models.Model):
@@ -30,6 +31,9 @@ class Wbs(models.Model):
     specs = models.CharField(max_length=200)
     userId = models.IntegerField()
     isActive = models.BooleanField()
+
+    def get_absolute_url(self):  # Тут мы создали новый метод
+        return reverse('wbs_edit', args=[str(self.id)])
 
 
 class Task(models.Model):

@@ -7,6 +7,7 @@ import simplejson
 from django.http import HttpResponseRedirect, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import UpdateView
 from neo4j import GraphDatabase
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import AllowAny
@@ -415,6 +416,45 @@ def sdr(request, id):
 
     except URN.DoesNotExist:
         return HttpResponseNotFound("<h2>WBS not found</h2>")
+
+
+class WbsUpdateView(UpdateView):
+    model = Wbs
+    fields = ['wbs_code', 'docsdiv', 'wbs1', 'wbs2', 'wbs3', 'specs']
+    template_name = 'myapp/wbs_edit.html'
+
+    # def form_valid(self, form):
+    #     form.instance.userId = self.request.user
+    #     form.instance.isActive = True
+    #     return super().form_valid(form)
+
+
+# def sdr_edit(request, id):
+#     """
+#     Изменение SDR
+#     :param request:
+#     :param id:
+#     :return:
+#     """
+#     if not request.user.is_authenticated:
+#         return redirect('/login/')
+#     try:
+#         sdr = Wbs.objects.get(id=id)
+#         if request.method == "POST":
+#             sdr.wbs_code = request.POST.get("wbs_code")
+#             sdr.docsdiv = request.POST.get("docsdiv")
+#             sdr.wbs1 = request.POST.get("wbs1")
+#             sdr.wbs2 = request.POST.get("wbs2")
+#             sdr.wbs3 = request.POST.get("wbs3")
+#             sdr.specs = request.POST.get("specs")
+#             sdr.isActive = request.POST.get("isActive")
+#             sdr.userId = request.POST.get("userId")
+#             sdr.save()
+#             return HttpResponseRedirect("/urn_index/")
+#         else:
+#             return render(request, "myapp/sdr_edit.html", {"sdr": sdr})
+#     except Wbs.DoesNotExist:
+#         return HttpResponseNotFound("<h2>SDR not found</h2>")
 
 
 def sdr_delete(request, id):

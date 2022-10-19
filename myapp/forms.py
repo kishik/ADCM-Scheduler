@@ -6,6 +6,16 @@ from crispy_forms.layout import Submit
 from myapp.models import Rule, Wbs
 
 
+class SdrForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper(self)
+
+    class Meta:
+        model = Wbs
+        fields = ['wbs_code', 'docsdiv', 'wbs1', 'wbs2', 'wbs3', 'specs']
+
+
 class URNForm(forms.Form):
     id = forms.IntegerField()
     type = forms.CharField()

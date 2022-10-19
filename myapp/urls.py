@@ -19,6 +19,8 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from myapp import views
 from django.conf import settings
 from django.conf.urls.static import static
+
+from myapp.views import WbsUpdateView
 from registration import views as v
 
 urlpatterns = [
@@ -39,7 +41,7 @@ urlpatterns = [
     # path('file_upload/', views.file_upload),
     path('register/', v.register, name="register"),
     path('', include("django.contrib.auth.urls")),
-
+    path('sdr/<int:pk>/', WbsUpdateView.as_view(), name='wbs_edit'),
     path('urn_index/', views.urn_index),
     path('urn_create/', views.urn_create),
     path('urn_edit/<int:id>/', views.urn_edit),
