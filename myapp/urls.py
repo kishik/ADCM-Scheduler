@@ -55,7 +55,7 @@ urlpatterns = [
     path('save_model/', views.saveModel),
     path('family_delete/<int:id>/', views.rule_delete),
     path('sdr_delete/<int:id>/', views.sdr_delete),
-    path('sdr/<int:id>/', views.sdr),
+    path('sdr_choose/<int:id>/', views.sdr),
     path('new_gantt/', views.new_gantt),
     path('hist_gantt/', views.hist_gantt),
     re_path(r'^data/task/(?P<pk>[0-9]+)$', views.task_update),
