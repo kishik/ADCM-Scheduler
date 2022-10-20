@@ -13,6 +13,7 @@
 
 <br>
 <div class="d-flex flex-row">
+
  <div class="p-2">
     <p>
   <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
@@ -23,6 +24,14 @@
 <div class="d-flex justify-content-center" id="load">
 </div>
 
+    <script>$(function(){
+$('a').click(function(){
+     $('<div class="spinner-border" role="status"></div>')
+         .prependTo("#load");
+  });
+});</script>
+
+    </div>
 <div class="collapse" id="collapseExample">
 <form action="" method="post">
     {% csrf_token %}

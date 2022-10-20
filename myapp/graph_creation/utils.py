@@ -65,6 +65,6 @@ def add_typed_edge(tx: Transaction, pred_din: str, flw_din: str, rel_type: str) 
         WHERE n.DIN = $din1 AND n.type = $type1
         MATCH (m:Work)
         WHERE m.DIN = $din2 AND m.type = $type2
-        MERGE (n)-[r:FOLLOWS {{weight: coalesce(r.weight, 0) + 1}}]->(m);
+        MERGE (n)-[r:FOLLOWS {{weight: 1}}]->(m);
         '''
     tx.run(Q_CREATE_REL, din1=pred_din, din2=flw_din, type1=pred_type, type2=flw_type)

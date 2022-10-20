@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   web:
-    image: kishikmaxim/adcm:v0.4.3
+    image: kishikmaxim/adcm:v0.4.4
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code
@@ -10,14 +10,35 @@ services:
       - "8000:8000"
 
 
-  neo4j_historical:
-    image: neo4j:3.5-community
+  neo4j_user:
+    image: neo4j:community
 
 
     restart: unless-stopped
     ports:
       - "7474:7474"
       - "7687:7687"
+    volumes:
+      - ./conf:/conf_user
+      - ./data:/data_user
+      - ./import:/import_user
+      - ./logs:/logs_user
+      - ./plugins:/plugins_user
+    environment:
+      # Raise memory limits
+#      - NEO4J_dbms_memory_pagecache_size=1G
+#      - NEO4J_dbms.memory.heap.initial_size=1G
+#      - NEO4J_dbms_memory_heap_max__size=1G
+      - NEO4J_AUTH=neo4j/231099
+
+  neo4j_historical:
+    image: neo4j:community
+
+
+    restart: unless-stopped
+    ports:
+      - "7475:7474"
+      - "7688:7687"
     volumes:
       - ./conf:/conf_hist
       - ./data:/data_hist
@@ -26,7 +47,7 @@ services:
       - ./plugins:/plugins_hist
     environment:
       # Raise memory limits
-      #      - NEO4J_dbms_memory_pagecache_size=1G
-      #      - NEO4J_dbms.memory.heap.initial_size=1G
-      #      - NEO4J_dbms_memory_heap_max__size=1G
+#      - NEO4J_dbms_memory_pagecache_size=1G
+#      - NEO4J_dbms.memory.heap.initial_size=1G
+#      - NEO4J_dbms_memory_heap_max__size=1G
       - NEO4J_AUTH=neo4j/231099

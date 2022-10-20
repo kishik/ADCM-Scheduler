@@ -343,7 +343,10 @@ def volumes(request):
     user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
     # тут ресторю в свой граф из эксель
     time_now = datetime.now()
-    user_graph.restore_graph()
+    try:
+        user_graph.restore_graph()
+    except Exception:
+        print("passed")
     print(datetime.now() - time_now)
     # заменить функцией copy
     # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
