@@ -62,6 +62,11 @@ def new_graph(request):
     """
     if not request.user.is_authenticated:
         return redirect('/login/')
+    # user_graph = neo4jexplorer.Neo4jExplorer(uri=NEW_URL)
+    # try:
+    #     user_graph.restore_graph()
+    # except Exception:
+    #     print("passed")
     context = {'form': UploadFileForm(), 'url': NEW_URL, 'user_graph': USER, 'pass': PASS, 'link': AddLink(),
                'node': AddNode()}
     return render(request, 'myapp/test.html', context)
