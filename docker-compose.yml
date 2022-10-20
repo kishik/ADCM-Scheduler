@@ -9,22 +9,24 @@ services:
     ports:
       - "8000:8000"
 
-  neo4j_user:
-    image: neo4j:latest
+
+  neo4j_historical:
+    image: neo4j:3.5-community
+
+
     restart: unless-stopped
     ports:
       - "7474:7474"
       - "7687:7687"
     volumes:
-      - ./conf:/conf
-      - ./data:/data
-      - ./import:/import
-      - ./logs:/logs
-      - ./plugins:/plugins
-
+      - ./conf:/conf_hist
+      - ./data:/data_hist
+      - ./import:/import_hist
+      - ./logs:/logs_hist
+      - ./plugins:/plugins_hist
     environment:
       # Raise memory limits
-      - NEO4J_dbms_memory_pagecache_size=3G
-      - NEO4J_dbms.memory.heap.initial_size=1G
-      - NEO4J_dbms_memory_heap_max__size=3G
+      #      - NEO4J_dbms_memory_pagecache_size=1G
+      #      - NEO4J_dbms.memory.heap.initial_size=1G
+      #      - NEO4J_dbms_memory_heap_max__size=1G
       - NEO4J_AUTH=neo4j/231099
