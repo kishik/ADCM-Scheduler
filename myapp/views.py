@@ -342,15 +342,18 @@ def volumes(request):
     # add async
     user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
     # тут ресторю в свой граф из эксель
+    time_now = datetime.now()
     user_graph.restore_graph()
+    print(datetime.now() - time_now)
     # заменить функцией copy
     # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
     #                       authentication(url=URL, user=USER, password=PASS))
     #
     global graph_data
     graph_data = myJson['data']
-
+    time_now = datetime.now()
     user_graph.create_new_graph_algo(dins)
+    print(datetime.now() - time_now)
     print(myJson['data'])
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
@@ -579,6 +582,8 @@ def schedule(request):
     data_collect.saving_typed_edges_with_wbs(session, result)
 
     for wbs1 in result.keys():
+        if not wbs1:
+            continue
         wbs1_str = str(wbs1)
         Task2(id=wbs1_str, text=wbs1,
               # min(start_date of levels)
@@ -586,6 +591,8 @@ def schedule(request):
               # duration = max([distances[din] for din in result[wbs1]])
               duration=10).save()
         for wbs2 in result[wbs1].keys():
+            if not wbs2:
+                continue
             wbs2_str = str(wbs2)
             Task2(id=wbs1_str + wbs2_str, text=wbs2,
                   # min(start_date of levels)
@@ -594,6 +601,8 @@ def schedule(request):
                   duration=5,
                   parent=wbs1_str).save()
             for wbs3 in result[wbs1][wbs2]:
+                if not wbs3:
+                    continue
                 wbs3_str = str(dins[wbs3])
                 if wbs3_str not in distances:
                     Task2(id=wbs1_str + wbs2_str + wbs3_str, text=names[wbs3] + " DIN(" + wbs3_str + ")",

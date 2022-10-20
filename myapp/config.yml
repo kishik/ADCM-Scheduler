@@ -1,5 +1,5 @@
 neo4j:
-  url: 'neo4j+s://178ff2cf.databases.neo4j.io:7687'
+  url: 'bolt://127.0.0.1:7687'
   user: 'neo4j'
   password: '231099'
   file: 'data/2021-11-19 Roder связи.xlsx'
