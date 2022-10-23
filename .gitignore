@@ -1,4 +1,5 @@
-.idea\
+\.idea
+\data
+\logs
 *.xml
 *.iml
-\data
