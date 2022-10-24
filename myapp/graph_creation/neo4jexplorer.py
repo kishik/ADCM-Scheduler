@@ -105,11 +105,11 @@ class Neo4jExplorer:
         self.driver.session().run(Q_DELETE)
 
     def restore_graph(self):
-        node_df = pd.read_excel('myapp/data/DIN-Операции.xlsx',
+        node_df = pd.read_excel('myapp/data/DIN-1.xlsx',
                                 dtype=str,
                                 usecols=[0, 3],
                                 skiprows=[1])
-        edge_df = pd.read_excel('myapp/data/DIN-Зависимости операции.xlsx',
+        edge_df = pd.read_excel('myapp/data/DIN-2.xlsx',
                                 dtype=str,
                                 usecols=[0, 1, 2],
                                 skiprows=[1])

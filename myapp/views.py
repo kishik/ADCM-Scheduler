@@ -69,7 +69,7 @@ def new_graph(request):
     #     print("passed")
     context = {'form': UploadFileForm(), 'url': NEW_URL, 'user_graph': USER, 'pass': PASS, 'link': AddLink(),
                'node': AddNode()}
-    return render(request, 'myapp/test.html', context)
+    return render(request, 'myapp/hist_graph.html', context)
 
 
 # def file_upload(request):
@@ -568,19 +568,24 @@ def schedule(request):
         return redirect('/login/')
 
     session = data_collect.authentication(url=URL, user=USER, password=PASS)
-    distances = data_collect.calculateDistance(session=session)
+    # distances = data_collect.calculateDistance(session=session)
+    distances = ()
     dins = []
     unique_wbs1 = set()
     global graph_data
     result = {}
+    result_din = {}
     names = {}
     for el in graph_data:
         if el['wbs1'] not in result:
             result[el['wbs1']] = {}
+            result_din[el['wbs1']] = {}
         if el['wbs2'] not in result[el['wbs1']]:
             result[el['wbs1']][el['wbs2']] = []
+            result_din[el['wbs1']][el['wbs2']] = []
         if el['wbs3'] not in result[el['wbs1']][el['wbs2']]:
             result[el['wbs1']][el['wbs2']].append(el['wbs3'])
+            result_din[el['wbs1']][el['wbs2']].append(el['wbs3_id'])
         dins.append(el['wbs3_id'])
         names[el['wbs3']] = el['name']
 
@@ -608,6 +613,8 @@ def schedule(request):
                   # duration = max([distances[din] for din in result[wbs1]])
                   duration=5,
                   parent=wbs1_str).save()
+            # здесь нужно считать дистанцию
+            distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
             for wbs3 in result[wbs1][wbs2]:
                 if not wbs3:
                     continue

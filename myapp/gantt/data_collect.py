@@ -137,7 +137,7 @@ def childrenByDin(din, session):
     return children
 
 
-def prohod(start_din, distances, session, cur_level=0):
+def prohod(start_din, distances, session, dins, cur_level=0):
     """
     Проходит рекурсивный путь по своим детям, указывая максимальную глубину рекурсии,
     сравнивая текущую и полученную сейчас
@@ -146,22 +146,26 @@ def prohod(start_din, distances, session, cur_level=0):
     :param session:
     :param cur_level:
     """
-    if start_din not in distances:
-        distances[start_din] = 0
+    if start_din not in dins:
+        for element in childrenByDin(start_din, session):
+            prohod(element, distances, session, dins, cur_level)
+    else:
+        if start_din not in distances:
+            distances[start_din] = 0
 
-    distances[start_din] = max(cur_level, distances[start_din])
-    for element in childrenByDin(start_din, session):
-        if start_din == element:
-            continue
-        if get_edge_type(session, start_din, element) == "FS":
-            prohod(element, distances, session, cur_level + 1)
-            continue
-        elif get_edge_type(session, start_din, element) == "SS":
-            # если связь типа старт-старт то prohod(element, distances, session, cur_level)
-            prohod(element, distances, session, cur_level)
+        distances[start_din] = max(cur_level, distances[start_din])
+        for element in childrenByDin(start_din, session):
+            if start_din == element:
+                continue
+            if get_edge_type(session, start_din, element) == "FS":
+                prohod(element, distances, session, dins, cur_level + 1)
+                continue
+            elif get_edge_type(session, start_din, element) == "SS":
+                # если связь типа старт-старт то prohod(element, distances, session, cur_level)
+                prohod(element, distances, session, dins, cur_level)
 
 
-def calculateDistance(session):
+def calculateDistance(session, dins):
     """
     Запускает проход по всем нодам, не имеющим родителей
     :return: dict нодов с их глубиной в графе
@@ -170,7 +174,7 @@ def calculateDistance(session):
     for node in allNodes(session):
         if parentsByDin(node, session):
             continue
-        prohod(start_din=node, distances=distances, session=session, cur_level=0)
+        prohod(start_din=node, distances=distances, session=session, cur_level=0, dins=dins)
     return distances
 
 
