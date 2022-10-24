@@ -617,7 +617,11 @@ def schedule(request):
             distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
             for wbs3 in result[wbs1][wbs2]:
                 if not wbs3:
-                    continue
+                    try:
+                        if wbs3 != 0:
+                            pass
+                    except:
+                        continue
                 wbs3_str = str(dins[wbs3])
                 if wbs3_str not in distances:
                     Task2(id=wbs1_str + wbs2_str + wbs3_str, text=names[wbs3] + " DIN(" + wbs3_str + ")",
