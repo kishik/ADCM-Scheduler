@@ -1,5 +1,6 @@
 from datetime import timedelta, datetime
 
+import numpy as np
 import pandas as pd
 from neo4j import GraphDatabase, Session
 
@@ -42,13 +43,10 @@ def get_edge_type(session: Session, pred_din: str, flw_din: str) -> str:
     if pred_type == 'start':
         if flw_type == 'start':
             return 'SS'
-        else:
-            return 'SF'
-    else:
-        if flw_type == 'start':
-            return 'FS'
-        else:
-            return 'FF'
+        return 'SF'
+    if flw_type == 'start':
+        return 'FS'
+    return 'FF'
 
 
 def elements(all_nodes, distances, parents, names):
@@ -93,9 +91,9 @@ def allNodes(session):
     :return: список нодов
     """
 
-    q_data_obtain = 'MATCH (n) RETURN n'
+    q_data_obtain = 'MATCH (n) RETURN n.DIN AS din'
     result = session.run(q_data_obtain).data()
-    return [result[i]['n']['DIN'] for i in range(len(result))]
+    return np.array([item['din'] for item in result])
 
 
 def parentsByDin(din, session):
@@ -103,19 +101,19 @@ def parentsByDin(din, session):
     Возвращает всех родителей элемента din
     :param din:
     :param session:
-    :return:
+    :return: np.array массив DINов родителей элемента
     """
+
     q_data_obtain = '''
     MATCH (c)-[r]->(a)
     WHERE a.DIN = $din
-    RETURN c
+    RETURN c.DIN AS din
     '''
     result = session.run(q_data_obtain, din=din).data()
-    dins = [result[i]['c']['DIN'] for i in range(len(result))]
-    if din in dins:
-        dins.remove(din)
-    print(dins)
-    return dins
+    dins_arr = np.array([item['din'] for item in result])
+    if din in dins_arr:
+        dins_arr = dins_arr[dins_arr != din]
+    return dins_arr
 
 
 def childrenByDin(din, session):
@@ -128,13 +126,13 @@ def childrenByDin(din, session):
     q_data_obtain = '''
     MATCH (a)-[r]->(c)
     WHERE a.DIN = $din
-    RETURN c
+    RETURN c.DIN AS din
     '''
     result = session.run(q_data_obtain, din=din).data()
-    children = [result[i]['c']['DIN'] for i in range(len(result))]
-    if din in children:
-        children.remove(din)
-    return children
+    children_arr = np.array([item['din'] for item in result])
+    if din in children_arr:
+        children_arr = children_arr[children_arr != din]
+    return children_arr
 
 
 def prohod(start_din, distances, session, cur_level=0):
@@ -142,7 +140,7 @@ def prohod(start_din, distances, session, cur_level=0):
     Проходит рекурсивный путь по своим детям, указывая максимальную глубину рекурсии,
     сравнивая текущую и полученную сейчас
     :param start_din:
-    :param distances:
+    :param distances: dict din to level
     :param session:
     :param cur_level:
     """
@@ -156,7 +154,7 @@ def prohod(start_din, distances, session, cur_level=0):
         if get_edge_type(session, start_din, element) == "FS":
             prohod(element, distances, session, cur_level + 1)
             continue
-        elif get_edge_type(session, start_din, element) == "SS":
+        if get_edge_type(session, start_din, element) == "SS":
             # если связь типа старт-старт то prohod(element, distances, session, cur_level)
             prohod(element, distances, session, cur_level)
 
@@ -168,7 +166,7 @@ def calculateDistance(session):
     """
     distances = {}
     for node in allNodes(session):
-        if parentsByDin(node, session):
+        if parentsByDin(node, session).size > 0:
             continue
         prohod(start_din=node, distances=distances, session=session, cur_level=0)
     return distances
@@ -180,31 +178,32 @@ def children():
     :return: list с din
     """
     session = authentication()
-
-    q_data_obtain = '''
-    MATCH (top) // though you should use labels if possible)
-    WHERE NOT ()-[]->(top)
-    RETURN top
-    '''
-    result = session.run(q_data_obtain).data()
-    elements = [result[i]['top']['DIN'] for i in range(len(result))]
+    # UPD 24.10 По-моему, все  что закоменчено ниже не используется
+    #
+    # q_data_obtain = '''
+    # MATCH (top) // though you should use labels if possible)
+    # WHERE NOT ()-[]->(top)
+    # RETURN top
+    # '''
+    # result = session.run(q_data_obtain).data()
+    # elements = [result[i]['top']['DIN'] for i in range(len(result))]
     nodes = {}
 
-    q_data_obtain = f'''
-                        MATCH (a)-[r]->(c)
-                        RETURN a
-                        '''
+    q_data_obtain = '''
+    MATCH (a)-[r]->(c)
+    RETURN a.DIN AS din
+    '''
     result = session.run(q_data_obtain).data()
-    children = [result[i]['a']['DIN'] for i in range(len(result))]
+    children = np.array([item['din'] for item in result])
 
     for element in children:
         q_data_obtain = '''
         MATCH (a)-[r]->(c)
         WHERE a.DIN = $din
-        RETURN c
+        RETURN c.DIN AS din
         '''
         result = session.run(q_data_obtain, din=element).data()
-        nodes[element] = [result[i]['c']['DIN'] for i in range(len(result))]
+        nodes[element] = np.array([item['din'] for item in result])
 
     return nodes
 
@@ -217,22 +216,22 @@ def parents_for_nodes(session):
 
     nodes = {}
 
-    q_data_obtain = f'''
-                    MATCH (a)-[r]->(c)
-                    RETURN c
-                    '''
+    q_data_obtain = '''
+    MATCH (a)-[r]->(c)
+    RETURN c.DIN AS din
+    '''
     result = session.run(q_data_obtain).data()
-    children = [result[i]['c']['DIN'] for i in range(len(result))]
+    children = np.array([item['din'] for item in result])
 
     for element in children:
         q_data_obtain = '''
         MATCH (a)-[r]->(c)
         WHERE c.DIN = $din
-        RETURN a
+        RETURN a.DIN AS din
         '''
         result = session.run(q_data_obtain, din=element).data()
 
-        nodes[element] = [result[i]['a']['DIN'] for i in range(len(result))]
+        nodes[element] = np.array([item['din'] for item in result])
 
     return nodes
 
