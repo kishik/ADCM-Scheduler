@@ -545,11 +545,11 @@ def hist_gantt(request):
     session = data_collect.authentication(url=NEW_URL, user=USER, password=PASS)
     Task2.objects.all().delete()
     Link.objects.all().delete()
-    distances = data_collect.calculateDistance(session=session)
+    distances = data_collect.calculate_hist_distance(session=session)
     data_collect.saving_typed_edges(session)
     duration = 1
     data = data_collect.allNodes(session)
-    # data = sorted(data, key=lambda x: distances[x])
+    data = sorted(data, key=lambda x: distances[x])
     for node in data:
         Task2(id=node, text=data_collect.get_name_by_din(session, node),
               start_date=datetime.today() + timedelta(days=distances[node]),
