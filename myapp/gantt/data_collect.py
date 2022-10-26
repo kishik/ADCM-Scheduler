@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 import pandas as pd
 from neo4j import GraphDatabase, Session
 
-import myapp.yml as yml
+import myapp.graph_creation.yml as yml
 from myapp.models import Link
 
 cfg: dict = yml.get_cfg("neo4j")

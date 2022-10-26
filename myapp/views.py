@@ -3,22 +3,20 @@ import re
 from datetime import timedelta, datetime
 
 import requests
-import simplejson
 from django.http import HttpResponseRedirect, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import UpdateView
-from neo4j import GraphDatabase
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import AllowAny
 
 from myapp.serializers import TaskSerializer
 from myapp.serializers import LinkSerializer
-import myapp.yml as yml
+import myapp.graph_creation.yml as yml
 from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
-from myapp.models import URN, ActiveLink, Rule, Wbs, Task, Link, Task2
+from myapp.models import URN, ActiveLink, Rule, Wbs, Link, Task2
 from .gantt import data_collect
-from .graph_creation import add, neo4jexplorer, graph_copy
+from .graph_creation import add, neo4jexplorer
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
@@ -350,8 +348,8 @@ def volumes(request):
     time_now = datetime.now()
     try:
         user_graph.restore_graph()
-    except Exception:
-        print("passed")
+    except Exception as e:
+        print('views.py 352', e.args)
     print(datetime.now() - time_now)
     # заменить функцией copy
     # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
