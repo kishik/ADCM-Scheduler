@@ -118,7 +118,7 @@ def urn_create(request):
     if request.method == "POST":
         urn = URN()
         urn.type = request.POST.get("type")
-        urn.urn = request.POST.get("urn")[3:].replace(':', '3A', 1).replace(':', '%3A')
+        urn.urn = request.POST.get("urn")
         urn.isActive = True
         urn.userId = request.user.id
         urn.save()
@@ -140,7 +140,7 @@ def urn_edit(request, id):
             return HttpResponseNotFound("<h2>It's not your URN</h2>")
         if request.method == "POST":
             urn.type = request.POST.get("type")
-            urn.urn = request.POST.get("urn")[3:].replace(':', '3A', 1).replace(':', '%3A')
+            urn.urn = request.POST.get("urn")
             urn.save()
             return HttpResponseRedirect("/urn_index/")
         else:
@@ -166,12 +166,6 @@ def urn_delete(request, id):
         return HttpResponseRedirect("/urn_index/")
     except URN.DoesNotExist:
         return HttpResponseNotFound("<h2>URN not found</h2>")
-
-
-def easter(request):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-    return render(request, 'myapp/WebGL Builds/index.html')
 
 
 @csrf_exempt
@@ -215,7 +209,7 @@ def model(request, id):
             return HttpResponseNotFound("<h2>It's not your URN</h2>")
         request.session['urn'] = id
         request.session['model_type'] = urn.type
-        request.session['model'] = 'urn%' + urn.urn
+        request.session['model'] = urn.urn
         return redirect('/families/')
 
     except URN.DoesNotExist:
@@ -542,7 +536,11 @@ def hist_gantt(request):
         """
     if not request.user.is_authenticated:
         return redirect('/login/')
-    session = data_collect.authentication(url=NEW_URL, user=USER, password=PASS)
+    session = data_collect.authentication(url=LAST_URL, user=USER, password=PASS)
+    if 'hist_restored' not in request.session:
+        user_graph = neo4jexplorer.Neo4jExplorer(uri=LAST_URL)
+        user_graph.restore_graph()
+        request.session['hist_restored'] = True
     Task2.objects.all().delete()
     Link.objects.all().delete()
     distances = data_collect.calculate_hist_distance(session=session)

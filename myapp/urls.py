@@ -46,7 +46,6 @@ urlpatterns = [
     path('urn_create/', views.urn_create),
     path('urn_edit/<int:id>/', views.urn_edit),
     path('urn_delete/<int:id>/', views.urn_delete),
-    path('easter/', views.easter),
     path('upload/', views.upload, name="upload"),
     path('add_link/', views.add_link, name="add_link"),
     path('add_node/', views.add_node, name="add_node"),
