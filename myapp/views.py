@@ -280,8 +280,15 @@ def volumes(request):
         print(res.request.url)
     else:
         for wbs in Wbs.objects.all():
-            res = requests.get(request_url.format(wbs.specs[2:-2], project.projectId, request.session['model']))
-            res = res.json()
+            print(URN.objects.get(
+                type=wbs.docsdiv).urn)
+            res = requests.get(request_url.format(wbs.specs[2:-2], project.projectId, URN.objects.get(
+                type=wbs.docsdiv).urn))
+            print(res.request.url)
+            try:
+                res = res.json()
+            except:
+                continue
             res = json.loads(res)
 
             if not flag:
@@ -355,6 +362,7 @@ def volumes(request):
     user_graph.create_new_graph_algo(dins)
     print(datetime.now() - time_now)
     print(myJson['data'])
+    myJson['data'] = sorted(myJson['data'], key=lambda x: (x['wbs1'], x['wbs2'], x['wbs3_id']))
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
     })
@@ -580,35 +588,39 @@ def schedule(request):
             result[el['wbs1']][el['wbs2']] = []
             result_din[el['wbs1']][el['wbs2']] = []
         if el['wbs3'] not in result[el['wbs1']][el['wbs2']]:
-            result[el['wbs1']][el['wbs2']].append(el['wbs3'])
+            result[el['wbs1']][el['wbs2']].append(el['wbs3_id']+str(el['wbs3']))
             result_din[el['wbs1']][el['wbs2']].append(el['wbs3_id'])
         dins.append(el['wbs3_id'])
-        names[el['wbs3']] = el['name']
+        names[el['wbs3_id']+str(el['wbs3'])] = el['name']
 
     Task2.objects.all().delete()
     Link.objects.all().delete()
 
     data_collect.saving_typed_edges_with_wbs(session, result)
-
+    created = set()
     for wbs1 in result.keys():
         if not wbs1:
             continue
         wbs1_str = str(wbs1)
-        Task2(id=wbs1_str, text=wbs1,
-              # min(start_date of levels)
-              start_date=datetime.today(),
-              # duration = max([distances[din] for din in result[wbs1]])
-              duration=10).save()
+        if wbs1_str not in created:
+            Task2(id=wbs1_str, text=wbs1,
+                  # min(start_date of levels)
+                  start_date=datetime.today(),
+                  # duration = max([distances[din] for din in result[wbs1]])
+                  duration=10).save()
+            created.add(wbs1_str)
         for wbs2 in result[wbs1].keys():
             if not wbs2:
                 continue
             wbs2_str = str(wbs2)
-            Task2(id=wbs1_str + wbs2_str, text=wbs2,
-                  # min(start_date of levels)
-                  start_date=datetime.today(),
-                  # duration = max([distances[din] for din in result[wbs1]])
-                  duration=5,
-                  parent=wbs1_str).save()
+            if (wbs1_str + wbs2_str) not in created:
+                Task2(id=wbs1_str + wbs2_str, text=wbs2,
+                      # min(start_date of levels)
+                      start_date=datetime.today(),
+                      # duration = max([distances[din] for din in result[wbs1]])
+                      duration=5,
+                      parent=wbs1_str).save()
+                created.add((wbs1_str + wbs2_str))
             # здесь нужно считать дистанцию
             distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
             for wbs3 in result[wbs1][wbs2]:
@@ -618,19 +630,22 @@ def schedule(request):
                             pass
                     except:
                         continue
-                wbs3_str = str(dins[wbs3])
+
+                wbs3_str = wbs3[:3]
                 if wbs3_str not in distances:
-                    Task2(id=wbs1_str + wbs2_str + wbs3_str, text=names[wbs3] + " DIN(" + wbs3_str + ")",
+                    Task2(id=wbs1_str + wbs2_str + wbs3, text=names[wbs3] + " DIN(" + wbs3_str + ")",
                           # min(start_date of levels)
                           start_date=datetime.today(),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1_str + wbs2_str).save()
                 else:
-                    Task2(id=wbs1_str + wbs2 + wbs3_str, text=names[wbs3] + " DIN(" + wbs3_str + ")",
+                    Task2(id=wbs1_str + wbs2 + wbs3, text=names[wbs3] + " DIN(" + wbs3_str + ")",
                           # min(start_date of levels)
                           start_date=datetime.today() + timedelta(distances[wbs3_str]),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1_str + wbs2_str).save()
+                # try:
+                #     Link.objects.filter()
 
     session.close()
     return render(request, 'myapp/new_gantt.html')
