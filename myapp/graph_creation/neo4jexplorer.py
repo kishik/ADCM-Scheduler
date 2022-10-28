@@ -1,7 +1,7 @@
 import pandas as pd
 from neo4j import GraphDatabase
 
-import myapp.yml as yml
+from myapp.graph_creation import yml
 from myapp.graph_creation import utils
 
 
@@ -54,34 +54,31 @@ class Neo4jExplorer:
             session.run(Q_CREATE)
 
     def removing_node(self, din: str):
-        Q_PRED_OBTAIN = '''
-            MATCH (n)-[:FOLLOWS]->(m)
+        Q_PRED_FLW_OBTAIN = '''
+        MATCH (pred)-[:FOLLOWS]->(m)
             WHERE m.DIN = $din
-            RETURN n.DIN AS din, n.type AS type
-            '''
-        Q_FLW_OBTAIN = '''
-            MATCH (n)-[:FOLLOWS]->(m)
+        MATCH (n)-[:FOLLOWS]->(flw)
             WHERE n.DIN = $din
-            RETURN m.DIN AS din, m.type AS type
-            '''
+        RETURN pred.DIN AS pred_din, pred.type AS pred_type, 
+            flw.DIN AS flw_din, flw.type AS flw_type
+        '''
         with self.driver.session() as session:
-            in_df = pd.DataFrame(session.run(Q_PRED_OBTAIN, din=din).data())
-            out_df = pd.DataFrame(session.run(Q_FLW_OBTAIN, din=din).data())
-
-            for _, pred_row in in_df.iterrows():
-                for _, flw_row in out_df.iterrows():
-                    session.run(
-                        '''
-                        MATCH (n)
-                        WHERE n.DIN = $din1 AND n.type = $type1
-                        MATCH (m)
-                        WHERE m.DIN = $din2 AND m.type = $type2
-                        MERGE (n)-[r:FOLLOWS]->(m)
-                        SET r.weight = coalesce(r.weight, 1);
-                        ''',
-                        din1=pred_row.din, type1=pred_row.type,
-                        din2=flw_row.din, type2=flw_row.type,
-                    )
+            result_df = pd.DataFrame(session.run(Q_PRED_FLW_OBTAIN, din=din).data())
+            result_df.apply(
+                lambda row: session.run(
+                    '''
+                    MATCH (n)
+                    WHERE n.DIN = $din1 AND n.type = $type1
+                    MATCH (m)
+                    WHERE m.DIN = $din2 AND m.type = $type2
+                    MERGE (n)-[r:FOLLOWS]->(m)
+                    SET r.weight = coalesce(r.weight, 1);
+                    ''',
+                    din1=row.pred_din, type1=row.pred_type,
+                    din2=row.flw_din, type2=row.flw_type,
+                ),
+                axis=1
+            )
             session.run("MATCH (n) WHERE n.DIN = $din DETACH DELETE n", din=din)
 
     def get_all_dins(self):
@@ -104,7 +101,7 @@ class Neo4jExplorer:
             '''
         self.driver.session().run(Q_DELETE)
 
-    def restore_graph(self):  # from precreated file
+    def restore_graph(self):
         LNK_NODES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvNoXaiLn2YlT_LFi0NUmA-Igumgoi5Puh-gXvBgaOeNoaoFAWwqjt-G6zMUvrhTNcndUmTdP7qpaT/pub?output=csv'
         Q_CREATE_NODES = f'''
         LOAD CSV WITH HEADERS FROM '{LNK_NODES}' AS row

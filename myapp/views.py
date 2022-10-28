@@ -3,22 +3,20 @@ import re
 from datetime import timedelta, datetime
 
 import requests
-import simplejson
 from django.http import HttpResponseRedirect, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import UpdateView
-from neo4j import GraphDatabase
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import AllowAny
 
 from myapp.serializers import TaskSerializer
 from myapp.serializers import LinkSerializer
-import myapp.yml as yml
+import myapp.graph_creation.yml as yml
 from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
-from myapp.models import URN, ActiveLink, Rule, Wbs, Task, Link, Task2
+from myapp.models import URN, ActiveLink, Rule, Wbs, Link, Task2
 from .gantt import data_collect
-from .graph_creation import add, neo4jexplorer, graph_copy
+from .graph_creation import add, neo4jexplorer
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
@@ -118,7 +116,7 @@ def urn_create(request):
     if request.method == "POST":
         urn = URN()
         urn.type = request.POST.get("type")
-        urn.urn = request.POST.get("urn")[3:].replace(':', '3A', 1).replace(':', '%3A')
+        urn.urn = request.POST.get("urn")
         urn.isActive = True
         urn.userId = request.user.id
         urn.save()
@@ -140,7 +138,7 @@ def urn_edit(request, id):
             return HttpResponseNotFound("<h2>It's not your URN</h2>")
         if request.method == "POST":
             urn.type = request.POST.get("type")
-            urn.urn = request.POST.get("urn")[3:].replace(':', '3A', 1).replace(':', '%3A')
+            urn.urn = request.POST.get("urn")
             urn.save()
             return HttpResponseRedirect("/urn_index/")
         else:
@@ -166,12 +164,6 @@ def urn_delete(request, id):
         return HttpResponseRedirect("/urn_index/")
     except URN.DoesNotExist:
         return HttpResponseNotFound("<h2>URN not found</h2>")
-
-
-def easter(request):
-    if not request.user.is_authenticated:
-        return redirect('/login/')
-    return render(request, 'myapp/WebGL Builds/index.html')
 
 
 @csrf_exempt
@@ -215,7 +207,7 @@ def model(request, id):
             return HttpResponseNotFound("<h2>It's not your URN</h2>")
         request.session['urn'] = id
         request.session['model_type'] = urn.type
-        request.session['model'] = 'urn%' + urn.urn
+        request.session['model'] = urn.urn
         return redirect('/families/')
 
     except URN.DoesNotExist:
@@ -288,8 +280,15 @@ def volumes(request):
         print(res.request.url)
     else:
         for wbs in Wbs.objects.all():
-            res = requests.get(request_url.format(wbs.specs[2:-2], project.projectId, request.session['model']))
-            res = res.json()
+            print(URN.objects.get(
+                type=wbs.docsdiv).urn)
+            res = requests.get(request_url.format(wbs.specs[2:-2], project.projectId, URN.objects.get(
+                type=wbs.docsdiv).urn))
+            print(res.request.url)
+            try:
+                res = res.json()
+            except:
+                continue
             res = json.loads(res)
 
             if not flag:
@@ -350,8 +349,8 @@ def volumes(request):
     time_now = datetime.now()
     try:
         user_graph.restore_graph()
-    except Exception:
-        print("passed")
+    except Exception as e:
+        print('views.py 352', e.args)
     print(datetime.now() - time_now)
     # заменить функцией copy
     # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
@@ -363,6 +362,7 @@ def volumes(request):
     user_graph.create_new_graph_algo(dins)
     print(datetime.now() - time_now)
     print(myJson['data'])
+    myJson['data'] = sorted(myJson['data'], key=lambda x: (x['wbs1'], x['wbs2'], x['wbs3_id']))
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
     })
@@ -542,14 +542,18 @@ def hist_gantt(request):
         """
     if not request.user.is_authenticated:
         return redirect('/login/')
-    session = data_collect.authentication(url=NEW_URL, user=USER, password=PASS)
+    session = data_collect.authentication(url=LAST_URL, user=USER, password=PASS)
+    if 'hist_restored' not in request.session:
+        user_graph = neo4jexplorer.Neo4jExplorer(uri=LAST_URL)
+        user_graph.restore_graph()
+        request.session['hist_restored'] = True
     Task2.objects.all().delete()
     Link.objects.all().delete()
-    distances = data_collect.calculateDistance(session=session)
+    distances = data_collect.calculate_hist_distance(session=session)
     data_collect.saving_typed_edges(session)
     duration = 1
     data = data_collect.allNodes(session)
-    # data = sorted(data, key=lambda x: distances[x])
+    data = sorted(data, key=lambda x: distances[x])
     for node in data:
         Task2(id=node, text=data_collect.get_name_by_din(session, node),
               start_date=datetime.today() + timedelta(days=distances[node]),
@@ -584,53 +588,64 @@ def schedule(request):
             result[el['wbs1']][el['wbs2']] = []
             result_din[el['wbs1']][el['wbs2']] = []
         if el['wbs3'] not in result[el['wbs1']][el['wbs2']]:
-            result[el['wbs1']][el['wbs2']].append(el['wbs3'])
+            result[el['wbs1']][el['wbs2']].append(el['wbs3_id']+str(el['wbs3']))
             result_din[el['wbs1']][el['wbs2']].append(el['wbs3_id'])
         dins.append(el['wbs3_id'])
-        names[el['wbs3']] = el['name']
+        names[el['wbs3_id']+str(el['wbs3'])] = el['name']
 
     Task2.objects.all().delete()
     Link.objects.all().delete()
 
     data_collect.saving_typed_edges_with_wbs(session, result)
-
+    created = set()
     for wbs1 in result.keys():
         if not wbs1:
             continue
         wbs1_str = str(wbs1)
-        Task2(id=wbs1_str, text=wbs1,
-              # min(start_date of levels)
-              start_date=datetime.today(),
-              # duration = max([distances[din] for din in result[wbs1]])
-              duration=10).save()
+        if wbs1_str not in created:
+            Task2(id=wbs1_str, text=wbs1,
+                  # min(start_date of levels)
+                  start_date=datetime.today(),
+                  # duration = max([distances[din] for din in result[wbs1]])
+                  duration=10).save()
+            created.add(wbs1_str)
         for wbs2 in result[wbs1].keys():
             if not wbs2:
                 continue
             wbs2_str = str(wbs2)
-            Task2(id=wbs1_str + wbs2_str, text=wbs2,
-                  # min(start_date of levels)
-                  start_date=datetime.today(),
-                  # duration = max([distances[din] for din in result[wbs1]])
-                  duration=5,
-                  parent=wbs1_str).save()
+            if (wbs1_str + wbs2_str) not in created:
+                Task2(id=wbs1_str + wbs2_str, text=wbs2,
+                      # min(start_date of levels)
+                      start_date=datetime.today(),
+                      # duration = max([distances[din] for din in result[wbs1]])
+                      duration=5,
+                      parent=wbs1_str).save()
+                created.add((wbs1_str + wbs2_str))
             # здесь нужно считать дистанцию
             distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
             for wbs3 in result[wbs1][wbs2]:
                 if not wbs3:
-                    continue
-                wbs3_str = str(dins[wbs3])
+                    try:
+                        if wbs3 != 0:
+                            pass
+                    except:
+                        continue
+
+                wbs3_str = wbs3[:3]
                 if wbs3_str not in distances:
-                    Task2(id=wbs1_str + wbs2_str + wbs3_str, text=names[wbs3] + " DIN(" + wbs3_str + ")",
+                    Task2(id=wbs1_str + wbs2_str + wbs3, text=names[wbs3] + " DIN(" + wbs3_str + ")",
                           # min(start_date of levels)
                           start_date=datetime.today(),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1_str + wbs2_str).save()
                 else:
-                    Task2(id=wbs1_str + wbs2 + wbs3_str, text=names[wbs3] + " DIN(" + wbs3_str + ")",
+                    Task2(id=wbs1_str + wbs2 + wbs3, text=names[wbs3] + " DIN(" + wbs3_str + ")",
                           # min(start_date of levels)
                           start_date=datetime.today() + timedelta(distances[wbs3_str]),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1_str + wbs2_str).save()
+                # try:
+                #     Link.objects.filter()
 
     session.close()
     return render(request, 'myapp/new_gantt.html')

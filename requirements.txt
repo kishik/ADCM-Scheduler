@@ -1,11 +1,11 @@
 PyYAML~=6.0
-Django==4.1.1
+Django==4.1.2
 django-crispy-forms~=1.14.0
 requests==2.28.1
 simplejson~=3.17.6
-neo4j==5.0.0
-pandas==1.4.4
-numpy==1.23.3
+neo4j~=5.1
+pandas~=1.5
+numpy==1.23.4
 django-bootstrap4==22.2
-djangorestframework~=3.13.1
+djangorestframework==3.14.0
 openpyxl==3.0.10
