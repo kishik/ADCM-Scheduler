@@ -555,7 +555,7 @@ def hist_gantt(request):
     data = data_collect.allNodes(session)
     data = sorted(data, key=lambda x: distances[x])
     for node in data:
-        Task2(id=node, text=data_collect.get_name_by_din(session, node),
+        Task2(id=node, text=data_collect.get_name_by_din(session, node) + ' DIN-' + str(node),
               start_date=datetime.today() + timedelta(days=distances[node]),
               duration=duration).save()
 

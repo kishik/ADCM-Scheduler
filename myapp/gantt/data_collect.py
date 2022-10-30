@@ -208,7 +208,7 @@ def calculate_hist_distance(session):
     """
     distances = {}
     for node in allNodes(session):
-        if parentsByDin(node, session):
+        if parentsByDin(node, session).size > 0:
             continue
         prohod_hist(start_din=node, distances=distances, session=session, cur_level=0)
     return distances
