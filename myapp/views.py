@@ -277,7 +277,8 @@ def volumes(request):
     project = ActiveLink.objects.filter(userId=request.user.id).last()
     request_url = 'http://4d-model.acceleration.ru:8000/acc/get_spec/{0}/project/{1}/model/{2}'
     if request.session['wbs'] != 0:
-        res = requests.get(request_url.format(request.session['specs'], project.projectId, request.session['model']))
+        res = requests.get(request_url.format(request.session['specs'], project.projectId, URN.objects.get(
+                type=Wbs.objects.get(id=request.session['wbs']).docsdiv).urn))
         print(res.request.url)
     else:
         for wbs in Wbs.objects.all():
