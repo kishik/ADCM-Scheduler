@@ -102,7 +102,8 @@ def urn_index(request):
     if not request.user.is_authenticated:
         return redirect('/login/')
     urns = URN.objects.all()
-    return render(request, "myapp/urn_index.html", {"urns": urns})
+    project = ActiveLink.objects.filter(userId=request.user.id).last().projectId
+    return render(request, "myapp/urn_index.html", {"urns": urns, "project": project})
 
 
 def urn_create(request):
@@ -497,20 +498,21 @@ def rule_create(request):
         return redirect('/login/')
     form = RuleForm()
     families_all = Rule.objects.all()
-    if request.method == 'POST':
-        # create a form instance and populate it with data from the request:
-        form = RuleForm(request.POST)
+    if request.method == "POST":
+        rule = Rule()
+        rule.name = request.POST.get("name")
+        rule.names = request.POST.get("names")
+        rule.fields = request.POST.get("fields")
+        rule.unique_name = request.POST.get("unique_name")
+        rule.filters = request.POST.get("filters")
+        rule.group_by = request.POST.get("group_by")
+        rule.sum_by = request.POST.get("sum_by")
+        rule.operations = request.POST.get("operations")
+        rule.isActive = True
+        rule.userId = request.user.id
+        rule.save()
 
-        # check whether it's valid:
-        if form.is_valid():
-            rule = Rule()
-            rule.name = form["name"].data
-            rule.rule = form["rule"].data
-            rule.userId = request.user.id
-            rule.isActive = True
-            rule.save()
-            # redirect to a new URL:
-            return HttpResponseRedirect('/families/')
+        return HttpResponseRedirect('/families/')
 
     return render(request, "myapp/rule.html", {"form": form, "families": families_all})
 
@@ -588,10 +590,10 @@ def schedule(request):
             result[el['wbs1']][el['wbs2']] = []
             result_din[el['wbs1']][el['wbs2']] = []
         if el['wbs3'] not in result[el['wbs1']][el['wbs2']]:
-            result[el['wbs1']][el['wbs2']].append(el['wbs3_id']+str(el['wbs3']))
+            result[el['wbs1']][el['wbs2']].append(el['wbs3_id'] + str(el['wbs3']))
             result_din[el['wbs1']][el['wbs2']].append(el['wbs3_id'])
         dins.append(el['wbs3_id'])
-        names[el['wbs3_id']+str(el['wbs3'])] = el['name']
+        names[el['wbs3_id'] + str(el['wbs3'])] = el['name']
 
     Task2.objects.all().delete()
     Link.objects.all().delete()

@@ -16,7 +16,7 @@
 <form action="" method="post">
     {% csrf_token %}
     <table>
-    {{ form }}
+    {{ form|crispy }}
     </table>
     <input type="submit" value="Submit" />
     </form>
@@ -29,14 +29,13 @@
     <thead>
         <tr>
             <th scope="col" class="col-4">Name</th>
-            <th scope="col">Rule</th>
+
         </tr>
     </thead>
         {% for family in families %}
             {% if user.id == family.userId and family.isActive %}
-            <tr><td class="">{{ family.name }}</td><td class="">{{ family.rule }}</td></tr>
-                <tr>
-                    <td><a href="/family_delete/{{family.id}}">Удалить</a></td></tr>
+            <tr><td class="">{{ family.name }}</td></tr>
+
             {% endif %}
         {% endfor %}
     </table>

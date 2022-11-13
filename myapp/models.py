@@ -10,8 +10,14 @@ class URN(models.Model):
 
 
 class Rule(models.Model):
-    name = models.CharField(max_length=30)
-    rule = models.CharField(max_length=9999)
+    name = models.CharField(max_length=99, blank=True)
+    names = models.CharField(max_length=999, blank=True)
+    fields = models.CharField(max_length=999, blank=True)
+    unique_name = models.CharField(max_length=100, blank=True)
+    filters = models.CharField(max_length=999, blank=True)
+    group_by = models.CharField(max_length=999, blank=True)
+    sum_by = models.CharField(max_length=999, blank=True)
+    operations = models.CharField(max_length=9999, blank=True)
     userId = models.IntegerField()
     isActive = models.BooleanField()
 

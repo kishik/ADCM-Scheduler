@@ -25,9 +25,17 @@ class URNForm(forms.Form):
 class RuleForm(ModelForm):
     class Meta:
         model = Rule
-        fields = ['name', 'rule']
+        fields = ['name', 'names', 'fields', 'unique_name', 'filters', 'group_by', 'sum_by', 'operations', 'userId', 'isActive']
         widgets = {
-            'rule': Textarea(attrs={'cols': 150, 'rows': 30}),
+            'names': Textarea(attrs={'cols': 150, 'rows': 5}),
+            'fields': Textarea(attrs={'cols': 150, 'rows': 6}),
+            'unique_name': Textarea(attrs={'cols': 150, 'rows': 6}),
+            'filters': Textarea(attrs={'cols': 150, 'rows': 4}),
+            'group_by': Textarea(attrs={'cols': 150, 'rows': 5}),
+            'sum_by': Textarea(attrs={'cols': 150, 'rows': 5}),
+            'operations': Textarea(attrs={'cols': 150, 'rows': 10}),
+            'userId': forms.HiddenInput(),
+            'isActive': forms.HiddenInput()
         }
 
 
