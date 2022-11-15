@@ -21,6 +21,9 @@ class Rule(models.Model):
     userId = models.IntegerField()
     isActive = models.BooleanField()
 
+    def get_absolute_url(self):  # Тут мы создали новый метод
+        return reverse('rule_edit', args=[str(self.id)])
+
 
 class ActiveLink(models.Model):
     userId = models.CharField(max_length=200)
