@@ -34,7 +34,8 @@
     </thead>
         {% for family in families %}
             {% if user.id == family.userId and family.isActive %}
-            <tr><td class="">{{ family.name }}</td></tr>
+            <tr><td class="">{{ family.name }}</td><td><a href="/rule_edit/{{family.id}}">Изменить</a></td>
+                <td><a href="/family_delete/{{family.id}}">Удалить</a></td></tr>
 
             {% endif %}
         {% endfor %}

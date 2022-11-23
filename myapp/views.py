@@ -6,7 +6,7 @@ import requests
 from django.http import HttpResponseRedirect, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import UpdateView
+from django.views.generic import UpdateView, DetailView
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import AllowAny
 
@@ -489,6 +489,11 @@ def sdr_delete(request, id):
         return HttpResponseNotFound("<h2>WBS not found</h2>")
 
 
+class ArticleDetailView(DetailView):
+
+    model = Rule
+
+
 def rule_create(request):
     """
     Создание правила выгрузки
@@ -513,9 +518,46 @@ def rule_create(request):
         rule.userId = request.user.id
         rule.save()
 
-        return HttpResponseRedirect('/families/')
-
     return render(request, "myapp/rule.html", {"form": form, "families": families_all})
+
+
+class RuleUpdateView(UpdateView):
+    model = Rule
+    fields = ['names', 'fields', 'unique_name', 'filters', 'group_by', 'sum_by', 'operations']
+    template_name = 'myapp/rule_edit.html'
+
+
+# def rule_edit(request, id):
+#     """
+#     Изменение кгду
+#     :param request:
+#     :param id:
+#     :return:
+#     """
+#     if not request.user.is_authenticated:
+#         return redirect('/login/')
+#     try:
+#         rule = Rule.objects.get(id=id)
+#         if rule.userId != request.user.id:
+#             return HttpResponseNotFound("<h2>It's not your URN</h2>")
+#         if request.method == "POST":
+#             rule = Rule()
+#             rule.name = request.POST.get("name")
+#             rule.names = request.POST.get("names")
+#             rule.fields = request.POST.get("fields")
+#             rule.unique_name = request.POST.get("unique_name")
+#             rule.filters = request.POST.get("filters")
+#             rule.group_by = request.POST.get("group_by")
+#             rule.sum_by = request.POST.get("sum_by")
+#             rule.operations = request.POST.get("operations")
+#             rule.isActive = True
+#             rule.userId = request.user.id
+#             rule.save()
+#             return HttpResponseRedirect("/rules/")
+#         else:
+#             return render(request, "myapp/rule_edit.html", {"form": rule})
+#     except URN.DoesNotExist:
+#         return HttpResponseNotFound("<h2>URN not found</h2>")
 
 
 def rule_delete(request, id):
@@ -532,7 +574,7 @@ def rule_delete(request, id):
         if rule.userId != request.user.id:
             return HttpResponseNotFound("<h2>It's not your Rule</h2>")
         rule.delete()
-        return HttpResponseRedirect("/families/")
+        return HttpResponseRedirect("/rules/")
     except Rule.DoesNotExist:
         return HttpResponseNotFound("<h2>Rule not found</h2>")
 

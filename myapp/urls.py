@@ -20,7 +20,7 @@ from myapp import views
 from django.conf import settings
 from django.conf.urls.static import static
 
-from myapp.views import WbsUpdateView
+from myapp.views import WbsUpdateView, RuleUpdateView
 from registration import views as v
 
 urlpatterns = [
@@ -34,7 +34,8 @@ urlpatterns = [
 
     # path('graph/', views.graph_show),
     path('rules/', views.rule_create),
-
+    # path('rule_edit/<int:id>/', views.rule_edit),
+    path('rule_edit/<int:pk>/', RuleUpdateView.as_view(), name='rule_edit'),
     # path('graph_info/', views.graph),
     path('new_graph/', views.new_graph),
     path('model_load/', views.urn_show),
