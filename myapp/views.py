@@ -278,7 +278,7 @@ def volumes(request):
     request_url = 'http://4d-model.acceleration.ru:8000/acc/get_spec/{0}/project/{1}/model/{2}'
     if request.session['wbs'] != 0:
         res = requests.get(request_url.format(request.session['specs'], project.projectId, URN.objects.get(
-                type=Wbs.objects.get(id=request.session['wbs']).docsdiv).urn))
+            type=Wbs.objects.get(id=request.session['wbs']).docsdiv).urn))
         print(res.request.url)
     else:
         for wbs in Wbs.objects.all():
@@ -601,31 +601,41 @@ def schedule(request):
 
     data_collect.saving_typed_edges_with_wbs(session, result)
     created = set()
+    prev_level = 0
+    prev_building = None
+    pre_pre_dur = 0
     for wbs1 in result.keys():
+        if prev_building:
+            pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
+            prev_building.save()
+
         if not wbs1:
             continue
         wbs1_str = str(wbs1)
         if wbs1_str not in created:
             Task2(id=wbs1_str, text=wbs1,
                   # min(start_date of levels)
-                  start_date=datetime.today(),
+                  start_date=datetime.today() + timedelta(prev_level),
                   # duration = max([distances[din] for din in result[wbs1]])
                   duration=10).save()
+            prev_building = Task2.objects.get(id=wbs1_str)
             created.add(wbs1_str)
         for wbs2 in result[wbs1].keys():
             if not wbs2:
                 continue
             wbs2_str = str(wbs2)
+            # здесь нужно считать дистанцию
+            distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
+            new_level = int(max(distances.values(), default=1))
             if (wbs1_str + wbs2_str) not in created:
                 Task2(id=wbs1_str + wbs2_str, text=wbs2,
                       # min(start_date of levels)
-                      start_date=datetime.today(),
+                      start_date=datetime.today() + timedelta(prev_level),
                       # duration = max([distances[din] for din in result[wbs1]])
-                      duration=5,
+                      duration=new_level + 1 if distances and int(max(distances.values()) > 0) else 1,
                       parent=wbs1_str).save()
                 created.add((wbs1_str + wbs2_str))
-            # здесь нужно считать дистанцию
-            distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
+
             for wbs3 in result[wbs1][wbs2]:
                 if not wbs3:
                     try:
@@ -638,18 +648,19 @@ def schedule(request):
                 if wbs3_str not in distances:
                     Task2(id=wbs1_str + wbs2_str + wbs3, text=names[wbs3] + " DIN(" + wbs3_str + ")",
                           # min(start_date of levels)
-                          start_date=datetime.today(),
+                          start_date=datetime.today() + timedelta(prev_level),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1_str + wbs2_str).save()
                 else:
                     Task2(id=wbs1_str + wbs2 + wbs3, text=names[wbs3] + " DIN(" + wbs3_str + ")",
                           # min(start_date of levels)
-                          start_date=datetime.today() + timedelta(distances[wbs3_str]),
+                          start_date=datetime.today() + timedelta(prev_level) + timedelta(distances[wbs3_str]),
                           # duration = max([distances[din] for din in result[wbs1]])
                           duration=1, parent=wbs1_str + wbs2_str).save()
-                # try:
-                #     Link.objects.filter()
 
+            prev_level += new_level + 1
+    prev_building.duration = prev_level - pre_pre_dur
+    prev_building.save()
     session.close()
     return render(request, 'myapp/new_gantt.html')
 
