@@ -45,6 +45,11 @@ class WbsForm(ModelForm):
         fields = ['wbs_code', 'docsdiv', 'wbs1', 'wbs2', 'wbs3', 'specs']
 
 
+class UploadForm(forms.Form):
+
+    file = forms.FileField()
+
+
 class UploadFileForm(forms.Form):
 
     def __init__(self, *args, **kwargs):

@@ -3,8 +3,10 @@ import re
 from datetime import timedelta, datetime
 
 import requests
+from asgiref.sync import sync_to_async
 from django.http import HttpResponseRedirect, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import UpdateView, DetailView
 from rest_framework.authentication import BasicAuthentication
@@ -13,13 +15,15 @@ from rest_framework.permissions import AllowAny
 from myapp.serializers import TaskSerializer
 from myapp.serializers import LinkSerializer
 import myapp.graph_creation.yml as yml
-from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
+from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink, UploadForm
 from myapp.models import URN, ActiveLink, Rule, Wbs, Link, Task2
 from .gantt import data_collect
 from .graph_creation import add, neo4jexplorer
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
+import asyncio
+import httpx
 
 cfg: dict = yml.get_cfg("neo4j")
 
@@ -183,6 +187,25 @@ def upload(request):
         add.from_one_file(session, request.FILES['file'])
 
     return redirect('/new_graph/')
+
+
+@csrf_exempt
+def upload_gantt(request):
+    """
+    Загрузка графа в виде файла в исторический граф
+    :param request:
+    :return:
+    """
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+
+    if request.method == 'POST':
+
+        # handle_uploaded_file(request.FILES['file'])
+        print('works')
+        return HttpResponseRedirect('/schedule/')
+
+    return redirect('/schedule/')
 
 
 def families(request):
@@ -368,6 +391,7 @@ def volumes(request):
     return render(request, 'myapp/volumes.html', {
         "myJson": myJson['data'],
     })
+
 
 
 def sdrs(request):
@@ -704,7 +728,10 @@ def schedule(request):
     prev_building.duration = prev_level - pre_pre_dur
     prev_building.save()
     session.close()
-    return render(request, 'myapp/new_gantt.html')
+    form = UploadFileForm()
+    form.helper.form_action = reverse_lazy("upload_gantt")
+    context = {'form': form}
+    return render(request, 'myapp/new_gantt.html', context)
 
 
 @csrf_exempt
