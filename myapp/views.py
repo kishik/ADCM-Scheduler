@@ -2,6 +2,7 @@ import json
 import re
 from datetime import timedelta, datetime
 
+import pandas as pd
 import requests
 from asgiref.sync import sync_to_async
 from django.http import HttpResponseRedirect, HttpResponseNotFound, JsonResponse
@@ -192,6 +193,16 @@ def upload(request):
     return redirect('/new_graph/')
 
 
+def graph_from_csv(file: str = 'plan.csv') -> list:
+    df = pd.read_csv(file)
+    df = df.filter(items=['title', 'level', 'count'])
+    df.fillna(0, inplace=True)
+
+    df.rename(columns={"title": "wbs1", "level": "wbs2", "count": "wbs3"})
+    graph_data = df.to_dict('records')
+    return graph_data
+
+
 @csrf_exempt
 def upload_gantt(request):
     """
@@ -206,10 +217,24 @@ def upload_gantt(request):
         # handle_uploaded_file(request.FILES['file'])
         # print('works')
         files = request.FILES.getlist('file_field')
+
+        dins = set()
+        global graph_data
+        graph_data = []
         for f in files:
             # Do something with each file.
+            graph_data.extend(graph_from_csv(f))
             print(f)
-        return HttpResponseRedirect('/volumes/')
+        user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+        try:
+            user_graph.restore_graph()
+        except Exception as e:
+            print('views.py 352', e.args)
+        user_graph.create_new_graph_algo(dins)
+
+        return render(request, 'myapp/volumes.html', {
+            "myJson": graph_data,
+        })
 
     return redirect('/schedule/')
 
