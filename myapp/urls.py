@@ -29,7 +29,7 @@ urlpatterns = [
     path('models/', views.urn_show),
     path('families/', views.families),
     path('sdrs/', views.sdrs),
-    path('volumes/', views.volumes),
+    path('volumes/', views.volumes, name="volumes"),
     path('schedule/', views.schedule),
 
     # path('graph/', views.graph_show),

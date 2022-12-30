@@ -45,9 +45,15 @@ class WbsForm(ModelForm):
         fields = ['wbs_code', 'docsdiv', 'wbs1', 'wbs2', 'wbs3', 'specs']
 
 
-class UploadForm(forms.Form):
+class FileFieldForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper(*args, **kwargs)
+        self.helper.form_action = reverse_lazy("upload_gantt")
 
-    file = forms.FileField()
+        self.helper.add_input(Submit('submit', 'Отправить'))
+
+    file_field = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple': True}))
 
 
 class UploadFileForm(forms.Form):

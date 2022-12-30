@@ -15,7 +15,9 @@ from rest_framework.permissions import AllowAny
 from myapp.serializers import TaskSerializer
 from myapp.serializers import LinkSerializer
 import myapp.graph_creation.yml as yml
-from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink, UploadForm
+from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
+from django.views.generic.edit import FormView
+from .forms import FileFieldForm
 from myapp.models import URN, ActiveLink, Rule, Wbs, Link, Task2
 from .gantt import data_collect
 from .graph_creation import add, neo4jexplorer
@@ -107,7 +109,8 @@ def urn_index(request):
         return redirect('/login/')
     urns = URN.objects.all()
     project = ActiveLink.objects.filter(userId=request.user.id).last().projectId
-    return render(request, "myapp/urn_index.html", {"urns": urns, "project": project})
+    form = FileFieldForm()
+    return render(request, "myapp/urn_index.html", {"urns": urns, "project": project, 'form': form})
 
 
 def urn_create(request):
@@ -200,12 +203,33 @@ def upload_gantt(request):
         return redirect('/login/')
 
     if request.method == 'POST':
-
         # handle_uploaded_file(request.FILES['file'])
-        print('works')
-        return HttpResponseRedirect('/schedule/')
+        # print('works')
+        files = request.FILES.getlist('file_field')
+        for f in files:
+            # Do something with each file.
+            print(f)
+        return HttpResponseRedirect('/volumes/')
 
     return redirect('/schedule/')
+
+
+class FileFieldFormView(FormView):
+    form_class = FileFieldForm
+    template_name = 'myapp/new_gantt.html'  # Replace with your template.
+    success_url = '/schedule/'  # Replace with your URL or reverse(). "upload_gantt"
+
+    def post(self, request, *args, **kwargs):
+        form_class = self.get_form_class()
+        form = self.get_form(form_class)
+        files = request.FILES.getlist('file_field')
+        if form.is_valid():
+            for f in files:
+                # Do something with each file.
+                print(f)
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
 
 
 def families(request):
@@ -393,7 +417,6 @@ def volumes(request):
     })
 
 
-
 def sdrs(request):
     """
     Вывод правил выгрузки
@@ -514,7 +537,6 @@ def sdr_delete(request, id):
 
 
 class ArticleDetailView(DetailView):
-
     model = Rule
 
 
@@ -728,10 +750,9 @@ def schedule(request):
     prev_building.duration = prev_level - pre_pre_dur
     prev_building.save()
     session.close()
-    form = UploadFileForm()
-    form.helper.form_action = reverse_lazy("upload_gantt")
-    context = {'form': form}
-    return render(request, 'myapp/new_gantt.html', context)
+    # form = FileFieldForm()
+    # context = {'form': form}
+    return render(request, 'myapp/new_gantt.html')
 
 
 @csrf_exempt
