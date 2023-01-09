@@ -20,7 +20,7 @@ from myapp.forms import UploadFileForm, RuleForm, WbsForm, AddNode, AddLink
 from django.views.generic.edit import FormView
 from .forms import FileFieldForm
 from myapp.models import URN, ActiveLink, Rule, Wbs, Link, Task2
-from .gantt import data_collect
+from .gantt import data_collect, net_hierarhy
 from .graph_creation import add, neo4jexplorer
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -194,13 +194,24 @@ def upload(request):
 
 
 def graph_from_csv(file: str = 'plan.csv') -> list:
-    df = pd.read_csv(file)
-    df = df.filter(items=['title', 'level', 'count'])
+    df = pd.read_csv(file, dtype={'din': str})
+    # df = df.filter(items=['title', 'level', 'count'])
     df.fillna(0, inplace=True)
 
-    df.rename(columns={"title": "wbs1", "level": "wbs2", "count": "wbs3"})
-    graph_data = df.to_dict('records')
-    return graph_data
+    df.rename(columns={"title": "wbs1",
+                       "level": "wbs2",
+                       "count": "wbs3",
+                       "din": "wbs3_id",
+                       "type": "name",
+                       "volume": "value",
+                       },
+              inplace=True)
+    df['wbs'] = df.wbs1 + df.wbs3_id
+
+    dins = set(df.wbs3_id)
+
+    data = df.to_dict('records')
+    return data
 
 
 @csrf_exempt
@@ -223,7 +234,7 @@ def upload_gantt(request):
         graph_data = []
         for f in files:
             # Do something with each file.
-            graph_data.extend(graph_from_csv(f))
+            graph_data.extend(net_hierarhy.ifc_parse(f.temporary_file_path()))
             print(f)
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
         try:

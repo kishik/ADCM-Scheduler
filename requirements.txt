@@ -9,4 +9,8 @@ numpy==1.23.5
 django-bootstrap4==22.2
 djangorestframework==3.14.0
 openpyxl==3.0.10
-httpx
+httpx~=0.23.0
+ifcopenshell~=0.7.0
+networkx~=3.0
+tqdm~=4.64.1
+asgiref~=3.5.2
