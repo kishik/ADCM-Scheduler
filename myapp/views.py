@@ -77,6 +77,10 @@ def new_graph(request):
     return render(request, 'myapp/hist_graph.html', context)
 
 
+def graph_from_csv(file: str) -> list:
+    pass
+
+
 # def file_upload(request):
 #     """
 #     Загрузка файла
@@ -232,10 +236,9 @@ def upload_gantt(request):
         dins = set()
         global graph_data
         graph_data = []
-        for f in files:
-            # Do something with each file.
-            graph_data.extend(net_hierarhy.ifc_parse(f.temporary_file_path()))
-            print(f)
+        # Do something with each file.
+        graph_data.extend(net_hierarhy.ifc_parse([f.temporary_file_path() for f in files]))  #
+        print(f)
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
         try:
             user_graph.restore_graph()
@@ -435,7 +438,7 @@ def volumes(request):
     try:
         user_graph.restore_graph()
     except Exception as e:
-        print('views.py 352', e.args)
+        print('views.py 402', e.args)
     print(datetime.now() - time_now)
     # заменить функцией copy
     # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),

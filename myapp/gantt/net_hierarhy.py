@@ -51,7 +51,7 @@ def dict_merge(dct, merge_dct) -> None:
             dct[k] = merge_dct[k]
 
 
-def ifc_parse(file_name: str):
+def ifc_parse(file_names: List[str]):
     G = nx.MultiDiGraph()
 
     def node(element):
@@ -82,23 +82,23 @@ def ifc_parse(file_name: str):
         )
         return atts
 
-    ifc_file = ifcopenshell.open(file_name)
     storeys = set()
+    for file_name in file_names:
+        ifc_file = ifcopenshell.open(file_name)
+        for project in tqdm(ifc_file.by_type("IfcProject"), position=1):
+            for parent, child in tqdm(traverse(project, None, filter_ifc), position=2):
+                attributes = node_attributes(child)
+                n = node(child)
+                if child.is_a("IfcBuildingStorey"):
+                    storeys.add(n)
 
-    for project in tqdm(ifc_file.by_type("IfcProject"), position=1):
-        for parent, child in tqdm(traverse(project, None, filter_ifc), position=2):
-            attributes = node_attributes(child)
-            n = node(child)
-            if child.is_a("IfcBuildingStorey"):
-                storeys.add(n)
-
-            if G.has_node(n):
-                attrs = G.nodes[n]
-                dict_merge(attrs, attributes)
-            else:
-                G.add_node(node(child), **attributes)
-            if parent is not None and not G.has_edge(node(parent), n):
-                G.add_edge(node(parent), n)
+                if G.has_node(n):
+                    attrs = G.nodes[n]
+                    dict_merge(attrs, attributes)
+                else:
+                    G.add_node(node(child), **attributes)
+                if parent is not None and not G.has_edge(node(parent), n):
+                    G.add_edge(node(parent), n)
 
     agg_keys = ("is_a", "group_type", "ADCM_DIN", "ADCM_Title")
     storeys = sorted(storeys, key=lambda x: G.nodes[x].get("Elevation", -1000000))
