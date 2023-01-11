@@ -305,17 +305,12 @@ if __name__ == "__main__":
         writer = csv.DictWriter(
             out,
             fieldnames=[
-                "storey",
-                "type",
-                "level",
-                "rd",
-                "din",
-                "title",
-                "count",
-                "length",
-                "area",
-                "volume",
-                "ifc_type",
+                'wbs1',
+                'wbs2',
+                'wbs3',
+                'wbs3_id',
+                'name',
+                'value',
             ],
         )
         writer.writeheader()
