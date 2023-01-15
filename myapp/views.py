@@ -233,17 +233,17 @@ def upload_gantt(request):
         # print('works')
         files = request.FILES.getlist('file_field')
 
-        dins = set()
         global graph_data
         graph_data = []
         # Do something with each file.
         graph_data.extend(net_hierarhy.main([f.temporary_file_path() for f in files]))  #
-        print(f)
+        # print(f)
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
         try:
             user_graph.restore_graph()
         except Exception as e:
             print('views.py 352', e.args)
+        dins = {r["wbs3_id"] for r in graph_data if r["wbs3_id"]}
         user_graph.create_new_graph_algo(dins)
 
         return render(request, 'myapp/volumes.html', {

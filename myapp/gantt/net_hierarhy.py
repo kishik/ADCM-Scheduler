@@ -270,15 +270,21 @@ def main(files: List[Union[str, Path]]) -> List[Dict[str, str]]:
 
             node_lst.append({
                 # "storey": storey,
-                "name": n["group_type"],
-                "count": count,
+
+                # "count": count,
                 # "length": attrs.get("Length"),
                 # "area": attrs.get("Area", attrs.get("NetArea")),
-                "value": attrs.get("NetVolume", attrs.get("GrossVolume")),
-                "wbs2": G.nodes[storey].get("ADCM_Level"),
-                "wbs3": attrs.get("ADCM_RD"),
-                "wbs3_id": attrs.get("ADCM_DIN"),
                 "wbs1": attrs.get("ADCM_Title"),
+                "wbs2": G.nodes[storey].get("ADCM_Level"),
+                "wbs3_id": attrs.get("ADCM_DIN"),
+                "wbs3": attrs.get("ADCM_RD"),
+                "name": n["group_type"],
+                "value": attrs.get("NetVolume", attrs.get("GrossVolume")),
+                "wbs": "".join(filter(None, [attrs.get("ADCM_Title"), attrs.get("ADCM_DIN")]))
+
+
+
+
                 # "ifc_type": n["is_a"],
             })
 
