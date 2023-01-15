@@ -270,60 +270,55 @@ def main(files: List[Union[str, Path]]) -> List[Dict[str, str]]:
 
             node_lst.append({
                 # "storey": storey,
-
                 # "count": count,
                 # "length": attrs.get("Length"),
                 # "area": attrs.get("Area", attrs.get("NetArea")),
-                "wbs1": attrs.get("ADCM_Title"),
-                "wbs2": G.nodes[storey].get("ADCM_Level"),
-                "wbs3_id": attrs.get("ADCM_DIN"),
-                "wbs3": attrs.get("ADCM_RD"),
-                "name": n["group_type"],
-                "value": attrs.get("NetVolume", attrs.get("GrossVolume")),
-                "wbs": "".join(filter(None, [attrs.get("ADCM_Title"), attrs.get("ADCM_DIN")]))
-
-
-
-
                 # "ifc_type": n["is_a"],
+                "wbs1": attrs.get("ADCM_Title", 'No title'),
+                "wbs2": G.nodes[storey].get("ADCM_Level", 'No level'),
+                "wbs3_id": attrs.get("ADCM_DIN", 'No DIN'),
+                "wbs3": attrs.get("ADCM_RD", 'No RD'),
+                "name": n.get("group_type", 'No type'),
+                "value": attrs.get("NetVolume", attrs.get("GrossVolume", attrs.get("Area", attrs.get("NetArea", "No volume")))),
+                "wbs": "".join(filter(None, [attrs.get("ADCM_Title"), attrs.get("ADCM_DIN")]))
             })
 
     return node_lst
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        prog="net_hierarchy.py",
-        description="Aggregates IFC model to the list of construction elements",
-    )
-    parser.add_argument(
-        "output",
-        metavar="output_csv_file",
-        type=pathlib.Path,
-    )
-    parser.add_argument(
-        "files",
-        metavar="ifc_file",
-        type=pathlib.Path,
-        nargs="+",
-        help="an IFC model file",
-    )
-    args = parser.parse_args()
-
-    with open(args.output, "w", encoding="utf-8", newline="") as out:
-        writer = csv.DictWriter(
-            out,
-            fieldnames=[
-                'wbs1',
-                'wbs2',
-                'wbs3',
-                'wbs3_id',
-                'name',
-                'value',
-                'count'
-            ],
-        )
-        writer.writeheader()
-        for record in main(args.files):
-            writer.writerow(record)
-            # print(record)
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser(
+#         prog="net_hierarchy.py",
+#         description="Aggregates IFC model to the list of construction elements",
+#     )
+#     parser.add_argument(
+#         "output",
+#         metavar="output_csv_file",
+#         type=pathlib.Path,
+#     )
+#     parser.add_argument(
+#         "files",
+#         metavar="ifc_file",
+#         type=pathlib.Path,
+#         nargs="+",
+#         help="an IFC model file",
+#     )
+#     args = parser.parse_args()
+#
+#     with open(args.output, "w", encoding="utf-8", newline="") as out:
+#         writer = csv.DictWriter(
+#             out,
+#             fieldnames=[
+#                 'wbs1',
+#                 'wbs2',
+#                 'wbs3',
+#                 'wbs3_id',
+#                 'name',
+#                 'value',
+#                 'count'
+#             ],
+#         )
+#         writer.writeheader()
+#         for record in main(args.files):
+#             writer.writerow(record)
+#             print(record)

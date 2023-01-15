@@ -236,7 +236,7 @@ def upload_gantt(request):
         global graph_data
         graph_data = []
         # Do something with each file.
-        graph_data.extend(net_hierarhy.main([f.temporary_file_path() for f in files]))  #
+        graph_data.extend(net_hierarhy.main([f.temporary_file_path() for f in files]))
         # print(f)
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
         try:
