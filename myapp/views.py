@@ -1,7 +1,7 @@
 import json
 import re
 from datetime import timedelta, datetime
-
+import operator
 import pandas as pd
 import requests
 from asgiref.sync import sync_to_async
@@ -245,7 +245,8 @@ def upload_gantt(request):
             print('views.py 352', e.args)
         dins = {r["wbs3_id"] for r in graph_data if r["wbs3_id"]}
         user_graph.create_new_graph_algo(dins)
-
+        graph_data.sort(key=lambda x: (x.get('wbs1', "") or "", x.get("wbs2", "") or "", x.get("wbs3_id", "") or "",
+                                       x.get("wbs3", "") or ""))
         return render(request, 'myapp/volumes.html', {
             "myJson": graph_data,
         })
