@@ -712,14 +712,14 @@ def schedule(request):
     result_din = {}
     names = {}
     for el in graph_data:
-        wbs_id = (el['wbs3_id'] or "") + str(el['wbs3'])
+        wbs_id = (el['wbs3_id'] or "") + str(el['name'])
         if el['wbs1'] not in result:
             result[el['wbs1']] = {}
             result_din[el['wbs1']] = {}
         if el['wbs2'] not in result[el['wbs1']]:
             result[el['wbs1']][el['wbs2']] = []
             result_din[el['wbs1']][el['wbs2']] = []
-        if el['wbs3'] not in result[el['wbs1']][el['wbs2']]:
+        if el['name'] not in result[el['wbs1']][el['wbs2']]:
 
             result[el['wbs1']][el['wbs2']].append(wbs_id)
             result_din[el['wbs1']][el['wbs2']].append(el['wbs3_id'])
