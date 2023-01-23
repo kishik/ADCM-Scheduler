@@ -1,3 +1,7 @@
+import urllib
+from pathlib import Path
+from urllib.parse import unquote
+
 from django.db import models
 from django.urls import reverse
 
@@ -8,12 +12,26 @@ class URN(models.Model):
     userId = models.IntegerField()
     isActive = models.BooleanField()
 
+    def is_ifc(self):
+        parts = urllib.parse.urlparse(self.urn)
+        file = unquote(Path(parts.path).name)
+        return "urn:" not in self.urn or (file and file.endswith(".ifc"))
+
 
 class Rule(models.Model):
-    name = models.CharField(max_length=30)
-    rule = models.CharField(max_length=9999)
+    name = models.CharField(max_length=99, blank=True)
+    names = models.CharField(max_length=999, blank=True)
+    fields = models.CharField(max_length=999, blank=True)
+    unique_name = models.CharField(max_length=100, blank=True)
+    filters = models.CharField(max_length=999, blank=True)
+    group_by = models.CharField(max_length=999, blank=True)
+    sum_by = models.CharField(max_length=999, blank=True)
+    operations = models.CharField(max_length=9999, blank=True)
     userId = models.IntegerField()
     isActive = models.BooleanField()
+
+    def get_absolute_url(self):  # Тут мы создали новый метод
+        return reverse('rule_edit', args=[str(self.id)])
 
 
 class ActiveLink(models.Model):

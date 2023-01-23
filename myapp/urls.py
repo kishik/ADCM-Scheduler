@@ -20,7 +20,7 @@ from myapp import views
 from django.conf import settings
 from django.conf.urls.static import static
 
-from myapp.views import WbsUpdateView
+from myapp.views import WbsUpdateView, RuleUpdateView
 from registration import views as v
 
 urlpatterns = [
@@ -29,12 +29,13 @@ urlpatterns = [
     path('models/', views.urn_show),
     path('families/', views.families),
     path('sdrs/', views.sdrs),
-    path('volumes/', views.volumes),
+    path('volumes/', views.volumes, name="volumes"),
     path('schedule/', views.schedule),
 
     # path('graph/', views.graph_show),
     path('rules/', views.rule_create),
-
+    # path('rule_edit/<int:id>/', views.rule_edit),
+    path('rule_edit/<int:pk>/', RuleUpdateView.as_view(), name='rule_edit'),
     # path('graph_info/', views.graph),
     path('new_graph/', views.new_graph),
     path('model_load/', views.urn_show),
@@ -43,10 +44,13 @@ urlpatterns = [
     path('', include("django.contrib.auth.urls")),
     path('sdr/<int:pk>/', WbsUpdateView.as_view(), name='wbs_edit'),
     path('urn_index/', views.urn_index),
+    path('urn_view/<int:id>/', views.urn_view),
+    path('urn_ifc/<int:id>', views.urn_ifc),
     path('urn_create/', views.urn_create),
     path('urn_edit/<int:id>/', views.urn_edit),
     path('urn_delete/<int:id>/', views.urn_delete),
     path('upload/', views.upload, name="upload"),
+    path('upload_gantt/', views.upload_gantt, name="upload_gantt"),
     path('add_link/', views.add_link, name="add_link"),
     path('add_node/', views.add_node, name="add_node"),
     path('model/<int:id>/', views.model),

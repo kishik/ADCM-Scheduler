@@ -208,7 +208,7 @@ def calculate_hist_distance(session):
     """
     distances = {}
     for node in allNodes(session):
-        if parentsByDin(node, session):
+        if parentsByDin(node, session).size > 0:
             continue
         prohod_hist(start_din=node, distances=distances, session=session, cur_level=0)
     return distances
@@ -331,8 +331,14 @@ def saving_typed_edges_with_wbs(session, result):
             for wbs1 in result:
                 for wbs2 in result[wbs1].keys():
                     # if row['pred_din'] in  смотрим если ли эти дины с этим wbs1
-                    Link(source=str(wbs1) + wbs2 + str(row['pred_din']), target=str(wbs1) + wbs2 + str(row['flw_din']),
-                         type=str(i), lag=0).save()
+                    for el in result[wbs1][wbs2]:
+                        if el.startswith(str(row['pred_din'])):
+                            pred_id = el[3:]
+                            for sub_el in result[wbs1][wbs2]:
+                                if sub_el.startswith(str(row['flw_din'])):
+                                    flw_id = sub_el[3:]
+                                    Link(source=str(wbs1) + wbs2 + str(row['pred_din']) + pred_id, target=str(wbs1) + wbs2 + str(row['flw_din'] + flw_id),
+                                         type=str(i), lag=0).save()
 
 
 if __name__ == '__main__':

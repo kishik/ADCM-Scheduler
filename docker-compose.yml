@@ -11,7 +11,7 @@ services:
 #      - SQLITE_DB=db.sqlite3
 
   web:
-    image: kishikmaxim/adcm:v0.5.5
+    image: kishikmaxim/adcm:v0.5.5.5
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code
@@ -39,7 +39,7 @@ services:
 #      - NEO4J_dbms_memory_pagecache_size=1G
 #      - NEO4J_dbms.memory.heap.initial_size=1G
 #      - NEO4J_dbms_memory_heap_max__size=1G
-      - NEO4J_AUTH=neo4j/231099
+      - NEO4J_AUTH=neo4j/23109900
 
   neo4j_historical:
     image: neo4j:community
@@ -60,4 +60,4 @@ services:
 #      - NEO4J_dbms_memory_pagecache_size=1G
 #      - NEO4J_dbms.memory.heap.initial_size=1G
 #      - NEO4J_dbms_memory_heap_max__size=1G
-      - NEO4J_AUTH=neo4j/231099
+      - NEO4J_AUTH=neo4j/23109900
