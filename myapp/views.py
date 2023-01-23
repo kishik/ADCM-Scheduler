@@ -5,7 +5,7 @@ import operator
 import pandas as pd
 import requests
 from asgiref.sync import sync_to_async
-from django.http import HttpResponseRedirect, HttpResponseNotFound, JsonResponse
+from django.http import HttpResponseRedirect, HttpResponseNotFound, JsonResponse, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
@@ -129,6 +129,25 @@ def urn_index(request):
     form = FileFieldForm()
     return render(request, "myapp/urn_index.html", {"urns": urns, "project": project, 'form': form})
 
+
+def urn_ifc(request, id):
+    if not request.user.is_authenticated:
+        return redirect("/login/")
+    urn = URN.objects.get(id=id)
+    data = requests.get(urn.urn).content
+    return HttpResponse(data, content_type="application/octet-stream")
+
+
+def urn_view(request, id):
+    if not request.user.is_authenticated:
+        return redirect("/login/")
+
+    urn = URN.objects.get(id=id)
+    project = ActiveLink.objects.filter(userId=request.user.id).last().projectId
+    if urn.is_ifc():
+        return render(request, "myapp/urn_ifc.html", {"urn": urn})
+    else:
+        return redirect(f"http://4d-model.acceleration.ru:8000/acc/viewer/project/{project}/model/{urn.urn}")
 
 def urn_create(request):
     """
