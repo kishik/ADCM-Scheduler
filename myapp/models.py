@@ -15,7 +15,7 @@ class URN(models.Model):
     def is_ifc(self):
         parts = urllib.parse.urlparse(self.urn)
         file = unquote(Path(parts.path).name)
-        return file and file.endswith(".ifc")
+        return "urn:" not in self.urn or (file and file.endswith(".ifc"))
 
 
 class Rule(models.Model):

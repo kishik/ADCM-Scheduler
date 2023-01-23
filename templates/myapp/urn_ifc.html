@@ -1,4 +1,4 @@
-{% load static tailwind_tags django_htmx i18n  %}
+{% load static i18n  %}
 
 <div class="w-full">
 <canvas id="bimCanvas" style="width: 80vw; height: 90vh"></canvas>
@@ -54,7 +54,7 @@
     });
 
     const model = loaderPlugin.load({
-        src: "{{ bimmodel.uri }}",
+        src: "/urn_ifc/{{ urn.id }}",
         edges: true,
         objectDefaults: {
             IfcSpace: {
