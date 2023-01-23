@@ -44,6 +44,7 @@ urlpatterns = [
     path('', include("django.contrib.auth.urls")),
     path('sdr/<int:pk>/', WbsUpdateView.as_view(), name='wbs_edit'),
     path('urn_index/', views.urn_index),
+    path('urn_view/<int:id>/', views.urn_view),
     path('urn_create/', views.urn_create),
     path('urn_edit/<int:id>/', views.urn_edit),
     path('urn_delete/<int:id>/', views.urn_delete),
