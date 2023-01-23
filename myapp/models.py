@@ -1,3 +1,7 @@
+import urllib
+from pathlib import Path
+from urllib.parse import unquote
+
 from django.db import models
 from django.urls import reverse
 
@@ -7,6 +11,11 @@ class URN(models.Model):
     urn = models.CharField(max_length=200)
     userId = models.IntegerField()
     isActive = models.BooleanField()
+
+    def is_ifc(self):
+        parts = urllib.parse.urlparse(self.urn)
+        file = unquote(Path(parts.path).name)
+        return file and file.endswith(".ifc")
 
 
 class Rule(models.Model):

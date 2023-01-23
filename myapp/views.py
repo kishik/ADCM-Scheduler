@@ -104,6 +104,18 @@ def urn_show(request):
     return render(request, "myapp/cdn_model.html", {"urns": urns, "user": request.user})
 
 
+def urn_view(request, id):
+    if not request.user.is_authenticated:
+        return redirect("/login/")
+
+    urn = URN.objects.get(id=id)
+    project = ActiveLink.objects.filter(userId=request.user.id).last().projectId
+    if urn.is_ifc():
+        return render(request, "myapp/urn_ifc.html", {"urn": urn})
+    else:
+        return redirect(f"http://4d-model.acceleration.ru:8000/acc/viewer/project/{project}/model/{urn.urn}")
+
+
 def urn_index(request):
     """
     Выводит все правила выгрузки
@@ -720,7 +732,6 @@ def schedule(request):
             result[el['wbs1']][el['wbs2']] = []
             result_din[el['wbs1']][el['wbs2']] = []
         if el['name'] not in result[el['wbs1']][el['wbs2']]:
-
             result[el['wbs1']][el['wbs2']].append(wbs_id)
             result_din[el['wbs1']][el['wbs2']].append(el['wbs3_id'])
         dins.append(el['wbs3_id'])
