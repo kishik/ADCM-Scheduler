@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('myapp', '0003_remove_rule_name_remove_rule_rule_rule_fields_and_more'),
+        ("myapp", "0003_remove_rule_name_remove_rule_rule_rule_fields_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='rule',
-            name='name',
+            model_name="rule",
+            name="name",
             field=models.CharField(blank=True, max_length=99),
         ),
     ]

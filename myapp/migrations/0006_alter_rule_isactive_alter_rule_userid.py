@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('myapp', '0005_alter_rule_isactive_alter_rule_userid'),
+        ("myapp", "0005_alter_rule_isactive_alter_rule_userid"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='rule',
-            name='isActive',
+            model_name="rule",
+            name="isActive",
             field=models.BooleanField(),
         ),
         migrations.AlterField(
-            model_name='rule',
-            name='userId',
+            model_name="rule",
+            name="userId",
             field=models.IntegerField(),
         ),
     ]

@@ -1,10 +1,10 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import redirect, render
 
 
 def register(response):
-    if response.method == 'POST':
+    if response.method == "POST":
         form = UserCreationForm(response.POST)
 
         if form.is_valid():
