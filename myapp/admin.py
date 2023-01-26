@@ -1,5 +1,6 @@
 from django.contrib import admin as dj_admin
-from .models import ActiveLink, URN
+
+from .models import URN, ActiveLink
 
 
 class WorkAdmin(dj_admin.ModelAdmin):

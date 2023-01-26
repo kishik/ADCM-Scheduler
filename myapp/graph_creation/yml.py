@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Optional
+
 import yaml
 
 _cfg: Optional[dict] = None
@@ -25,7 +26,7 @@ def get_cfg(app=None, paths=None, cache=True):
         if not Path(path).exists():
             continue
 
-        with open(path, encoding='utf8') as file:
+        with open(path, encoding="utf8") as file:
             result = yaml.safe_load(file)
             if app:
                 return result.get(app)
