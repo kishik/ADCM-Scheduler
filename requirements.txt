@@ -18,3 +18,5 @@ networkx~=3.0
 tqdm~=4.64.1
 asgiref~=3.5.2
 
+
+jmespath~=1.0.1

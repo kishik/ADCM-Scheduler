@@ -100,11 +100,11 @@ class Storey:
         if level and level.startswith("L"):
             if level.startswith("L-"):
                 basement = True
-                level = int(level[2:])
+                level = level[2:]
             else:
-                level = int(level[1:])
+                level = level[1:]
             while level and level.startswith("0"):
-                level = int(level[1:])
+                level = level[1:]
             self.value = int(level) * (-1 if basement else 1)
         else:
             self.value = None
