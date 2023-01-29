@@ -93,21 +93,21 @@ class Link(models.Model):
 class Storey:
     name: str
     description: Optional[str]
-    value: Optional[int] = field(init=False)
+    value: Optional[int] = field(init=False, default=None)
 
     def __post_init__(self):
         level = self.name
         if level and level.startswith("L"):
+            basement = False
             if level.startswith("L-"):
                 basement = True
-                level = int(level[2:])
+                level = level[2:]
             else:
-                level = int(level[1:])
+                level = level[1:]
             while level and level.startswith("0"):
-                level = int(level[1:])
-            self.value = int(level) * (-1 if basement else 1)
-        else:
-            self.value = None
+                level = level[1:]
+            object.__setattr__(self, "value", int(level) * (-1 if basement else 1))
+
 
     def __eq__(self, other):
         return self.name == other.name

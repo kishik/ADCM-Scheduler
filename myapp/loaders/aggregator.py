@@ -1,7 +1,7 @@
 from typing import Dict, Iterable
 
 from myapp.loaders import BimModelLoader
-from myapp.loaders.ifc_loader import IfcLoader
+from myapp.loaders.ifc_loader import IFCLoader
 from myapp.loaders.revit_loader import RevitLoader
 from myapp.models import URN, ActiveLink, Wbs, WorkItem, WorkVolume
 
@@ -13,7 +13,7 @@ class WorkAggregator:
         self._data = {}
 
     def loader(self, model: URN) -> BimModelLoader:
-        return IfcLoader() if model.is_ifc() else RevitLoader()
+        return IFCLoader() if model.is_ifc() else RevitLoader()
 
     def load_models(self) -> None:
         for spec in self.specs:

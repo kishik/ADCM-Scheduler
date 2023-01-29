@@ -452,7 +452,7 @@ def volumes(request):
                 "wbs2": item.din,
                 "wbs3": item.building,
                 "name": item.name,
-                "volume": volume.volume if volume is not None else volume.count,
+                "volume": volume.value if volume is not None else volume.count,
             }
             for item, volume in data.items()
         ]
