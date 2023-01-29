@@ -410,7 +410,7 @@ def volumes(request):
     """
     Ведомость объемов
     :param request:
-    :return:
+    :return:vol
     """
     flag = False
     project = ActiveLink.objects.filter(userId=request.user.id).last()
