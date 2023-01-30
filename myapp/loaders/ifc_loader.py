@@ -139,13 +139,13 @@ def aggregate_items(G, storeys):
                 WorkItem(
                     work_type=attrs.get("ADCM_RD"),
                     building=attrs.get("ADCM_Title"),
-                    level_name=Storey(level, description=storey),
+                    storey=Storey(level, description=storey),
                     din=attrs.get("ADCM_DIN"),
                     name=n.get("group_type"),
                 ),
                 WorkVolume(
                     count=count,
-                    volume=attrs.get("NetVolume", attrs.get("GrossVolume", attrs.get("Area", attrs.get("NetArea")))),
+                    value=attrs.get("NetVolume", attrs.get("GrossVolume", attrs.get("Area", attrs.get("NetArea")))),
                 ),
             )
     return node_lst
