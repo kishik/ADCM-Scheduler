@@ -447,12 +447,17 @@ def volumes(request):
     myJson = {
         "data": [
             {
-                "wbs": f"{item.building}{item.din}",
-                "wbs1": item.storey,
-                "wbs2": item.din,
-                "wbs3": item.building,
+
+                "wbs1": item.building,
+                "wbs2": item.storey.name if item.storey else "",
+                "wbs3_id": item.din,
+                "wbs3": "",
+
                 "name": item.name,
-                "volume": volume.value if volume is not None else volume.count,
+                "value": volume.value if volume.value is not None else volume.count,
+                "wbs": f"{item.building}{item.din}",
+                # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+
             }
             for item, volume in data.items()
         ]
@@ -475,6 +480,13 @@ def volumes(request):
     #
     global graph_data
     graph_data = myJson["data"]
+    graph_data.sort(
+        key=lambda x: (
+            x.get("wbs1", "") or "",
+            x.get("wbs2", "") or "",
+            x.get("wbs3_id", "") or "",
+        )
+    )
     time_now = datetime.now()
     user_graph.create_new_graph_algo(dins)
     print(datetime.now() - time_now)
@@ -743,6 +755,7 @@ def schedule(request):
     result = {}
     result_din = {}
     names = {}
+
     for el in graph_data:
         wbs_id = (el["wbs3_id"] or "") + str(el["name"])
         if el["wbs1"] not in result:
