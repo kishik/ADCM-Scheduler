@@ -451,7 +451,7 @@ def volumes(request):
                 "wbs1": item.building,
                 "wbs2": item.storey.name if item.storey else "",
                 "wbs3_id": item.din,
-                "wbs3": "",
+                "wbs3": item.work_type,
 
                 "name": item.name,
                 "value": volume.value if volume.value is not None else volume.count,
@@ -490,7 +490,7 @@ def volumes(request):
     time_now = datetime.now()
     user_graph.create_new_graph_algo(dins)
     print(datetime.now() - time_now)
-    print(myJson["data"])
+    # print(myJson["data"])
     return render(
         request,
         "myapp/volumes.html",
@@ -847,8 +847,9 @@ def schedule(request):
                     ).save()
 
             prev_level += new_level + 1
-    prev_building.duration = prev_level - pre_pre_dur
-    prev_building.save()
+    if prev_building:
+        prev_building.duration = prev_level - pre_pre_dur
+        prev_building.save()
     session.close()
     # form = FileFieldForm()
     # context = {'form': form}
