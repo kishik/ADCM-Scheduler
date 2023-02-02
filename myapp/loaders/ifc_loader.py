@@ -15,6 +15,8 @@ from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume
 class IFCLoader(BimModelLoader):
     def load(self, project: ActiveLink, spec: Wbs, model: URN) -> Iterable[Tuple[WorkItem, WorkVolume]]:
         model_data = requests.get(model.urn).content.decode("utf-8")
+        if model_data[:3] != "ISO":
+            raise Exception("Sorry, bad file")
         ifc_file = ifcopenshell.file.from_string(model_data)
 
         G, storeys = load_graph(ifc_file)

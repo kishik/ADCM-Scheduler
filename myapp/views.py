@@ -443,17 +443,19 @@ def volumes(request):
     #
     # # Save the workbook
     # book.save("spreadsheet.xls")
+
     data = WorkAggregator(project, wbs).load_models()
+
     myJson = {
         "data": [
             {
 
-                "wbs1": item.building,
+                "wbs1": item.building or "None",
                 "wbs2": item.storey.name if item.storey else "",
-                "wbs3_id": item.din,
-                "wbs3": item.work_type,
+                "wbs3_id": item.din or "None",
+                "wbs3": item.work_type or "None",
 
-                "name": item.name,
+                "name": item.name or "None",
                 "value": volume.value if volume.value is not None else volume.count,
                 "wbs": f"{item.building}{item.din}",
                 # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),

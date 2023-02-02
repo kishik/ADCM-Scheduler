@@ -19,8 +19,11 @@ class WorkAggregator:
         for spec in self.specs:
             models = URN.objects.filter(type=spec.docsdiv)
             for model in models:
-                for item, volume in self.loader(model).load(self.project, spec, model):
-                    self._data[item] = self._data.setdefault(item, WorkVolume(0, None)) + volume
+                try:
+                    for item, volume in self.loader(model).load(self.project, spec, model):
+                        self._data[item] = self._data.setdefault(item, WorkVolume(0, None)) + volume
+                except:
+                    continue
         return self._data
 
     def get_data(self) -> Dict[WorkItem, WorkVolume]:
