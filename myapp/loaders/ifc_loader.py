@@ -1,4 +1,5 @@
 import re
+import tempfile
 from dataclasses import dataclass, field
 from typing import Iterable, Tuple
 
@@ -14,13 +15,22 @@ from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume
 
 class IFCLoader(BimModelLoader):
     def load(self, project: ActiveLink, spec: Wbs, model: URN) -> Iterable[Tuple[WorkItem, WorkVolume]]:
-        model_data = requests.get(model.urn).content.decode("utf-8")
-        if model_data[:3] != "ISO":
-            raise Exception("Sorry, bad file")
-        ifc_file = ifcopenshell.file.from_string(model_data)
+        # Создаем временный файл с расширением .ifc
+        with tempfile.NamedTemporaryFile(suffix=".ifc") as file_object:
+            # Скачиваем модель во временный файл используя потоковую запись
+            with requests.get(model.urn, stream=True) as r:
+                r.raise_for_status()
+                for chunk in r.iter_content(chunk_size=8192):
+                    file_object.write(chunk)
+            # сбрасываем буфер записи и переходим в начало файла
+            file_object.flush()
+            file_object.seek(0)
+            
+            # открываем файл
+            ifc_file = ifcopenshell.open(file_object.name)
 
-        G, storeys = load_graph(ifc_file)
-        yield from aggregate_items(G, storeys)
+            G, storeys = load_graph(ifc_file)
+            yield from aggregate_items(G, storeys)
 
 
 AGGREGATE_QTOS = {"Area", "NetVolume", "GrossVolume", "Length", "NetArea"}
