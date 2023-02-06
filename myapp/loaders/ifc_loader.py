@@ -1,6 +1,5 @@
 import re
 import tempfile
-from dataclasses import dataclass, field
 from typing import Iterable, Tuple
 
 import ifcopenshell
@@ -25,15 +24,16 @@ class IFCLoader(BimModelLoader):
             # сбрасываем буфер записи и переходим в начало файла
             file_object.flush()
             file_object.seek(0)
-            
+
             # открываем файл
             ifc_file = ifcopenshell.open(file_object.name)
+            agg_keys = ("is_a", "group_type", "ADCM_DIN", "ADCM_Title")
 
-            G, storeys = load_graph(ifc_file)
-            yield from aggregate_items(G, storeys)
+            G, storeys = load_graph(ifc_file, agg_keys)
+            yield from aggregate_items(G, storeys, agg_keys)
 
 
-AGGREGATE_QTOS = {"Area", "NetVolume", "GrossVolume", "Length", "NetArea"}
+AGGREGATE_QTOS = {"Area", "NetVolume", "GrossVolume", "Length", "NetArea", "Объем"}
 
 
 def filter_ifc(element: entity_instance) -> bool:
@@ -95,9 +95,7 @@ def guess_level(G, storeys, index):
         return f"L{int(elevation)}"
 
 
-def aggregate_items(G, storeys):
-    agg_keys = ("is_a", "group_type", "ADCM_DIN", "ADCM_Title")
-
+def aggregate_items(G, storeys, agg_keys):
     level_map = {s: guess_level(G, storeys, i) for i, s in enumerate(storeys)}
 
     node_lst = []
@@ -157,14 +155,16 @@ def aggregate_items(G, storeys):
                 ),
                 WorkVolume(
                     count=count,
-                    value=attrs.get("NetVolume", attrs.get("GrossVolume", attrs.get("Area", attrs.get("NetArea")))),
+                    value=attrs.get("Объем", attrs.get("NetVolume", attrs.get("GrossVolume", attrs.get("Area", attrs.get("NetArea"))))),
                 ),
             )
     return node_lst
 
 
-def load_graph(ifc_file):
+def load_graph(ifc_file, agg_keys):
     G = nx.MultiDiGraph()
+
+    attribute_keys = AGGREGATE_QTOS.union(agg_keys).union({"Идентификация", "group_type", "Elevation"})
 
     def node(element):
         return element.Name
@@ -192,7 +192,7 @@ def load_graph(ifc_file):
             "Elevation",
             element.Elevation if element.is_a("IfcBuildingStorey") else None,
         )
-        return atts
+        return {k: v for k, v in atts.items() if k in attribute_keys}
 
     storeys = set()
     # k = 0
