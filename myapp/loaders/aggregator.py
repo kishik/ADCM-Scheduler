@@ -1,9 +1,13 @@
+import logging
 from typing import Dict, Iterable
 
 from myapp.loaders import BimModelLoader
 from myapp.loaders.ifc_loader import IFCLoader
 from myapp.loaders.revit_loader import RevitLoader
 from myapp.models import URN, ActiveLink, Wbs, WorkItem, WorkVolume
+
+
+logger = logging.getLogger(__name__)
 
 
 class WorkAggregator:
@@ -22,8 +26,8 @@ class WorkAggregator:
                 try:
                     for item, volume in self.loader(model).load(self.project, spec, model):
                         self._data[item] = self._data.setdefault(item, WorkVolume(0, None)) + volume
-                except:
-                    continue
+                except Exception as e:
+                    logger.exception(e)
         return self._data
 
     def get_data(self) -> Dict[WorkItem, WorkVolume]:
