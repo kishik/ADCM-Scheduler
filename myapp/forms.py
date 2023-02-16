@@ -39,13 +39,13 @@ class RuleForm(ModelForm):
             "isActive",
         ]
         widgets = {
-            "names": Textarea(attrs={"cols": 150, "rows": 5}),
-            "fields": Textarea(attrs={"cols": 150, "rows": 6}),
-            "unique_name": Textarea(attrs={"cols": 150, "rows": 6}),
-            "filters": Textarea(attrs={"cols": 150, "rows": 4}),
-            "group_by": Textarea(attrs={"cols": 150, "rows": 5}),
-            "sum_by": Textarea(attrs={"cols": 150, "rows": 5}),
-            "operations": Textarea(attrs={"cols": 150, "rows": 10}),
+            "names": Textarea(attrs={'cols': 80, 'rows': 20}),
+            "fields": Textarea(attrs={'cols': 80, 'rows': 20}),
+            "unique_name": Textarea(attrs={'cols': 80, 'rows': 20}),
+            "filters": Textarea(attrs={'cols': 80, 'rows': 20}),
+            "group_by": Textarea(attrs={'cols': 80, 'rows': 20}),
+            "sum_by": Textarea(attrs={'cols': 80, 'rows': 20}),
+            "operations": Textarea(attrs={'cols': 80, 'rows': 20}),
             "userId": forms.HiddenInput(),
             "isActive": forms.HiddenInput(),
         }

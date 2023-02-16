@@ -9,7 +9,8 @@ from ifcopenshell import entity_instance
 from tqdm import tqdm
 
 from myapp.loaders import BimModelLoader
-from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume
+from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume, Rule
+import yaml
 
 
 class IFCLoader(BimModelLoader):
@@ -27,6 +28,8 @@ class IFCLoader(BimModelLoader):
 
             # открываем файл
             ifc_file = ifcopenshell.open(file_object.name)
+            specification = Rule.objects.filter(name=spec.specs)
+            print(specification)
             agg_keys = ("is_a", "group_type", "ADCM_DIN", "ADCM_Title")
 
             G, storeys = load_graph(ifc_file, agg_keys)
