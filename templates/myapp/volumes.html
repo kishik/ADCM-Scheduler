@@ -32,7 +32,7 @@ table.dataTable thead .sorting_desc_disabled:before {
 
 </style>
 
-<script src="{% static 'celery_progress/celery_progress.js' %}"></script>
+{#<script src="{% static 'celery_progress/celery_progress.js' %}"></script>#}
 <!--<div class="d-flex justify-content-center" id="load">-->
 <!--<div class="order-4 p-2" id="wrap"></div>-->
 <!--</div>-->
@@ -62,11 +62,11 @@ table.dataTable thead .sorting_desc_disabled:before {
 {#      })#}
 {##}
 {#    </script>#}
-
-    <div class='progress-wrapper'>
-  <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;">&nbsp;</div>
-</div>
-<div id="progress-bar-message">Waiting for progress to start...</div>
+{##}
+{#    <div class='progress-wrapper'>#}
+{#  <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;">&nbsp;</div>#}
+{#</div>#}
+{#<div id="progress-bar-message">Waiting for progress to start...</div>#}
 
 {% regroup myJson by wbs1 as myList %}
 
