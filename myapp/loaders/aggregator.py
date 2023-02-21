@@ -5,6 +5,10 @@ from myapp.loaders import BimModelLoader
 from myapp.loaders.ifc_loader import IFCLoader
 from myapp.loaders.revit_loader import RevitLoader
 from myapp.models import URN, ActiveLink, Wbs, WorkItem, WorkVolume
+from celery import shared_task
+from celery_progress.backend import ProgressRecorder
+
+from time import sleep
 
 
 logger = logging.getLogger(__name__)

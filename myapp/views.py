@@ -28,6 +28,7 @@ from myapp.serializers import LinkSerializer, TaskSerializer
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
 from .graph_creation import add, neo4jexplorer
+# from .tasks import my_task
 
 cfg: dict = yml.get_cfg("neo4j")
 
@@ -40,6 +41,10 @@ NEW_PASS = cfg.get("new_password")
 LAST_URL = cfg.get("last_url")
 
 graph_data = []
+
+def progress_view(request):
+    result = my_task.delay(10)
+    return render(request, 'myapp/display_progress.html', context={'task_id': result.task_id})
 
 
 def login(request):

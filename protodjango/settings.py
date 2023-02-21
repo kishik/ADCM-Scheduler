@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     "crispy_forms",
     "myapp",
     "registration",
+    "django_celery_results",
+    "celery_progress"
     # 'myapp.yml',
     # 'django_webix',
 ]
@@ -159,3 +161,16 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 100,
     "DEFAULT_FILTER_BACKENDS": ("rest_framework.filters.DjangoFilterBackend",),
 }
+
+# REDIS settings
+# Настройки Redis условные и у вас они могут отличатся в зависимости от конфигурации
+REDIS_HOST = 'localhost'
+REDIS_PORT = '6379'
+
+# CELERY settings
+CELERY_BROKER_URL = 'redis://' + REDIS_HOST + ':' + REDIS_PORT + '/0'
+CELERY_BROKER_TRANSPORT_OPTION = {'visibility_timeout': 3600}
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'

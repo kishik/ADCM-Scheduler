@@ -6,6 +6,7 @@ from urllib.parse import unquote
 
 from django.db import models
 from django.urls import reverse
+from django_celery_results.models import TaskResult
 
 
 class URN(models.Model):
@@ -108,7 +109,6 @@ class Storey:
                 level = level[1:]
             object.__setattr__(self, "value", int(level) * (-1 if basement else 1))
 
-
     def __eq__(self, other):
         return self.name == other.name
 
@@ -137,3 +137,30 @@ class WorkVolume:
             self.count + other.count,
             other.value if self.value is None else self.value + other.value if other.value is not None else self.value,
         )
+
+
+class Job(models.Model):
+    class JobType(models.TextChoices):
+        LOAD = "LOAD", "Load models"
+        PLAN = "PLAN", "Generate plan"
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    task_id = models.CharField(max_length=191, null=True)
+    # project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="jobs")
+    task_type = models.CharField(max_length=10, choices=JobType.choices)
+
+    def tasks(self):
+        return TaskResult.objects.filter(task_id=self.task_id)
+
+
+class WorkItem(models.Model):
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="work_items")
+    # bim_model = models.ForeignKey(BimModel, on_delete=models.CASCADE, related_name="work_items")
+    docsdiv = models.CharField(max_length=100)
+    wbs_1 = models.CharField(max_length=100, null=True)
+    wbs_2 = models.CharField(max_length=100, null=True)
+    wbs_3 = models.CharField(max_length=100, null=True)
+    # name = models.CharField(max_length=255, null=True)
+    specs = models.CharField(max_length=100)
+    count = models.IntegerField(default=1)
+    volume = models.FloatField(null=True)

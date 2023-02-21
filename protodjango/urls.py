@@ -17,7 +17,7 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 
 import myapp
 from myapp import urls, views
@@ -25,4 +25,5 @@ from myapp import urls, views
 urlpatterns = [
     path("", include("myapp.urls")),
     path("admin/", admin.site.urls),
+    re_path(r'^celery-progress/', include('celery_progress.urls')),  # the endpoint is configurable
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
