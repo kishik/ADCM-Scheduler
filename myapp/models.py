@@ -153,14 +153,24 @@ class Job(models.Model):
         return TaskResult.objects.filter(task_id=self.task_id)
 
 
-class WorkItem(models.Model):
+class JobItem(models.Model):
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="work_items")
-    # bim_model = models.ForeignKey(BimModel, on_delete=models.CASCADE, related_name="work_items")
+    model = models.ForeignKey(URN, on_delete=models.CASCADE, related_name="work_items")
     docsdiv = models.CharField(max_length=100)
-    wbs_1 = models.CharField(max_length=100, null=True)
-    wbs_2 = models.CharField(max_length=100, null=True)
-    wbs_3 = models.CharField(max_length=100, null=True)
-    # name = models.CharField(max_length=255, null=True)
-    specs = models.CharField(max_length=100)
+    group_0 = models.CharField(max_length=100)
+    group_1 = models.CharField(max_length=100, null=True)
+    group_2 = models.CharField(max_length=100, null=True)
+    group_3 = models.CharField(max_length=100, null=True)
+    name = models.CharField(max_length=255, null=True)
     count = models.IntegerField(default=1)
     volume = models.FloatField(null=True)
+    # name = models.CharField(max_length=255, null=True)
+
+    # yield (
+    #     WorkItem(
+    #         work_type=attrs.get("ADCM_RD"),
+    #         building=attrs.get("ADCM_Title"),
+    #         storey=Storey(level, description=storey),
+    #         din=attrs.get("ADCM_DIN"),
+    #         name=n.get("group_type"),
+    #     ),

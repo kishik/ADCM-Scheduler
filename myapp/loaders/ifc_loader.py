@@ -1,6 +1,6 @@
 import re
 import tempfile
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, List
 
 import ifcopenshell
 import networkx as nx
@@ -9,7 +9,7 @@ from ifcopenshell import entity_instance
 from tqdm import tqdm
 
 from myapp.loaders import BimModelLoader
-from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume, Rule
+from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume, Rule, Job, JobItem
 import yaml
 
 
@@ -34,6 +34,40 @@ class IFCLoader(BimModelLoader):
 
             G, storeys = load_graph(ifc_file, agg_keys)
             yield from aggregate_items(G, storeys, agg_keys)
+
+
+def load1(self, spec: Wbs, model: URN, job: Job) -> List[WorkItem]:
+
+    with tempfile.NamedTemporaryFile(suffix=".ifc") as file_object:
+        # Скачиваем модель во временный файл используя потоковую запись
+        with requests.get(model.urn, stream=True) as r:
+            r.raise_for_status()
+            for chunk in r.iter_content(chunk_size=8192):
+                file_object.write(chunk)
+        # сбрасываем буфер записи и переходим в начало файла
+        file_object.flush()
+        file_object.seek(0)
+
+        # открываем файл
+        ifc_file = ifcopenshell.open(file_object.name)
+        specification = Rule.objects.filter(name=spec.specs)
+        print(specification)
+        agg_keys = ("is_a", "group_type", "ADCM_DIN", "ADCM_Title")
+
+        G, storeys = load_graph(ifc_file, agg_keys)
+        # yield from aggregate_items(G, storeys, agg_keys)
+        for item, volume in aggregate_items(G, storeys, agg_keys):
+            yield JobItem.objects.create(
+                job=job,
+                model=model,
+                docsdiv=model.type,
+                wbs_1=item.work_type,
+                wbs_2=item.storey,
+                wbs_3=item.din,
+                name=item.name,
+                count=volume.count,
+                volume=volume.value,
+            ).id
 
 
 AGGREGATE_QTOS = {"Area", "NetVolume", "GrossVolume", "Length", "NetArea", "Объем"}
