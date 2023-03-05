@@ -19,15 +19,15 @@ from django.urls import include, path, re_path
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from myapp import views
-from myapp.views import RuleUpdateView, WbsUpdateView
+from myapp.views import RuleUpdateView, WbsUpdateView, Volumes, Sdrs
 from registration import views as v
 
 urlpatterns = [
     path("", views.work_in_progress),
     path("models/", views.urn_show),
     path("families/", views.families),
-    path("sdrs/", views.sdrs),
-    path("volumes/", views.volumes, name="volumes"),
+    path("sdrs/", Sdrs.as_view()),
+    path("volumes/", Volumes.as_view(), name="volumes"),
     path("schedule/", views.schedule),
     # path('graph/', views.graph_show),
     path("rules/", views.rule_create),

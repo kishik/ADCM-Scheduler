@@ -11,6 +11,7 @@ from asgiref.sync import sync_to_async
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, UpdateView
 from django.views.generic.edit import FormView
@@ -28,6 +29,7 @@ from myapp.serializers import LinkSerializer, TaskSerializer
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
 from .graph_creation import add, neo4jexplorer
+
 # from .tasks import my_task
 
 cfg: dict = yml.get_cfg("neo4j")
@@ -41,6 +43,7 @@ NEW_PASS = cfg.get("new_password")
 LAST_URL = cfg.get("last_url")
 
 graph_data = []
+
 
 def progress_view(request):
     result = my_task.delay(10)
@@ -411,6 +414,100 @@ def saveModel(request):
     return redirect("/settings/")
 
 
+class Volumes(View):
+    template_name = 'myapp/volumes.html'
+
+    def get(self, request):
+        flag = False
+        project = ActiveLink.objects.filter(userId=request.user.id).last()
+        wbs = Wbs.objects.filter(id=request.session["wbs"]) if request.session["wbs"] != 0 else Wbs.objects.all()
+
+        # import xlwt
+        #
+        # # Initialize a workbook
+        # book = xlwt.Workbook(encoding="utf-8")
+        #
+        # # Add a sheet to the workbook
+        # sheet1 = book.add_sheet("Python Sheet 1")
+        # if len(myJson['data']) > 0:
+        #     i = 0
+        #     for k, v in myJson['data'][0].items():
+        #         sheet1.write(0, i, k)
+        #         i = i + 1
+        #     i = 1
+        #     j = 0
+        #     for element in myJson['data']:
+        #         for k, v in element.items():
+        #             sheet1.write(i, j, v)
+        #             j = j + 1
+        #         j = 0
+        #         i = i + 1
+        #     name = r"C:\Users\kishi\PycharmProjects\protodjango\spreadsheet.xls"
+        #     book.save(name)
+        # Write to the sheet of the workbook
+        # sheet1.write(0, 0, "This is the First Cell of the First Sheet")
+        #
+        # # Save the workbook
+        # book.save("spreadsheet.xls")
+
+        data = WorkAggregator(project, wbs).load_models()
+
+        myJson = {
+            "data": [
+                {
+
+                    "wbs1": item.building or "None",
+                    "wbs2": item.storey.name if item.storey else "",
+                    "wbs3_id": item.din or "None",
+                    "wbs3": item.work_type or "None",
+
+                    "name": item.name or "None",
+                    "value": volume.value if volume.value is not None else volume.count,
+                    "wbs": f"{item.building}{item.din}",
+                    # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+
+                }
+                for item, volume in data.items()
+            ]
+        }
+
+        dins = {item.din for item, volume in data.items()}
+
+        # add async
+        user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+        # тут ресторю в свой граф из эксель
+        time_now = datetime.now()
+        try:
+            user_graph.restore_graph()
+        except Exception as e:
+            print("views.py 402", e.args)
+        print(datetime.now() - time_now)
+        # заменить функцией copy
+        # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
+        #                       authentication(url=URL, user=USER, password=PASS))
+        #
+        global graph_data
+        graph_data = myJson["data"]
+        graph_data.sort(
+            key=lambda x: (
+                x.get("wbs1", "") or "",
+                x.get("wbs2", "") or "",
+                x.get("wbs3_id", "") or "",
+            )
+        )
+        time_now = datetime.now()
+        user_graph.create_new_graph_algo(dins)
+        print(datetime.now() - time_now)
+        # print(myJson["data"])
+        return render(
+            request,
+            self.template_name,
+            {
+                "myJson": myJson["data"],
+            },
+        )
+
+
 def volumes(request):
     """
     Ведомость объемов
@@ -505,6 +602,39 @@ def volumes(request):
             "myJson": myJson["data"],
         },
     )
+
+
+class Sdrs(View):
+    template_name = 'myapp/sdr.html'
+
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return redirect("/login/")
+        form = WbsForm()
+        sdrs_all = Wbs.objects.all()
+
+        return render(request, self.template_name, {"form": form, "sdrs_all": sdrs_all})
+
+    def post(self, request):
+        # create a form instance and populate it with data from the request:
+        form = WbsForm(request.POST)
+
+        # check whether it's valid:
+        if form.is_valid():
+            wbs = Wbs()
+            wbs.wbs_code = form["wbs_code"].data
+            wbs.docsdiv = form["docsdiv"].data
+            wbs.wbs1 = form["wbs1"].data
+            wbs.wbs2 = form["wbs2"].data
+            wbs.wbs3 = form["wbs3"].data
+            wbs.specs = form["specs"].data
+            wbs.userId = request.user.id
+            wbs.isActive = True
+            wbs.save()
+            # process the data in form.cleaned_data as required
+            # ...
+            # redirect to a new URL:
+            return HttpResponseRedirect("/sdrs/")
 
 
 def sdrs(request):

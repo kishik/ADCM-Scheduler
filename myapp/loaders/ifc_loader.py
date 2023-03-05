@@ -13,31 +13,7 @@ from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume, Rul
 import yaml
 
 
-class IFCLoader(BimModelLoader):
-    def load(self, project: ActiveLink, spec: Wbs, model: URN) -> Iterable[Tuple[WorkItem, WorkVolume]]:
-        # Создаем временный файл с расширением .ifc
-        with tempfile.NamedTemporaryFile(suffix=".ifc") as file_object:
-            # Скачиваем модель во временный файл используя потоковую запись
-            with requests.get(model.urn, stream=True) as r:
-                r.raise_for_status()
-                for chunk in r.iter_content(chunk_size=8192):
-                    file_object.write(chunk)
-            # сбрасываем буфер записи и переходим в начало файла
-            file_object.flush()
-            file_object.seek(0)
-
-            # открываем файл
-            ifc_file = ifcopenshell.open(file_object.name)
-            specification = Rule.objects.filter(name=spec.specs)
-            print(specification)
-            agg_keys = ("is_a", "group_type", "ADCM_DIN", "ADCM_Title")
-
-            G, storeys = load_graph(ifc_file, agg_keys)
-            yield from aggregate_items(G, storeys, agg_keys)
-
-
-def load1(self, spec: Wbs, model: URN, job: Job) -> List[WorkItem]:
-
+def load1(spec: Wbs, model: URN, job: Job) -> List[WorkItem]:
     with tempfile.NamedTemporaryFile(suffix=".ifc") as file_object:
         # Скачиваем модель во временный файл используя потоковую запись
         with requests.get(model.urn, stream=True) as r:
@@ -70,12 +46,36 @@ def load1(self, spec: Wbs, model: URN, job: Job) -> List[WorkItem]:
             ).id
 
 
+class IFCLoader(BimModelLoader):
+    def load(self, project: ActiveLink, spec: Wbs, model: URN) -> Iterable[Tuple[WorkItem, WorkVolume]]:
+        # Создаем временный файл с расширением .ifc
+        with tempfile.NamedTemporaryFile(suffix=".ifc") as file_object:
+            # Скачиваем модель во временный файл используя потоковую запись
+            with requests.get(model.urn, stream=True) as r:
+                r.raise_for_status()
+                for chunk in r.iter_content(chunk_size=8192):
+                    file_object.write(chunk)
+            # сбрасываем буфер записи и переходим в начало файла
+            file_object.flush()
+            file_object.seek(0)
+
+            # открываем файл
+            ifc_file = ifcopenshell.open(file_object.name)
+            specification = Rule.objects.filter(name=spec.specs)
+            print(specification)
+            agg_keys = ("is_a", "group_type", "ADCM_DIN", "ADCM_Title")
+
+            G, storeys = load_graph(ifc_file, agg_keys)
+            yield from aggregate_items(G, storeys, agg_keys)
+
+
 AGGREGATE_QTOS = {"Area", "NetVolume", "GrossVolume", "Length", "NetArea", "Объем"}
 
 
 def filter_ifc(element: entity_instance) -> bool:
     return (
-        element.is_a("IfcElement") or element.is_a("IfcSpatialStructureElement") or element.is_a("IfcObjectDefinition")
+            element.is_a("IfcElement") or element.is_a("IfcSpatialStructureElement") or element.is_a(
+        "IfcObjectDefinition")
     ) and not (element.is_a("IfcGrid") or element.is_a("IfcAnnotation"))
 
 
@@ -192,7 +192,9 @@ def aggregate_items(G, storeys, agg_keys):
                 ),
                 WorkVolume(
                     count=count,
-                    value=attrs.get("Объем", attrs.get("NetVolume", attrs.get("GrossVolume", attrs.get("Area", attrs.get("NetArea"))))),
+                    value=attrs.get("Объем", attrs.get("NetVolume", attrs.get("GrossVolume", attrs.get("Area",
+                                                                                                       attrs.get(
+                                                                                                           "NetArea"))))),
                 ),
             )
     return node_lst
