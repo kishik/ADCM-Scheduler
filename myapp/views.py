@@ -23,7 +23,7 @@ from rest_framework.response import Response
 import myapp.graph_creation.yml as yml
 from myapp.forms import AddLink, AddNode, RuleForm, UploadFileForm, WbsForm
 from myapp.loaders.aggregator import WorkAggregator
-from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs, WorkItem, WorkVolume
+from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs, WorkItem, WorkVolume, JobItem
 from myapp.serializers import LinkSerializer, TaskSerializer
 
 from .forms import FileFieldForm
@@ -566,6 +566,27 @@ def volumes(request):
             for item, volume in data.items()
         ]
     }
+
+    myJson = {
+        "data": [
+            {
+
+                "wbs1": element.group_0 or "None",
+                "wbs2": element.group_1 or "None",
+                "wbs3_id": element.group_2 or "None",
+                "wbs3": element.group_3 or "None",
+
+                "name": element.name or "None",
+                "value": element.volume if element.volume is not None else element.count,
+                "wbs": f"{element.group_0}{element.group_2}",
+                # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+
+            }
+            for element in JobItem.objects.all()
+        ]
+    }
+
+    dins = {element.group_2 for element in JobItem.objects.all()}
 
     dins = {item.din for item, volume in data.items()}
 

@@ -156,7 +156,6 @@ class Job(models.Model):
 class JobItem(models.Model):
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="work_items")
     model = models.ForeignKey(URN, on_delete=models.CASCADE, related_name="work_items")
-    docsdiv = models.CharField(max_length=100)
     group_0 = models.CharField(max_length=100)
     group_1 = models.CharField(max_length=100, null=True)
     group_2 = models.CharField(max_length=100, null=True)
