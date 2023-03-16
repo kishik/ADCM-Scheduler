@@ -68,21 +68,21 @@ class IFCLoader(BimModelLoader):
     #         G, storeys = load_graph(ifc_file, agg_keys)
     #         yield from aggregate_items(G, storeys, agg_keys)
 
-    def load(spec: Wbs, model: URN, job: Job) -> List[JobItem]:
+    def load(self, project: ActiveLink, spec: Wbs, model: URN) -> List[JobItem]:
         with tempfile.NamedTemporaryFile(suffix=".ifc") as file_object:
             # Скачиваем модель во временный файл используя потоковую запись
             with requests.get(model.urn, stream=True) as r:
                 r.raise_for_status()
                 for chunk in r.iter_content(chunk_size=8192):
                     file_object.write(chunk)
-            # сбрасываем буфер записи и переходим в начало файла
+                # сбрасываем буфер записи и переходим в начало файла
             file_object.flush()
             file_object.seek(0)
 
             # открываем файл
             ifc_file = ifcopenshell.open(file_object.name)
-            specification = Rule.objects.filter(name=spec.specs)
-            print(specification)
+            # specification = Rule.objects.filter(name=spec.specs)
+            # print(specification)
             agg_keys = ("is_a", "group_type", "ADCM_DIN", "ADCM_Title")
 
             G, storeys = load_graph(ifc_file, agg_keys)
@@ -99,6 +99,39 @@ class IFCLoader(BimModelLoader):
                     count=volume.count,
                     volume=volume.value,
                 ).id
+
+
+def load_ifc(model: URN, job: Job) -> List[JobItem]:
+    with tempfile.NamedTemporaryFile(suffix=".ifc") as file_object:
+        # Скачиваем модель во временный файл используя потоковую запись
+        with requests.get(model.urn, stream=True) as r:
+            r.raise_for_status()
+            for chunk in r.iter_content(chunk_size=8192):
+                file_object.write(chunk)
+            # сбрасываем буфер записи и переходим в начало файла
+        file_object.flush()
+        file_object.seek(0)
+
+        # открываем файл
+        ifc_file = ifcopenshell.open(file_object.name)
+        # specification = Rule.objects.filter(name=spec.specs)
+        # print(specification)
+        agg_keys = ("is_a", "group_type", "ADCM_DIN", "ADCM_Title")
+
+        G, storeys = load_graph(ifc_file, agg_keys)
+        # yield from aggregate_items(G, storeys, agg_keys)
+        for item, volume in aggregate_items(G, storeys, agg_keys):
+            yield JobItem.objects.create(
+                job=job,
+                model=model,
+                group_0=model.type,
+                group_1=item.work_type,
+                group_2=item.storey,
+                group_3=item.din,
+                name=item.name,
+                count=volume.count,
+                volume=volume.value,
+            ).id
 
 
 AGGREGATE_QTOS = {"Area", "NetVolume", "GrossVolume", "Length", "NetArea", "Объем"}

@@ -23,12 +23,13 @@ from rest_framework.response import Response
 import myapp.graph_creation.yml as yml
 from myapp.forms import AddLink, AddNode, RuleForm, UploadFileForm, WbsForm
 from myapp.loaders.aggregator import WorkAggregator
-from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs, WorkItem, WorkVolume, JobItem
+from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs, WorkItem, WorkVolume, JobItem, Project
 from myapp.serializers import LinkSerializer, TaskSerializer
 
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
 from .graph_creation import add, neo4jexplorer
+from .tasks import sync_project
 
 # from .tasks import my_task
 
@@ -45,9 +46,9 @@ LAST_URL = cfg.get("last_url")
 graph_data = []
 
 
-def progress_view(request):
-    result = my_task.delay(10)
-    return render(request, 'myapp/display_progress.html', context={'task_id': result.task_id})
+# def progress_view(request):
+#     result = my_task.delay(10)
+#     return render(request, 'myapp/display_progress.html', context={'task_id': result.task_id})
 
 
 def login(request):
@@ -418,7 +419,6 @@ class Volumes(View):
     template_name = 'myapp/volumes.html'
 
     def get(self, request):
-        flag = False
         project = ActiveLink.objects.filter(userId=request.user.id).last()
         wbs = Wbs.objects.filter(id=request.session["wbs"]) if request.session["wbs"] != 0 else Wbs.objects.all()
 
@@ -449,29 +449,30 @@ class Volumes(View):
         #
         # # Save the workbook
         # book.save("spreadsheet.xls")
-
-        data = WorkAggregator(project, wbs).load_models()
+        # project = Project.objects.last()
+        result = sync_project()
+        # WorkAggregator(project, wbs).load_models()
 
         myJson = {
             "data": [
                 {
 
-                    "wbs1": item.building or "None",
-                    "wbs2": item.storey.name if item.storey else "",
-                    "wbs3_id": item.din or "None",
-                    "wbs3": item.work_type or "None",
+                    "wbs1": element.group_0 or "None",
+                    "wbs2": element.group_1 or "",
+                    "wbs3_id": element.group_2 or "None",
+                    "wbs3": element.group_3 or "None",
 
-                    "name": item.name or "None",
-                    "value": volume.value if volume.value is not None else volume.count,
-                    "wbs": f"{item.building}{item.din}",
+                    "name": element.name or "None",
+                    "value": element.value if element.value is not None else element.count,
+                    "wbs": f"{element.group_0}{element.group_3}",
                     # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
 
                 }
-                for item, volume in data.items()
+                for element in JobItem.objects.all()
             ]
         }
 
-        dins = {item.din for item, volume in data.items()}
+        dins = {item.din for item in JobItem.objects.all()}
 
         # add async
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
@@ -590,7 +591,6 @@ def volumes(request):
 
     dins = {item.din for item, volume in data.items()}
 
-    # add async
     user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
     # тут ресторю в свой граф из эксель
     time_now = datetime.now()
@@ -599,12 +599,10 @@ def volumes(request):
     except Exception as e:
         print("views.py 402", e.args)
     print(datetime.now() - time_now)
-    # заменить функцией copy
-    # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
-    #                       authentication(url=URL, user=USER, password=PASS))
-    #
-    global graph_data
+
+    # global graph_data
     graph_data = myJson["data"]
+    # graph_data = JobItem.objects.all()
     graph_data.sort(
         key=lambda x: (
             x.get("wbs1", "") or "",
@@ -615,7 +613,7 @@ def volumes(request):
     time_now = datetime.now()
     user_graph.create_new_graph_algo(dins)
     print(datetime.now() - time_now)
-    # print(myJson["data"])
+
     return render(
         request,
         "myapp/volumes.html",
@@ -909,7 +907,30 @@ def schedule(request):
     distances = ()
     dins = []
     unique_wbs1 = set()
-    global graph_data
+
+    myJson = {
+        "data": [
+            {
+
+                "wbs1": element.group_0 or "None",
+                "wbs2": element.group_1 or "None",
+                "wbs3_id": element.group_2 or "None",
+                "wbs3": element.group_3 or "None",
+
+                "name": element.name or "None",
+                "value": element.volume if element.volume is not None else element.count,
+                "wbs": f"{element.group_0}{element.group_2}",
+                # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+
+            }
+            for element in JobItem.objects.all()
+        ]
+    }
+
+    graph_data = myJson["data"]
+
+    # global graph_data
+    # graph_data = JobItem.objects.all()
     result = {}
     result_din = {}
     names = {}

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import unquote
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
 from django_celery_results.models import TaskResult
@@ -138,6 +139,43 @@ class WorkVolume:
             other.value if self.value is None else self.value + other.value if other.value is not None else self.value,
         )
 
+    # name = models.CharField(max_length=255, null=True)
+
+    # yield (
+    #     WorkItem(
+    #         work_type=attrs.get("ADCM_RD"),
+    #         building=attrs.get("ADCM_Title"),
+    #         storey=Storey(level, description=storey),
+    #         din=attrs.get("ADCM_DIN"),
+    #         name=n.get("group_type"),
+    #     ),
+
+
+class EditableModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="%(app_label)s_%(class)s_created_by")
+    updated_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="%(app_label)s_%(class)s_updated_by")
+    deleted_at = models.DateTimeField(blank=True, null=True)
+    deleted_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, blank=True, null=True, related_name="%(app_label)s_%(class)s_deleted_by"
+    )
+
+    def is_active(self):
+        return self.deleted_at is None
+
+    class Meta:
+        abstract = True
+
+
+class Project(EditableModel):
+    name = models.CharField(max_length=100, blank=True)
+    description = models.CharField(max_length=1000, blank=True)
+    users = models.ManyToManyField(User, blank=True, related_name="projects")
+
+    def __str__(self):
+        return self.name
+
 
 class Job(models.Model):
     class JobType(models.TextChoices):
@@ -146,7 +184,7 @@ class Job(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     task_id = models.CharField(max_length=191, null=True)
-    # project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="jobs")
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="jobs")
     task_type = models.CharField(max_length=10, choices=JobType.choices)
 
     def tasks(self):
@@ -163,13 +201,40 @@ class JobItem(models.Model):
     name = models.CharField(max_length=255, null=True)
     count = models.IntegerField(default=1)
     volume = models.FloatField(null=True)
-    # name = models.CharField(max_length=255, null=True)
 
-    # yield (
-    #     WorkItem(
-    #         work_type=attrs.get("ADCM_RD"),
-    #         building=attrs.get("ADCM_Title"),
-    #         storey=Storey(level, description=storey),
-    #         din=attrs.get("ADCM_DIN"),
-    #         name=n.get("group_type"),
-    #     ),
+
+class ModelGroup(EditableModel):
+    name = models.CharField(max_length=100, blank=True)
+    description = models.CharField(max_length=1000, blank=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="model_groups")
+
+    def __str__(self):
+        return self.name
+
+
+class AutodeskExtractorRule(EditableModel):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    model_group = models.ForeignKey(ModelGroup, on_delete=models.CASCADE, related_name="extractor_rules")
+    name = models.CharField(max_length=100, blank=True)
+    description = models.CharField(max_length=1000, blank=True)
+    group_0 = models.CharField(max_length=100, null=True)
+    group_1 = models.CharField(max_length=100, null=True)
+    group_2 = models.CharField(max_length=100, null=True)
+    group_3 = models.CharField(max_length=100, null=True)
+    spec = models.CharField(max_length=200)
+
+
+class BimModel(EditableModel):
+    class ModelType(models.TextChoices):
+        REVIT = "REVIT", "Revit"
+        IFC = "IFC", "IFC"
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="bim_models")
+    model_group = models.ForeignKey(ModelGroup, on_delete=models.CASCADE, related_name="bim_models")
+    name = models.CharField(max_length=100, blank=True)
+    description = models.CharField(max_length=1000, blank=True)
+    uri = models.CharField(max_length=1000)
+    model_type = models.CharField(max_length=10, choices=ModelType.choices)
+
+    def __str__(self):
+        return f"{self.name}[{self.model_type}]"
