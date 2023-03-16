@@ -9,7 +9,7 @@ from ifcopenshell import entity_instance
 from tqdm import tqdm
 
 from myapp.loaders import BimModelLoader
-from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume, Rule, Job, JobItem
+from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume, Rule, Job, JobItem, BimModel
 import yaml
 
 
@@ -101,10 +101,10 @@ class IFCLoader(BimModelLoader):
                 ).id
 
 
-def load_ifc(model: URN, job: Job) -> List[JobItem]:
+def load_ifc(model: BimModel, job: Job) -> List[JobItem]:
     with tempfile.NamedTemporaryFile(suffix=".ifc") as file_object:
         # Скачиваем модель во временный файл используя потоковую запись
-        with requests.get(model.urn, stream=True) as r:
+        with requests.get(model.uri, stream=True) as r:
             r.raise_for_status()
             for chunk in r.iter_content(chunk_size=8192):
                 file_object.write(chunk)
@@ -124,7 +124,7 @@ def load_ifc(model: URN, job: Job) -> List[JobItem]:
             yield JobItem.objects.create(
                 job=job,
                 model=model,
-                group_0=model.type,
+                group_0=model.model_type,
                 group_1=item.work_type,
                 group_2=item.storey,
                 group_3=item.din,
@@ -132,6 +132,25 @@ def load_ifc(model: URN, job: Job) -> List[JobItem]:
                 count=volume.count,
                 volume=volume.value,
             ).id
+
+
+def load(model: BimModel, job: Job) -> List[WorkItem]:
+    model_data = requests.get(model.uri).content.decode("utf-8")
+    ifc_file = ifcopenshell.file.from_string(model_data)
+    print("loading")
+    G, storeys = load_graph(ifc_file)
+    for item in aggregate_items(G, storeys):
+        yield WorkItem.objects.create(
+            job=job,
+            bim_model=model,
+            group_0=model.model_group.name,
+            group_1=item["group_1"],
+            group_2=item["group_2"],
+            group_3=item["group_3"],
+            name=item["name"],
+            count=item["count"],
+            volume=item["volume"],
+        ).id
 
 
 AGGREGATE_QTOS = {"Area", "NetVolume", "GrossVolume", "Length", "NetArea", "Объем"}

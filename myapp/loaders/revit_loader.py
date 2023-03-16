@@ -5,7 +5,7 @@ import jmespath
 import requests
 
 from myapp.loaders import BimModelLoader
-from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume, Job, AutodeskExtractorRule
+from myapp.models import URN, ActiveLink, Storey, Wbs, WorkItem, WorkVolume, Job, AutodeskExtractorRule, BimModel
 
 
 class RevitLoader(BimModelLoader):
@@ -41,7 +41,8 @@ class RevitLoader(BimModelLoader):
                 yield item, volume
 
 
-def load_revit(model: URN, job: Job, rule: AutodeskExtractorRule) -> List[WorkItem]:
+def load_revit(model: BimModel, job: Job, rule: AutodeskExtractorRule) -> List[WorkItem]:
+    print("revit")
     path = "/".join([rule.spec, "project", model.project.external_project.external_id, "model", model.uri])
     data = requests.get(f"http://4d-model.acceleration.ru:8000/acc/get_spec/{path}").json()
     if isinstance(data, str):
