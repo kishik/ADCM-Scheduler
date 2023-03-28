@@ -406,6 +406,70 @@ def saveModel(request):
     return redirect("/settings/")
 
 
+def excel_upload(request):
+    if request.method == "POST":
+        print('hi')
+        path = request.FILES['excel_file']
+        data = pd.read_excel(
+            path,
+            dtype=str,
+            usecols="A:F",
+            skiprows=[0, 1, 2, 3],
+            # index_col=3,
+        )
+        info = 'Проект,Смета,Шифр,НаименованиеПолное'
+        print(data.columns)
+        # обработка excel
+
+
+
+
+        return render(
+            request,
+            "myapp/excel_table.html"
+        )
+
+    return render(
+        request,
+        "myapp/excel.html"
+    )
+
+# myJson = {
+        #     "data": [
+        #         {
+        #
+        #             "wbs1": item.building or "None",
+        #             "wbs2": item.storey.name if item.storey else "",
+        #             "wbs3_id": item.din or "None",
+        #             "wbs3": item.work_type or "None",
+        #
+        #             "name": item.name or "None",
+        #             "value": volume.value if volume.value is not None else volume.count,
+        #             "wbs": f"{item.building}{item.din}",
+        #             # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+        #
+        #         }
+        #         for item, volume in data.items()
+        #     ]
+        # }
+
+
+def uploading(request):
+    print('hi, outside')
+    path = request.FILES['excel_file']
+    data = pd.read_excel(
+        path,
+        dtype=str,
+        usecols="A,B,E,F,J",
+        index_col=0,
+    )
+    # обработка excel
+    return render(
+        request,
+        "myapp/excel_table.html"
+    )
+
+
 def volumes(request):
     """
     Ведомость объемов
