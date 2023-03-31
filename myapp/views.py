@@ -28,8 +28,7 @@ from myapp.serializers import LinkSerializer, TaskSerializer
 
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
-from .graph_creation import add, neo4jexplorer
-
+from .graph_creation import add, neo4jexplorer, neo4j_driver
 cfg: dict = yml.get_cfg("neo4j")
 
 URL = cfg.get("url")
@@ -450,7 +449,7 @@ def excel_upload(request):
         # тут ресторю в свой граф из эксель
         time_now = datetime.now()
         try:
-            user_graph.restore_graph()
+            neo4j_driver.main()
         except Exception as e:
             print("views.py 402", e.args)
         user_graph.create_new_graph_algo(dins)
