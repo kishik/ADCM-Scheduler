@@ -2,6 +2,7 @@ import asyncio
 import json
 import operator
 import re
+import sys
 from datetime import datetime, timedelta
 
 import httpx
@@ -413,20 +414,61 @@ def excel_upload(request):
         data = pd.read_excel(
             path,
             dtype=str,
-            usecols="A:F",
-            skiprows=[0, 1, 2, 3],
+            # usecols="A:F"
+            # skiprows=[0, 1, 2, 3],
             # index_col=3,
         )
         info = 'Проект,Смета,Шифр,НаименованиеПолное'
         print(data.columns)
+        print(data.head(1))
+
         # обработка excel
 
+        myJson = {
+            "data": [
+                {
 
+                    "wbs1": volume['Проект'] or "None",
+                    "wbs2": volume['Смета'] or "None",
+                    "wbs3_id": str(volume['Шифр']) or "None",
+                    "wbs3": str(volume['Шифр']) or "None",
 
+                    "name": volume['НаименованиеПолное'] or "None",
+                    "value": 0,
+                    "wbs": re.search(r'№\S*', volume['Смета']).group(0)[1:],
+                    # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+                    'number': int(re.search(r'№\S*', volume['Смета']).group(0)[1:].split('-')[0])
+                }
+                for item, volume in data.iterrows()
+            ]
+        }
 
+        dins = {re.search(r'№\S*', volume['Смета']).group(0)[1:] for item, volume in data.iterrows()}
+
+        # add async
+        user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+        # тут ресторю в свой граф из эксель
+        time_now = datetime.now()
+        try:
+            user_graph.restore_graph()
+        except Exception as e:
+            print("views.py 402", e.args)
+        user_graph.create_new_graph_algo(dins)
+
+        global graph_data
+        graph_data = myJson["data"]
+        graph_data.sort(
+            key=lambda x: (
+                x.get("number", "") or "",
+                x.get("wbs3_id", "") or "",
+            )
+        )
         return render(
             request,
-            "myapp/excel_table.html"
+            "myapp/excel_table.html",
+            {
+                "myJson": myJson["data"],
+            }
         )
 
     return render(
@@ -434,24 +476,25 @@ def excel_upload(request):
         "myapp/excel.html"
     )
 
+
 # myJson = {
-        #     "data": [
-        #         {
-        #
-        #             "wbs1": item.building or "None",
-        #             "wbs2": item.storey.name if item.storey else "",
-        #             "wbs3_id": item.din or "None",
-        #             "wbs3": item.work_type or "None",
-        #
-        #             "name": item.name or "None",
-        #             "value": volume.value if volume.value is not None else volume.count,
-        #             "wbs": f"{item.building}{item.din}",
-        #             # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
-        #
-        #         }
-        #         for item, volume in data.items()
-        #     ]
-        # }
+#     "data": [
+#         {
+#
+#             "wbs1": item.building or "None",
+#             "wbs2": item.storey.name if item.storey else "",
+#             "wbs3_id": item.din or "None",
+#             "wbs3": item.work_type or "None",
+#
+#             "name": item.name or "None",
+#             "value": volume.value if volume.value is not None else volume.count,
+#             "wbs": f"{item.building}{item.din}",
+#             # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+#
+#         }
+#         for item, volume in data.items()
+#     ]
+# }
 
 
 def uploading(request):
@@ -823,7 +866,7 @@ def schedule(request):
     names = {}
 
     for el in graph_data:
-        wbs_id = (el["wbs3_id"] or "") + str(el["name"])
+        wbs_id = (str(el["wbs3_id"]) or "") + str(el["name"])
         if el["wbs1"] not in result:
             result[el["wbs1"]] = {}
             result_din[el["wbs1"]] = {}
