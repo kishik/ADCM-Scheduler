@@ -6,7 +6,8 @@ from neo4j import GraphDatabase, Session
 
 import myapp.graph_creation.yml as yml
 from myapp.models import Link
-
+import sys
+sys.setrecursionlimit(10000)
 cfg: dict = yml.get_cfg("neo4j")
 
 URL = cfg.get("url")

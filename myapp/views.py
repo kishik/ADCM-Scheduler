@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import datetime, timedelta
 
@@ -22,7 +23,7 @@ from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs
 from myapp.serializers import LinkSerializer, TaskSerializer
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
-from .graph_creation import add, neo4jexplorer, neo4j_driver
+from .graph_creation import add, neo4jexplorer, neo4j_driver, GESN_graph_creation
 from .graph_creation.graph_copy import graph_copy
 from .graph_creation.neo4jexplorer import Neo4jExplorer
 
@@ -403,29 +404,7 @@ def saveModel(request):
     return redirect("/settings/")
 
 
-def gesn_upload(file):
-    df1 = pd.read_excel(file)
-    df1.rename(
-        columns={"Проект": "wbs1", "Смета": "wbs2", "Шифр": "wbs3_id", "Наименование": "name"},
-        inplace=True
-    )
-    df1 = df1[["wbs1", "wbs2", "wbs3_id", "name"]]
-    df1.dropna(subset=["wbs3_id"], inplace=True)
-    df1.drop_duplicates(inplace=True)
 
-    HIST_URI = "neo4j+s://99c1a702.databases.neo4j.io:7687"
-    LOCAL_URI = "neo4j://127.0.0.1:7687"
-    USER = "neo4j"
-    PSWD = "231099"
-    hist_driver = GraphDatabase.driver(HIST_URI, auth=(USER, PSWD))
-    local_driver = GraphDatabase.driver(LOCAL_URI, auth=(USER, "23109900"))
-    graph_copy(hist_driver.session(), local_driver.session())
-
-    app = Neo4jExplorer(uri=LOCAL_URI)
-    hist_gesns = app.get_all_dins()
-    input_gesns = df1.wbs3_id.unique()
-    targ_gesns = np.intersect1d(hist_gesns, input_gesns)
-    app.create_new_graph_algo(targ_gesns)
 
 
 def excel_upload(request):
@@ -464,14 +443,15 @@ def excel_upload(request):
             ]
         }
 
-        dins = {re.search(r'№\S*', volume['Смета']).group(0)[1:] for item, volume in data.iterrows()}
-
+        dins = {key['wbs3'] for key in myJson['data']}
+        # print(dins)
         # add async
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
         # тут ресторю в свой граф из эксель
         time_now = datetime.now()
         try:
-            neo4j_driver.main()
+            print(os.getcwd())
+            GESN_graph_creation.main('myapp/data/2022-02-07 МОЭК_ЕКС график по смете.xlsx')
         except Exception as e:
             print("views.py 402", e.args)
         user_graph.create_new_graph_algo(dins)

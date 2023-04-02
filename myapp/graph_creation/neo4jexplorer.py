@@ -94,7 +94,7 @@ class Neo4jExplorer:
         for element in self.get_all_dins():
             if element not in target_ids:
                 self.removing_node(element)
-        self.del_extra_rel()
+        # self.del_extra_rel()
 
     def del_extra_rel(self):
         Q_DELETE = """

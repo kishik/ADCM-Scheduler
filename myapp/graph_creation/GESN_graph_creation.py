@@ -1,6 +1,10 @@
 import numpy as np
 from neo4j import GraphDatabase, Transaction
 import pandas as pd
+
+from myapp.graph_creation.graph_copy import graph_copy
+from myapp.graph_creation.neo4jexplorer import Neo4jExplorer
+
 pd.options.mode.chained_assignment = None
 
 
@@ -21,17 +25,12 @@ def make_graph(tx: Transaction, data: pd.DataFrame):
         wrk_name = data.loc[wrk_id, 'Наименование']
         add_node(tx, wrk_gesn, wrk_name)
 
-        f = wrk_gesn == '2.1-3-38'
-        if f:
-            print(wrk_gesn)
-
         s = data.loc[wrk_id, 'Последователи']
         if s == s:  # Проверка на то, что есть Последователи (s != NaN)
             followers = np.array(s.split(', '))
             for flw_id in np.intersect1d(followers, id_lst):
                 flw_gesn = data.loc[flw_id, 'ADCM_шифрГЭСН']
-                if f:
-                    print(flw_gesn)
+
                 if flw_gesn != wrk_gesn:
                     add_edge(tx, wrk_gesn, flw_gesn, 'ФС')
 
@@ -57,12 +56,12 @@ def add_edge(tx: Transaction, pred_din: str, flw_din: str, rel_type: str) -> Non
         pred_type = 'start'
         flw_type = 'finish'
     Q_CREATE_REL = '''
-    MATCH (n:Work)
-    WHERE n.DIN = $din1 AND n.type = $type1
-    MATCH (m:Work)
-    WHERE m.DIN = $din2 AND m.type = $type2
-    MERGE (n)-[r:FOLLOWS]->(m)
-    SET r.weight = coalesce(r.weight, 0) + 1;
+        MATCH (n:Work)
+        WHERE n.DIN = $din1 AND n.type = $type1
+        MATCH (m:Work)
+        WHERE m.DIN = $din2 AND m.type = $type2
+        MERGE (n)-[r:FOLLOWS]->(m)
+        SET r.weight = coalesce(r.weight, 0) + 1;
         '''
     tx.run(Q_CREATE_REL, din1=pred_din, din2=flw_din, type1=pred_type, type2=flw_type)
 
@@ -72,11 +71,36 @@ def clear_database(tx: Transaction):
            DETACH DELETE n''')
 
 
-def main():
-    df = read_graph_data("../data/2022-02-07 МОЭК_ЕКС график по смете.xlsx")
+def gesn_upload(file):
+    df1 = pd.read_excel(file)
+    df1.rename(
+        columns={"Проект": "wbs1", "Смета": "wbs2", "Шифр": "wbs3_id", "Наименование": "name"},
+        inplace=True
+    )
+    df1 = df1[["wbs1", "wbs2", "wbs3_id", "name"]]
+    df1.dropna(subset=["wbs3_id"], inplace=True)
+    df1.drop_duplicates(inplace=True)
+
+    HIST_URI = "neo4j+s://99c1a702.databases.neo4j.io:7687"
+    LOCAL_URI = "neo4j://127.0.0.1:7687"
+    USER = "neo4j"
+    PSWD = "231099"
+    hist_driver = GraphDatabase.driver(HIST_URI, auth=(USER, PSWD))
+    local_driver = GraphDatabase.driver(LOCAL_URI, auth=(USER, "23109900"))
+    graph_copy(hist_driver.session(), local_driver.session())
+
+    app = Neo4jExplorer(uri=LOCAL_URI)
+    hist_gesns = app.get_all_dins()
+    input_gesns = df1.wbs3_id.unique()
+    targ_gesns = np.intersect1d(hist_gesns, input_gesns)
+    app.create_new_graph_algo(targ_gesns)
+
+
+def main(location):
+    df = read_graph_data(location)
     df.drop_duplicates(keep='first', inplace=True)
 
-    driver = GraphDatabase.driver("neo4j+s://99c1a702.databases.neo4j.io", auth=("neo4j", "231099"))
+    driver = GraphDatabase.driver("neo4j://127.0.0.1:7687", auth=("neo4j", "23109900"))
     with driver.session() as session:
         session.write_transaction(clear_database)
         session.write_transaction(make_graph, df)
