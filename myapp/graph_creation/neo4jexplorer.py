@@ -13,9 +13,9 @@ class Neo4jExplorer:
         else:
             _uri = uri
         _user = self.cfg.get("new_user")
-        _pass = self.cfg.get("new_password")
+        _pswd = self.cfg.get("new_password")
 
-        self.driver = GraphDatabase.driver(_uri, auth=(_user, _pass))
+        self.driver = GraphDatabase.driver(_uri, auth=(_user, _pswd))
 
     def close(self):
         # Don't forget to close the driver connection when you are finished with it
@@ -94,6 +94,7 @@ class Neo4jExplorer:
         for element in self.get_all_dins():
             if element not in target_ids:
                 self.removing_node(element)
+        self.del_extra_rel()
 
     def del_extra_rel(self):
         Q_DELETE = """
@@ -127,5 +128,4 @@ if __name__ == "__main__":
     app = Neo4jExplorer()
     app.restore_graph()  # Only if you need to restore your graph
     app.create_new_graph_algo(["329", "3421", "369"])
-    app.del_extra_rel()
     app.close()

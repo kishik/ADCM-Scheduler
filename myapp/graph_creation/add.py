@@ -45,5 +45,5 @@ def from_one_file(session: Session, path: str) -> None:
     session.execute_write(utils.delete_cycles)
 
 
-def from_two_files(session: Session, node_file_path: str, edge_file_path: str) -> None:
-    pass
+# def from_two_files(session: Session, node_file_path: str, edge_file_path: str) -> None:
+#     pass

@@ -1,7 +1,7 @@
 import pandas as pd
 from neo4j import GraphDatabase, Transaction
 
-import myapp.graph_creation.yml as yml
+from myapp.graph_creation import yml
 
 cfg: dict = yml.get_cfg("neo4j")
 

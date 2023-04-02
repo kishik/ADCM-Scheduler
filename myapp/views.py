@@ -1,20 +1,15 @@
-import asyncio
-import json
-import operator
 import re
-import sys
 from datetime import datetime, timedelta
 
-import httpx
+import numpy as np
 import pandas as pd
 import requests
-from asgiref.sync import sync_to_async
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, UpdateView
 from django.views.generic.edit import FormView
+from neo4j import GraphDatabase
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
@@ -23,12 +18,14 @@ from rest_framework.response import Response
 import myapp.graph_creation.yml as yml
 from myapp.forms import AddLink, AddNode, RuleForm, UploadFileForm, WbsForm
 from myapp.loaders.aggregator import WorkAggregator
-from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs, WorkItem, WorkVolume
+from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs
 from myapp.serializers import LinkSerializer, TaskSerializer
-
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
 from .graph_creation import add, neo4jexplorer, neo4j_driver
+from .graph_creation.graph_copy import graph_copy
+from .graph_creation.neo4jexplorer import Neo4jExplorer
+
 cfg: dict = yml.get_cfg("neo4j")
 
 URL = cfg.get("url")
@@ -404,6 +401,31 @@ def saveModel(request):
     link.modelId = model
     link.save()
     return redirect("/settings/")
+
+
+def gesn_upload(file):
+    df1 = pd.read_excel(file)
+    df1.rename(
+        columns={"Проект": "wbs1", "Смета": "wbs2", "Шифр": "wbs3_id", "Наименование": "name"},
+        inplace=True
+    )
+    df1 = df1[["wbs1", "wbs2", "wbs3_id", "name"]]
+    df1.dropna(subset=["wbs3_id"], inplace=True)
+    df1.drop_duplicates(inplace=True)
+
+    HIST_URI = "neo4j+s://99c1a702.databases.neo4j.io:7687"
+    LOCAL_URI = "neo4j://127.0.0.1:7687"
+    USER = "neo4j"
+    PSWD = "231099"
+    hist_driver = GraphDatabase.driver(HIST_URI, auth=(USER, PSWD))
+    local_driver = GraphDatabase.driver(LOCAL_URI, auth=(USER, "23109900"))
+    graph_copy(hist_driver.session(), local_driver.session())
+
+    app = Neo4jExplorer(uri=LOCAL_URI)
+    hist_gesns = app.get_all_dins()
+    input_gesns = df1.wbs3_id.unique()
+    targ_gesns = np.intersect1d(hist_gesns, input_gesns)
+    app.create_new_graph_algo(targ_gesns)
 
 
 def excel_upload(request):
