@@ -2,7 +2,6 @@ import os
 import re
 from datetime import datetime, timedelta
 
-import numpy as np
 import pandas as pd
 import requests
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, JsonResponse
@@ -10,7 +9,6 @@ from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, UpdateView
 from django.views.generic.edit import FormView
-from neo4j import GraphDatabase
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
@@ -23,9 +21,7 @@ from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs
 from myapp.serializers import LinkSerializer, TaskSerializer
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
-from .graph_creation import add, neo4jexplorer, neo4j_driver, GESN_graph_creation
-from .graph_creation.graph_copy import graph_copy
-from .graph_creation.neo4jexplorer import Neo4jExplorer
+from .graph_creation import add, neo4jexplorer, GESN_graph_creation
 
 cfg: dict = yml.get_cfg("neo4j")
 
@@ -419,8 +415,6 @@ def excel_upload(request):
             # index_col=3,
         )
         info = 'Проект,Смета,Шифр,НаименованиеПолное'
-        print(data.columns)
-        print(data.head(1))
 
         # обработка excel
 
@@ -444,17 +438,17 @@ def excel_upload(request):
         }
 
         dins = {key['wbs3'] for key in myJson['data']}
-        # print(dins)
         # add async
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
         # тут ресторю в свой граф из эксель
         time_now = datetime.now()
         try:
-            print(os.getcwd())
-            GESN_graph_creation.main('myapp/data/2022-02-07 МОЭК_ЕКС график по смете.xlsx')
+            print("views.py 446", os.getcwd())
+            # GESN_graph_creation.main('myapp/data/2022-02-07 МОЭК_ЕКС график по смете.xlsx')
+            user_graph.create_new_graph_algo(dins)
         except Exception as e:
-            print("views.py 402", e.args)
-        user_graph.create_new_graph_algo(dins)
+            print("views.py 450", "can't create gesn graph")
+            print(e.args)
 
         global graph_data
         graph_data = myJson["data"]
@@ -504,7 +498,7 @@ def uploading(request):
     data = pd.read_excel(
         path,
         dtype=str,
-        usecols="A,B,E,F,J",
+        # usecols="A,B,E,F,J",
         index_col=0,
     )
     # обработка excel
@@ -583,7 +577,7 @@ def volumes(request):
         user_graph.restore_graph()
     except Exception as e:
         print("views.py 402", e.args)
-    print(datetime.now() - time_now)
+    # print(datetime.now() - time_now)
     # заменить функцией copy
     # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
     #                       authentication(url=URL, user=USER, password=PASS))
@@ -599,7 +593,7 @@ def volumes(request):
     )
     time_now = datetime.now()
     user_graph.create_new_graph_algo(dins)
-    print(datetime.now() - time_now)
+    # print(datetime.now() - time_now)
     # print(myJson["data"])
     return render(
         request,

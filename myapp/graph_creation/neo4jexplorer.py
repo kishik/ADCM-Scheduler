@@ -5,15 +5,18 @@ from myapp.graph_creation import utils, yml
 
 
 class Neo4jExplorer:
-    def __init__(self, uri=None):
+    def __init__(self, uri=None, pswd=None):
         # read settings from config
         self.cfg: dict = yml.get_cfg("neo4j")
-        if not uri:
-            _uri = self.cfg.get("new_url")
-        else:
+        if uri:
             _uri = uri
-        _user = self.cfg.get("new_user")
-        _pswd = self.cfg.get("new_password")
+        else:
+            _uri = self.cfg.get("url")
+        if pswd:
+            _pswd = pswd
+        else:
+            _pswd = self.cfg.get("password")
+        _user = self.cfg.get("user")
 
         self.driver = GraphDatabase.driver(_uri, auth=(_user, _pswd))
 
@@ -23,9 +26,9 @@ class Neo4jExplorer:
 
     def load_historical_graph(self):
         # driver to historical database
-        _hist_uri = self.cfg.get("url")
+        _hist_uri = self.cfg.get("hist_url")
         _hist_user = self.cfg.get("user")
-        _hist_pass = self.cfg.get("password")
+        _hist_pass = self.cfg.get("hist_password")
         _hist_driver = GraphDatabase.driver(_hist_uri, auth=(_hist_user, _hist_pass))
 
         Q_DATA_OBTAIN = """
@@ -52,35 +55,80 @@ class Neo4jExplorer:
             session.run("MATCH (n) DETACH DELETE n")  # Предварительная очистка базы данных
             session.run(Q_CREATE)
 
+    def hist_graph_copy(self):
+        _hist_uri = self.cfg.get("hist_url")
+        _hist_user = self.cfg.get("user")
+        _hist_pass = self.cfg.get("hist_password")
+        _hist_driver = GraphDatabase.driver(_hist_uri, auth=(_hist_user, _hist_pass))
+        Q_NODES_OBTAIN = """
+        MATCH (n)
+        WHERE n.type = 'start'
+        RETURN n.name AS n_name, n.DIN AS n_din
+        """
+        Q_NODES_CREATE = """
+        MERGE (s:Work {DIN: $n_din, name: $n_name, type: 'start'})
+        MERGE (f:Work {DIN: $n_din, name: $n_name, type: 'finish'})
+        MERGE (s)-[r:EXCECUTION {weight: 100}]->(f)
+        """
+        Q_RELS_OBTAIN = """
+        MATCH (n)-[r:FOLLOWS]->(m) 
+        RETURN n.DIN AS n_din, m.DIN AS m_din, properties(r).weight AS weight
+        """
+        Q_RELS_CREATE = """
+        MATCH (n:Work)
+        WHERE n.DIN = $n_din AND n.type = 'finish'
+        MATCH (m:Work)
+        WHERE m.DIN = $m_din AND m.type = 'start'
+        MERGE (n)-[r:FOLLOWS]->(m)
+        SET r.weight = coalesce(r.weight, 0) + 1;
+        """
+
+        with _hist_driver.session() as in_session:
+            node_df = pd.DataFrame(in_session.run(Q_NODES_OBTAIN).data())
+            print(node_df.head())
+            rel_df = pd.DataFrame(in_session.run(Q_RELS_OBTAIN).data())
+            print(rel_df.head())
+
+        with self.driver.session() as session:
+            session.execute_write(utils.clear_database)
+            node_df.apply(lambda row: session.run(Q_NODES_CREATE, n_din=row["n_din"], n_name=row["n_name"]), axis=1)
+
+            rel_df.apply(
+                lambda row: session.run(
+                    Q_RELS_CREATE,
+                    n_din=row["n_din"],
+                    m_din=row["m_din"],
+                    wght=row["weight"]
+                ), axis=1
+            )
+
     def removing_node(self, din: str):
         Q_PRED_FLW_OBTAIN = """
         MATCH (pred)-[:FOLLOWS]->(m)
-            WHERE m.DIN = $din
+            WHERE m.DIN = $din AND pred.type = 'finish'
         MATCH (n)-[:FOLLOWS]->(flw)
-            WHERE n.DIN = $din
-        RETURN pred.DIN AS pred_din, pred.type AS pred_type, 
-            flw.DIN AS flw_din, flw.type AS flw_type
+            WHERE n.DIN = $din AND flw.type = 'start'
+        RETURN pred.DIN AS pred_din, flw.DIN AS flw_din
         """
         with self.driver.session() as session:
             result_df = pd.DataFrame(session.run(Q_PRED_FLW_OBTAIN, din=din).data())
             result_df.apply(
                 lambda row: session.run(
                     """
-                    MATCH (n)
-                    WHERE n.DIN = $din1 AND n.type = $type1
-                    MATCH (m)
-                    WHERE m.DIN = $din2 AND m.type = $type2
-                    MERGE (n)-[r:FOLLOWS]->(m)
+                    MATCH (pred)
+                    WHERE pred.DIN = $din1 AND pred.type = 'finish'
+                    MATCH (flw)
+                    WHERE flw.DIN = $din2 AND flw.type = 'start'
+                    MERGE (pred)-[r:FOLLOWS]->(flw)
                     SET r.weight = coalesce(r.weight, 1);
-                    """,
+                    """,  # weight of new edges?
                     din1=row.pred_din,
-                    type1=row.pred_type,
                     din2=row.flw_din,
-                    type2=row.flw_type,
                 ),
                 axis=1,
             )
             session.run("MATCH (n) WHERE n.DIN = $din DETACH DELETE n", din=din)
+            print('deleted:', din)
 
     def get_all_dins(self):
         Q_DATA_OBTAIN = """
@@ -91,17 +139,33 @@ class Neo4jExplorer:
         return result.din.unique()
 
     def create_new_graph_algo(self, target_ids):
+        self.del_loops()
         for element in self.get_all_dins():
             if element not in target_ids:
                 self.removing_node(element)
-        # self.del_extra_rel()
 
-    def del_extra_rel(self):
-        Q_DELETE = """
-            match (b)<-[r:FOLLOWS]-(a)-[:FOLLOWS]->(c)-[:FOLLOWS]->(b)
-            delete r
-            """
-        self.driver.session().run(Q_DELETE)
+    def del_loops(self):
+        q_del_4x_loop = """
+        match (n1)-->(n2)-->(n3)-->(n4)-->(n1)-->()
+        detach delete n3, n4
+        """
+        q_del_3x_loop = """
+        match (b)<-[r]-(a)-[]->(c)-[]->(b)
+        delete r
+        """
+        q_del_2x_loop = """
+        match (x)-[]->(y)-[]->(x)
+        detach delete y
+        """
+        q_del_1x_loop = """
+        match (x)-[r]->(x)
+        delete r
+        """
+        self.driver.session().run(q_del_1x_loop)
+        self.driver.session().run(q_del_2x_loop)
+        self.driver.session().run(q_del_3x_loop)
+        self.driver.session().run(q_del_4x_loop)
+        print("4x loops deleted")
 
     def restore_graph(self):
         LNK_NODES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvNoXaiLn2YlT_LFi0NUmA-Igumgoi5Puh-gXvBgaOeNoaoFAWwqjt-G6zMUvrhTNcndUmTdP7qpaT/pub?output=csv"
@@ -126,6 +190,6 @@ class Neo4jExplorer:
 
 if __name__ == "__main__":
     app = Neo4jExplorer()
-    app.restore_graph()  # Only if you need to restore your graph
-    app.create_new_graph_algo(["329", "3421", "369"])
+    print(app.get_all_dins())
+    app.create_new_graph_algo(["3.47-3-20", "3.47-5-15", "3.47-3-15"])
     app.close()

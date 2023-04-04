@@ -5,13 +5,10 @@ from myapp.graph_creation.utils import clear_database
 
 Q_NODES_OBTAIN = """
 MATCH (n)
-WHERE n.type = 'start'
 RETURN n.name AS n_name, n.DIN AS n_din
 """
 Q_NODES_CREATE = """
-MERGE (s:Work {DIN: $n_din, name: $n_name, type: 'start'})
-MERGE (f:Work {DIN: $n_din, name: $n_name, type: 'finish'})
-MERGE (s)-[r:EXCECUTION {weight: 100}]->(f)
+MERGE (s:Work {DIN: $n_din, name: $n_name})
 """
 Q_RELS_OBTAIN = """
 MATCH (n)-[r:FOLLOWS]->(m) 
@@ -19,9 +16,9 @@ RETURN n.DIN AS n_din, m.DIN AS m_din, properties(r).weight AS weight
 """
 Q_RELS_CREATE = """
 MATCH (n:Work)
-WHERE n.DIN = $n_din AND n.type = 'finish'
+WHERE n.DIN = $n_din
 MATCH (m:Work)
-WHERE m.DIN = $m_din AND m.type = 'start'
+WHERE m.DIN = $m_din
 MERGE (n)-[r:FOLLOWS]->(m)
 SET r.weight = coalesce(r.weight, 0) + 1;
 """

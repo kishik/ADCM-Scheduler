@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from neo4j import GraphDatabase, Transaction
 import pandas as pd
@@ -10,11 +12,12 @@ pd.options.mode.chained_assignment = None
 
 def read_graph_data(file_name: str) -> pd.DataFrame:
     df = pd.read_excel(file_name)
-    df.drop_duplicates(keep='first', inplace=True)
+    df.drop_duplicates(subset=["ADCM_шифрГЭСН"], inplace=True)
     graph_data = df[['Идентификатор операции', 'Наименование', 'ADCM_шифрГЭСН', 'Последователи']]
     graph_data.loc[:, 'Идентификатор операции'] = graph_data['Идентификатор операции'].apply(str.strip)
     graph_data = graph_data[graph_data['Идентификатор операции'].str.startswith('A')]
     graph_data.set_index('Идентификатор операции', inplace=True)  # Update indeces
+    graph_data.drop_duplicates(inplace=True)
     return graph_data
 
 
@@ -67,8 +70,7 @@ def add_edge(tx: Transaction, pred_din: str, flw_din: str, rel_type: str) -> Non
 
 
 def clear_database(tx: Transaction):
-    tx.run('''MATCH (n)
-           DETACH DELETE n''')
+    tx.run("MATCH (n) DETACH DELETE n;")
 
 
 def gesn_upload(file):
@@ -98,14 +100,14 @@ def gesn_upload(file):
 
 def main(location):
     df = read_graph_data(location)
-    df.drop_duplicates(keep='first', inplace=True)
 
-    driver = GraphDatabase.driver("neo4j://127.0.0.1:7687", auth=("neo4j", "23109900"))
+    driver = GraphDatabase.driver('neo4j+s://99c1a702.databases.neo4j.io:7687', auth=("neo4j", "231099"))
     with driver.session() as session:
-        session.write_transaction(clear_database)
-        session.write_transaction(make_graph, df)
+        session.execute_write(clear_database)
+        session.execute_write(make_graph, df)
     driver.close()
 
 
 if __name__ == "__main__":
-    main()
+    print(os.getcwd())
+    main("../data/2022-02-07 МОЭК_ЕКС график по смете.xlsx")
