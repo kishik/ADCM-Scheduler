@@ -1,6 +1,9 @@
 import numpy as np
 from neo4j import GraphDatabase, Transaction
 import pandas as pd
+
+from myapp.graph_creation import yml
+
 pd.options.mode.chained_assignment = None
 
 
@@ -45,8 +48,8 @@ def clear_database(tx: Transaction):
 def main():
     df = read_graph_data("../data/2022-02-07 МОЭК_ЕКС график по смете.xlsx")
     df.drop_duplicates(keep='first', inplace=True)
-
-    driver = GraphDatabase.driver("neo4j+s://99c1a702.databases.neo4j.io", auth=("neo4j", "231099"))
+    cfg = yml.get_cfg('neo4j')
+    driver = GraphDatabase.driver(cfg.get('side_url'), auth=("neo4j", "231099"))
     with driver.session() as session:
         session.execute_write(clear_database)
         session.execute_write(make_graph, df)

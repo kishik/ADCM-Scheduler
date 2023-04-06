@@ -3,8 +3,11 @@ neo4j:
   user: 'neo4j'
   password: '23109900'
 
-  hist_url: 'neo4j+s://99c1a702.databases.neo4j.io:7687'
+  hist_url: 'neo4j+s://99c1a702.databases.neo4j.io:7687' # mail
   hist_password: '231099'
+
+  side_url: 'neo4j+s://178ff2cf.databases.neo4j.io:7687' # google
+  2x_url: 'neo4j+s://0fdb78bd.databases.neo4j.io:7687' # yandex
 
   last_url: 'neo4j://127.0.0.1:7688'
   file: 'data/2021-11-19 Roder связи.xlsx'

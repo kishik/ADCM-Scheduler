@@ -4,6 +4,7 @@ import numpy as np
 from neo4j import GraphDatabase, Transaction
 import pandas as pd
 
+from myapp.graph_creation import yml
 from myapp.graph_creation.graph_copy import graph_copy
 from myapp.graph_creation.neo4jexplorer import Neo4jExplorer
 
@@ -12,7 +13,7 @@ pd.options.mode.chained_assignment = None
 
 def read_graph_data(file_name: str) -> pd.DataFrame:
     df = pd.read_excel(file_name)
-    df.drop_duplicates(subset=["ADCM_шифрГЭСН"], inplace=True)
+    df.drop_duplicates(inplace=True)
     graph_data = df[['Идентификатор операции', 'Наименование', 'ADCM_шифрГЭСН', 'Последователи']]
     graph_data.loc[:, 'Идентификатор операции'] = graph_data['Идентификатор операции'].apply(str.strip)
     graph_data = graph_data[graph_data['Идентификатор операции'].str.startswith('A')]
@@ -100,8 +101,8 @@ def gesn_upload(file):
 
 def main(location):
     df = read_graph_data(location)
-
-    driver = GraphDatabase.driver('neo4j+s://99c1a702.databases.neo4j.io:7687', auth=("neo4j", "231099"))
+    cfg = yml.get_cfg("neo4j")
+    driver = GraphDatabase.driver(cfg.get("2x_url"), auth=("neo4j", "231099"))
     with driver.session() as session:
         session.execute_write(clear_database)
         session.execute_write(make_graph, df)
