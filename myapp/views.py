@@ -9,6 +9,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, UpdateView
 from django.views.generic.edit import FormView
+from neo4j import GraphDatabase
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
@@ -22,6 +23,7 @@ from myapp.serializers import LinkSerializer, TaskSerializer
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
 from .graph_creation import add, neo4jexplorer, GESN_graph_creation
+from .graph_creation.graph_copy import graph_copy
 
 cfg: dict = yml.get_cfg("neo4j")
 
@@ -400,9 +402,6 @@ def saveModel(request):
     return redirect("/settings/")
 
 
-
-
-
 def excel_upload(request):
     if request.method == "POST":
         print('hi')
@@ -414,6 +413,8 @@ def excel_upload(request):
             # skiprows=[0, 1, 2, 3],
             # index_col=3,
         )
+        data = data[data["Шифр"].str.startswith("1.") == False]
+        data = data[data["Шифр"].str.startswith("ОКЦ") == False]
         info = 'Проект,Смета,Шифр,НаименованиеПолное'
 
         # обработка excel
@@ -429,7 +430,7 @@ def excel_upload(request):
 
                     "name": volume['НаименованиеПолное'] or "None",
                     "value": 0,
-                    "wbs": re.search(r'№\S*', volume['Смета']).group(0)[1:],
+                    "wbs": ''.join((re.search(r'№\S*', volume['Смета']).group(0)[1:], '.', str(volume['Пункт']))),
                     # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
                     'number': int(re.search(r'№\S*', volume['Смета']).group(0)[1:].split('-')[0])
                 }
@@ -440,15 +441,16 @@ def excel_upload(request):
         dins = {key['wbs3'] for key in myJson['data']}
         # add async
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+        driver_hist = GraphDatabase.driver('neo4j+s://0fdb78bd.databases.neo4j.io:7687', auth=(USER, PASS))
+        driver_user = GraphDatabase.driver(URL, auth=(USER, '231099'))
         # тут ресторю в свой граф из эксель
         time_now = datetime.now()
         try:
-            print("views.py 446", os.getcwd())
-            # GESN_graph_creation.main('myapp/data/2022-02-07 МОЭК_ЕКС график по смете.xlsx')
-            user_graph.create_new_graph_algo(dins)
+            print(os.getcwd())
+            graph_copy(driver_hist.session(), driver_user.session())
         except Exception as e:
-            print("views.py 450", "can't create gesn graph")
-            print(e.args)
+            print("views.py 402", e.args)
+        user_graph.create_new_graph_algo(dins)
 
         global graph_data
         graph_data = myJson["data"]
@@ -498,7 +500,7 @@ def uploading(request):
     data = pd.read_excel(
         path,
         dtype=str,
-        # usecols="A,B,E,F,J",
+        usecols="A,B,E,F,J",
         index_col=0,
     )
     # обработка excel
@@ -577,7 +579,7 @@ def volumes(request):
         user_graph.restore_graph()
     except Exception as e:
         print("views.py 402", e.args)
-    # print(datetime.now() - time_now)
+    print(datetime.now() - time_now)
     # заменить функцией copy
     # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
     #                       authentication(url=URL, user=USER, password=PASS))
@@ -593,7 +595,7 @@ def volumes(request):
     )
     time_now = datetime.now()
     user_graph.create_new_graph_algo(dins)
-    # print(datetime.now() - time_now)
+    print(datetime.now() - time_now)
     # print(myJson["data"])
     return render(
         request,
@@ -861,7 +863,7 @@ def schedule(request):
     names = {}
 
     for el in graph_data:
-        wbs_id = (str(el["wbs3_id"]) or "") + str(el["name"])
+        wbs_id = ((str(el["wbs3_id"]) or ""), str(el["name"]), str(el["wbs"]))
         if el["wbs1"] not in result:
             result[el["wbs1"]] = {}
             result_din[el["wbs1"]] = {}
@@ -872,7 +874,7 @@ def schedule(request):
             result[el["wbs1"]][el["wbs2"]].append(wbs_id)
             result_din[el["wbs1"]][el["wbs2"]].append(el["wbs3_id"])
         dins.append(el["wbs3_id"])
-        names[wbs_id] = el["name"]
+        names[wbs_id[1]] = el["name"]
 
     Task2.objects.all().delete()
     Link.objects.all().delete()
@@ -920,7 +922,7 @@ def schedule(request):
                 ).save()
                 created.add((wbs1_str + wbs2_str))
 
-            for wbs3 in result[wbs1][wbs2]:
+            for wbs3 in sorted(result[wbs1][wbs2], key=lambda x: x[2]):
                 if not wbs3:
                     try:
                         if wbs3 != 0:
@@ -928,11 +930,13 @@ def schedule(request):
                     except:
                         continue
 
-                wbs3_str = wbs3[:3]
+                # брать гэсн этой работы
+                wbs3_str = wbs3[0]
                 if wbs3_str not in distances:
+
                     Task2(
-                        id=wbs1_str + wbs2_str + wbs3,
-                        text=names[wbs3] + " DIN(" + wbs3_str + ")",
+                        id=wbs1_str + wbs2_str + wbs3[0] + wbs3[1],
+                        text=f'{wbs3[2]} - {names[wbs3[1]]}({wbs3[0]})',
                         # min(start_date of levels)
                         start_date=datetime.today() + timedelta(prev_level),
                         # duration = max([distances[din] for din in result[wbs1]])
@@ -940,9 +944,11 @@ def schedule(request):
                         parent=wbs1_str + wbs2_str,
                     ).save()
                 else:
+
                     Task2(
-                        id=wbs1_str + wbs2 + wbs3,
-                        text=names[wbs3] + " DIN(" + wbs3_str + ")",
+                        id=wbs1_str + wbs2 + wbs3[0] + wbs3[1],
+
+                        text=f'{wbs3[2]} - {names[wbs3[1]]}({wbs3[0]})',
                         # min(start_date of levels)
                         start_date=datetime.today() + timedelta(prev_level) + timedelta(distances[wbs3_str]),
                         # duration = max([distances[din] for din in result[wbs1]])

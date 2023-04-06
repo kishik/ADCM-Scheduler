@@ -160,7 +160,7 @@ def childrenByDin(din, session):
     return children_arr
 
 
-def prohod(start_din, distances, session, dins, cur_level=0):
+def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
     """
     Проходит рекурсивный путь по своим детям, указывая максимальную глубину рекурсии,
     сравнивая текущую и полученную сейчас
@@ -169,14 +169,18 @@ def prohod(start_din, distances, session, dins, cur_level=0):
     :param session:
     :param cur_level:
     """
+    if start_din in visited:
+        return
     if start_din not in dins:
         for element in childrenByDin(start_din, session):
-            prohod(element, distances, session, dins, cur_level)
+            prohod(element, distances, session, dins, cur_level, visited)
     else:
         if start_din not in distances:
             distances[start_din] = 0
 
+
         distances[start_din] = max(cur_level, distances[start_din])
+        visited.append(start_din)
         for element in childrenByDin(start_din, session):
             if start_din == element:
                 continue
@@ -191,13 +195,15 @@ def prohod(start_din, distances, session, dins, cur_level=0):
 def calculateDistance(session, dins):
     """
     Запускает проход по всем нодам, не имеющим родителей
+    dins это дины которые нас интересуют в рамках одного отчета
     :return: dict нодов с их глубиной в графе
     """
     distances = {}
+    visited_nodes = []
     for node in allNodes(session):
         if parentsByDin(node, session).size > 0:
             continue
-        prohod(start_din=node, distances=distances, session=session, cur_level=0, dins=dins)
+        prohod(start_din=node, distances=distances, session=session, cur_level=0, dins=dins, visited=visited_nodes)
     return distances
 
 
@@ -356,11 +362,11 @@ def saving_typed_edges_with_wbs(session, result):
                 for wbs2 in result[wbs1].keys():
                     # if row['pred_din'] in  смотрим если ли эти дины с этим wbs1
                     for el in result[wbs1][wbs2]:
-                        if el.startswith(str(row["pred_din"])):
-                            pred_id = el[3:]
+                        if el[0].startswith(str(row["pred_din"])):
+                            pred_id = el[1]
                             for sub_el in result[wbs1][wbs2]:
-                                if sub_el.startswith(str(row["flw_din"])):
-                                    flw_id = sub_el[3:]
+                                if sub_el[0].startswith(str(row["flw_din"])):
+                                    flw_id = sub_el[1]
                                     Link(
                                         source=str(wbs1) + wbs2 + str(row["pred_din"]) + pred_id,
                                         target=str(wbs1) + wbs2 + str(row["flw_din"] + flw_id),

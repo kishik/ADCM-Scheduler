@@ -1,7 +1,7 @@
 import pandas as pd
 from neo4j import Session
 
-from utils import clear_database
+from myapp.graph_creation.utils import clear_database
 
 Q_NODES_OBTAIN = """
 MATCH (n)
