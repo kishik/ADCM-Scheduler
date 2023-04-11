@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -404,67 +405,109 @@ def saveModel(request):
 
 def excel_upload(request):
     if request.method == "POST":
-        print('hi')
+        # path = request.FILES['excel_file']
+        # data = pd.read_excel(
+        #     path,
+        #     dtype=str,
+        #     # usecols="A:F"
+        #     # skiprows=[0, 1, 2, 3],
+        #     # index_col=3,
+        # )
+        # data = data[data["Шифр"].str.startswith("1.") == False]
+        # data = data[data["Шифр"].str.startswith("ОКЦ") == False]
+        # info = 'Проект,Смета,Шифр,НаименованиеПолное'
+        #
+        # # обработка excel
+        #
+        # myJson = {
+        #     "data": [
+        #         {
+        #
+        #             "wbs1": volume['Проект'] or "None",
+        #             "wbs2": volume['Смета'] or "None",
+        #             "wbs3_id": str(volume['Шифр']) or "None",
+        #             "wbs3": str(volume['Шифр']) or "None",
+        #
+        #             "name": volume['НаименованиеПолное'] or "None",
+        #             "value": 0,
+        #             "wbs": ''.join((re.search(r'№\S*', volume['Смета']).group(0)[1:], '.', str(volume['Пункт']))),
+        #             # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+        #             'number': int(re.search(r'№\S*', volume['Смета']).group(0)[1:].split('-')[0])
+        #         }
+        #         for item, volume in data.iterrows()
+        #     ]
+        # }
+        # # передвинуть и переделать сортировку pandas
+        # # выбрать уникальные значения методом pandas
+        # # dins = data['Шифр'].unique()
+        # dins = {key['wbs3'] for key in myJson['data']}
+        # # add async
+        # user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+        # driver_hist = GraphDatabase.driver('neo4j+s://0fdb78bd.databases.neo4j.io:7687', auth=(USER, '231099'))
+        # driver_user = GraphDatabase.driver(URL, auth=(USER, '23109900'))
+        # # тут ресторю в свой граф из эксель
+        # time_now = datetime.now()
+        # try:
+        #     print(os.getcwd())
+        #     graph_copy(driver_hist.session(), driver_user.session())
+        # except Exception as e:
+        #     print("views.py 402", e.args)
+        # # переделать под series pandas
+        # user_graph.create_new_graph_algo(dins)
+        #
+        # global graph_data
+        # graph_data = myJson["data"]
+        # graph_data.sort(
+        #     key=lambda x: (
+        #         x.get("number", "") or "",
+        #         x.get("wbs3_id", "") or "",
+        #     )
+        # )
+
         path = request.FILES['excel_file']
-        data = pd.read_excel(
+        data_raw = pd.read_excel(
             path,
             dtype=str,
             # usecols="A:F"
             # skiprows=[0, 1, 2, 3],
             # index_col=3,
         )
-        data = data[data["Шифр"].str.startswith("1.") == False]
-        data = data[data["Шифр"].str.startswith("ОКЦ") == False]
-        info = 'Проект,Смета,Шифр,НаименованиеПолное'
+        data_raw = data_raw[data_raw["Шифр"].str.startswith("1.") == False]
+        data_raw = data_raw[data_raw["Шифр"].str.startswith("ОКЦ") == False]
+        # info = 'Проект,Смета,Шифр,НаименованиеПолное'
+        # data = data_raw
 
-        # обработка excel
+        d = data_raw
+        d_js = pd.DataFrame()
+        # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
+        d_js['wbs1'] = d['Проект']
+        d_js['wbs2'] = d['Смета']
+        d_js['wbs3_id'] = d['Шифр']
+        d_js['wbs3'] = d['Шифр']
+        d_js['name'] = d['НаименованиеПолное']
+        d_js['wbs'] = d[['Смета', 'Пункт']].apply(
+            lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
+        )
+        d_js['number'] = d['Смета'].apply(lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0]))
+        d_js['value'] = 0
 
-        myJson = {
-            "data": [
-                {
-
-                    "wbs1": volume['Проект'] or "None",
-                    "wbs2": volume['Смета'] or "None",
-                    "wbs3_id": str(volume['Шифр']) or "None",
-                    "wbs3": str(volume['Шифр']) or "None",
-
-                    "name": volume['НаименованиеПолное'] or "None",
-                    "value": 0,
-                    "wbs": ''.join((re.search(r'№\S*', volume['Смета']).group(0)[1:], '.', str(volume['Пункт']))),
-                    # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
-                    'number': int(re.search(r'№\S*', volume['Смета']).group(0)[1:].split('-')[0])
-                }
-                for item, volume in data.iterrows()
-            ]
-        }
-
-        dins = {key['wbs3'] for key in myJson['data']}
-        # add async
-        user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
-        driver_hist = GraphDatabase.driver('neo4j+s://0fdb78bd.databases.neo4j.io:7687', auth=(USER, PASS))
-        driver_user = GraphDatabase.driver(URL, auth=(USER, '231099'))
-        # тут ресторю в свой граф из эксель
-        time_now = datetime.now()
-        try:
-            print(os.getcwd())
-            graph_copy(driver_hist.session(), driver_user.session())
-        except Exception as e:
-            print("views.py 402", e.args)
-        user_graph.create_new_graph_algo(dins)
-
-        global graph_data
-        graph_data = myJson["data"]
-        graph_data.sort(
+        myJson = d_js.to_dict('records')
+        myJson.sort(
             key=lambda x: (
                 x.get("number", "") or "",
-                x.get("wbs3_id", "") or "",
+                x.get("wbs", "") or ""
             )
         )
+        global graph_data
+        graph_data = myJson
+        print(myJson)
+        # переделать template под pandas
+        # вставлять готовый текст
         return render(
             request,
             "myapp/excel_table.html",
             {
-                "myJson": myJson["data"],
+                "myJson": myJson,
             }
         )
 
