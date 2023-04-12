@@ -72,7 +72,7 @@ def new_graph(request):
     #     print("passed")
     context = {
         "form": UploadFileForm(),
-        "url": NEW_URL,
+        "url": 'neo4j+s://0fdb78bd.databases.neo4j.io:7687',
         "user_graph": USER,
         "pass": PASS,
         "link": AddLink(),
@@ -465,6 +465,7 @@ def excel_upload(request):
         # )
 
         path = request.FILES['excel_file']
+        # data_raw = pd.read_excel(path, dtype=str, skiprows=7)
         data_raw = pd.read_excel(
             path,
             dtype=str,

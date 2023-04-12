@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     "crispy_forms",
     "myapp",
     "registration",
-    "debug_toolbar",
+    # "debug_toolbar",
     # 'myapp.yml',
     # 'django_webix',
 ]
@@ -60,7 +60,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 ROOT_URLCONF = "protodjango.urls"

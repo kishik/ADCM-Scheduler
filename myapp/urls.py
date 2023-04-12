@@ -65,7 +65,7 @@ urlpatterns = [
     re_path(r"^data/link/(?P<pk>[0-9]+)$", views.link_update),
     re_path(r"^data/link", views.link_add),
     re_path(r"^data/(.*)$", views.data_list),
-    path('__debug__/', include('debug_toolbar.urls')),
+    # path('__debug__/', include('debug_toolbar.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 urlpatterns = format_suffix_patterns(urlpatterns)

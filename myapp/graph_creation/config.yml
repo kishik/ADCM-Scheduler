@@ -1,6 +1,6 @@
 neo4j:
-  url: 'neo4j://127.0.0.1:7687'
-#  url: 'neo4j://neo4j_user:7687'
+#  url: 'neo4j://127.0.0.1:7687'
+  url: 'neo4j://neo4j_user:7687'
   user: 'neo4j'
   password: '23109900'
 
