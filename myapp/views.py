@@ -1,6 +1,4 @@
-import os
 import re
-import sys
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -10,7 +8,6 @@ from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, UpdateView
 from django.views.generic.edit import FormView
-from neo4j import GraphDatabase
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
@@ -23,18 +20,16 @@ from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs
 from myapp.serializers import LinkSerializer, TaskSerializer
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
-from .graph_creation import add, neo4jexplorer, GESN_graph_creation
-from .graph_creation.graph_copy import graph_copy
+from .graph_creation import add, neo4jexplorer
 
 cfg: dict = yml.get_cfg("neo4j")
 
 URL = cfg.get("url")
 USER = cfg.get("user")
 PASS = cfg.get("password")
-NEW_URL = cfg.get("new_url")
-NEW_USER = cfg.get("new_user")
-NEW_PASS = cfg.get("new_password")
-LAST_URL = cfg.get("last_url")
+
+X2_URL = cfg.get("x2_url")
+X2_PASS = cfg.get("x2_password")
 
 graph_data = []
 
@@ -65,7 +60,7 @@ def new_graph(request):
     """
     if not request.user.is_authenticated:
         return redirect("/login/")
-    # user_graph = neo4jexplorer.Neo4jExplorer(uri=NEW_URL)
+    # user_graph = neo4jexplorer.Neo4jExplorer(uri=X2_URL)
     # try:
     #     user_graph.restore_graph()
     # except Exception:
@@ -227,7 +222,7 @@ def upload(request):
 
     if request.method == "POST":
         # historical_graph_creation.main(request.FILES['file'])
-        session = data_collect.authentication(url=URL, user=USER, password=PASS)
+        session = data_collect.authentication(url=X2_URL, user=USER, password=X2_PASS)
         add.from_one_file(session, request.FILES["file"])
 
     return redirect("/new_graph/")
@@ -405,65 +400,6 @@ def saveModel(request):
 
 def excel_upload(request):
     if request.method == "POST":
-        # path = request.FILES['excel_file']
-        # data = pd.read_excel(
-        #     path,
-        #     dtype=str,
-        #     # usecols="A:F"
-        #     # skiprows=[0, 1, 2, 3],
-        #     # index_col=3,
-        # )
-        # data = data[data["Шифр"].str.startswith("1.") == False]
-        # data = data[data["Шифр"].str.startswith("ОКЦ") == False]
-        # info = 'Проект,Смета,Шифр,НаименованиеПолное'
-        #
-        # # обработка excel
-        #
-        # myJson = {
-        #     "data": [
-        #         {
-        #
-        #             "wbs1": volume['Проект'] or "None",
-        #             "wbs2": volume['Смета'] or "None",
-        #             "wbs3_id": str(volume['Шифр']) or "None",
-        #             "wbs3": str(volume['Шифр']) or "None",
-        #
-        #             "name": volume['НаименованиеПолное'] or "None",
-        #             "value": 0,
-        #             "wbs": ''.join((re.search(r'№\S*', volume['Смета']).group(0)[1:], '.', str(volume['Пункт']))),
-        #             # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
-        #             'number': int(re.search(r'№\S*', volume['Смета']).group(0)[1:].split('-')[0])
-        #         }
-        #         for item, volume in data.iterrows()
-        #     ]
-        # }
-        # # передвинуть и переделать сортировку pandas
-        # # выбрать уникальные значения методом pandas
-        # # dins = data['Шифр'].unique()
-        # dins = {key['wbs3'] for key in myJson['data']}
-        # # add async
-        # user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
-        # driver_hist = GraphDatabase.driver('neo4j+s://0fdb78bd.databases.neo4j.io:7687', auth=(USER, '231099'))
-        # driver_user = GraphDatabase.driver(URL, auth=(USER, '23109900'))
-        # # тут ресторю в свой граф из эксель
-        # time_now = datetime.now()
-        # try:
-        #     print(os.getcwd())
-        #     graph_copy(driver_hist.session(), driver_user.session())
-        # except Exception as e:
-        #     print("views.py 402", e.args)
-        # # переделать под series pandas
-        # user_graph.create_new_graph_algo(dins)
-        #
-        # global graph_data
-        # graph_data = myJson["data"]
-        # graph_data.sort(
-        #     key=lambda x: (
-        #         x.get("number", "") or "",
-        #         x.get("wbs3_id", "") or "",
-        #     )
-        # )
-
         path = request.FILES['excel_file']
         # data_raw = pd.read_excel(path, dtype=str, skiprows=7)
         data_raw = pd.read_excel(
@@ -624,10 +560,6 @@ def volumes(request):
     except Exception as e:
         print("views.py 402", e.args)
     print(datetime.now() - time_now)
-    # заменить функцией copy
-    # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
-    #                       authentication(url=URL, user=USER, password=PASS))
-    #
     global graph_data
     graph_data = myJson["data"]
     graph_data.sort(
@@ -864,10 +796,15 @@ def hist_gantt(request):
     """
     if not request.user.is_authenticated:
         return redirect("/login/")
-    session = data_collect.authentication(url='neo4j+s://0fdb78bd.databases.neo4j.io:7687', user=USER, password='231099')
+    user_graph = neo4jexplorer.Neo4jExplorer()
+    user_graph.hist_graph_copy()
+
+    # Проверяем правильность получения исторических данных:
+    gesns = user_graph.get_all_dins()
+    print("number of unique GESNs:", len(gesns), gesns[0])
+
+    session = user_graph.driver.session()
     if "hist_restored" not in request.session:
-        user_graph = neo4jexplorer.Neo4jExplorer(uri=LAST_URL)
-        user_graph.restore_graph()
         request.session["hist_restored"] = True
     Task2.objects.all().delete()
     Link.objects.all().delete()
@@ -879,7 +816,7 @@ def hist_gantt(request):
     for node in data:
         Task2(
             id=node,
-            text=data_collect.get_name_by_din(session, node) + " DIN-" + str(node),
+            text=data_collect.get_name_by_din(session, node) + " GESN-" + str(node),
             start_date=datetime.today() + timedelta(days=distances[node]),
             duration=duration,
         ).save()
@@ -1014,7 +951,7 @@ def schedule(request):
 def add_link(request):
     if not request.user.is_authenticated:
         return redirect("/login/")
-    session = data_collect.authentication(url=NEW_URL, user=USER, password=PASS)
+    session = data_collect.authentication(url=X2_URL, user=USER, password=X2_PASS)
     add.edge(session, request.POST["from_din"], request.POST["to_din"], request.POST["weight"])
     session.close()
     return redirect("/new_graph/")
@@ -1024,7 +961,7 @@ def add_link(request):
 def add_node(request):
     if not request.user.is_authenticated:
         return redirect("/login/")
-    session = data_collect.authentication(url=NEW_URL, user=USER, password=PASS)
+    session = data_collect.authentication(url=X2_URL, user=USER, password=X2_PASS)
     add.node(session=session, node_din=request.POST["din"], node_name=request.POST["name"])
     session.close()
     return redirect("/new_graph/")

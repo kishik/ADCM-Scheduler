@@ -7,17 +7,25 @@ pd.options.mode.chained_assignment = None
 
 
 def node(session: Session, node_din: str, node_name: str) -> None:
-    Q_ADD_NODE = "MERGE (a:Work {DIN: $din, name: $name});"
-    session.run(Q_ADD_NODE, din=node_din, name=node_name)
+    Q_ADD_NODE = '''
+        MERGE (s:Work {DIN: $n_din, name: $n_name, type: 'start'})
+        MERGE (f:Work {DIN: $n_din, name: $n_name, type: 'finish'})
+        MERGE (s)-[r:EXCECUTION {weight: 100}]->(f)
+        '''
+    session.run(Q_ADD_NODE, n_din=node_din, n_name=node_name)
 
 
 def edge(session: Session, pred_din: str, flw_din: str, weight: int) -> None:
-    Q_ADD_REL = """
-        MATCH (a:Work) WHERE a.DIN = $din1 
-        MATCH (b:Work) WHERE b.DIN = $din2
-        MERGE (a)-[r:FOLLOWS {weight: $wght}]->(b);
-        """
-    session.run(Q_ADD_REL, din1=pred_din, din2=flw_din, wght=weight)
+    pred_type = 'finish'
+    flw_type = 'start'
+    Q_ADD_REL = '''
+        MATCH (n:Work)
+        WHERE n.DIN = $din1 AND n.type = $p_type
+        MATCH (m:Work)
+        WHERE m.DIN = $din2 AND m.type = $f_type
+        MERGE (n)-[r:FOLLOWS {weight: $wght}]->(m);
+        '''
+    session.run(Q_ADD_REL, din1=pred_din, din2=flw_din, p_type=pred_type, f_type=flw_type, wght=weight)
 
 
 def from_one_file(session: Session, path: str) -> None:

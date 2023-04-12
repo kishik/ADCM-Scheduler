@@ -102,10 +102,15 @@ def gesn_upload(file):
 def main(location):
     df = read_graph_data(location)
     cfg = yml.get_cfg("neo4j")
-    driver = GraphDatabase.driver(cfg.get("2x_url"), auth=("neo4j", "231099"))
+    driver = GraphDatabase.driver(cfg.get("x2_url"), auth=("neo4j", "231099"))
     with driver.session() as session:
         session.execute_write(clear_database)
         session.execute_write(make_graph, df)
+        session.run(
+            "MATCH (n1)-[:EXCECUTION]->(n2) "
+            "WHERE size(()-->(n1))=0 AND size((n2)-->())=0 "
+            "DETACH DELETE n1, n2"
+        )
     driver.close()
 
 

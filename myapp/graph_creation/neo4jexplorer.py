@@ -56,7 +56,7 @@ class Neo4jExplorer:
             session.run(Q_CREATE)
 
     def hist_graph_copy(self):
-        _hist_uri = self.cfg.get("hist_url")
+        _hist_uri = self.cfg.get("x2_url")
         _hist_user = self.cfg.get("user")
         _hist_pass = self.cfg.get("hist_password")
         _hist_driver = GraphDatabase.driver(_hist_uri, auth=(_hist_user, _hist_pass))
@@ -85,13 +85,17 @@ class Neo4jExplorer:
 
         with _hist_driver.session() as in_session:
             node_df = pd.DataFrame(in_session.run(Q_NODES_OBTAIN).data())
-            print(node_df.head())
+            print(node_df.head(1))
             rel_df = pd.DataFrame(in_session.run(Q_RELS_OBTAIN).data())
-            print(rel_df.head())
+            print(rel_df.head(1))
 
         with self.driver.session() as session:
             session.execute_write(utils.clear_database)
-            node_df.apply(lambda row: session.run(Q_NODES_CREATE, n_din=row["n_din"], n_name=row["n_name"]), axis=1)
+            print("local database cleared")
+            node_df.apply(
+                lambda row: session.run(Q_NODES_CREATE, n_din=row["n_din"], n_name=row["n_name"]),
+                axis=1
+            )
 
             rel_df.apply(
                 lambda row: session.run(
@@ -101,6 +105,7 @@ class Neo4jExplorer:
                     wght=row["weight"]
                 ), axis=1
             )
+            print("historical db copied to local")
 
     def removing_node(self, din: str):
         Q_PRED_FLW_OBTAIN = """
@@ -167,29 +172,43 @@ class Neo4jExplorer:
         self.driver.session().run(q_del_4x_loop)
         print("4x loops deleted")
 
-    def restore_graph(self):
-        LNK_NODES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvNoXaiLn2YlT_LFi0NUmA-Igumgoi5Puh-gXvBgaOeNoaoFAWwqjt-G6zMUvrhTNcndUmTdP7qpaT/pub?output=csv"
-        Q_CREATE_NODES = f"""
-        LOAD CSV WITH HEADERS FROM '{LNK_NODES}' AS row
-        MERGE (s:Work {{DIN: row.din, name: row.name, type: 'start'}})
-        MERGE (f:Work {{DIN: row.din, name: row.name, type: 'finish'}})
-        MERGE (s)-[r:EXCECUTION {{weight: 100}}]->(f);
-        """
-        LNK_EDGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4ki-Hhz8IAostBONk2eAMW-lL3uLlvwF174w9qeQ420RBTDy2B4QJqkF9cILahG_ufTeZMVlndBde/pub?output=csv"
-        Q_CREATE_RELS = f"""
-        LOAD CSV WITH HEADERS FROM '{LNK_EDGES}' AS row
-        MERGE (n:Work {{DIN: row.n_din, type: row.n_type}})
-        MERGE (m:Work {{DIN: row.m_din, type: row.m_type}})
-        MERGE (n)-[r:FOLLOWS {{weight: row.weight}}]->(m);
-        """
-        with self.driver.session() as session:
-            session.execute_write(utils.clear_database)
-            session.run(Q_CREATE_NODES)
-            session.run(Q_CREATE_RELS)
+    # Старый метод, ДЛЯ ГЭСН НЕ ПОДХОДИТ!!!
+    # def restore_graph(self):
+    #     LNK_NODES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvNoXaiLn2YlT_LFi0NUmA-Igumgoi5Puh-gXvBgaOeNoaoFAWwqjt-G6zMUvrhTNcndUmTdP7qpaT/pub?output=csv"
+    #     Q_CREATE_NODES = f"""
+    #     LOAD CSV WITH HEADERS FROM '{LNK_NODES}' AS row
+    #     MERGE (s:Work {{DIN: row.din, name: row.name, type: 'start'}})
+    #     MERGE (f:Work {{DIN: row.din, name: row.name, type: 'finish'}})
+    #     MERGE (s)-[r:EXCECUTION {{weight: 100}}]->(f);
+    #     """
+    #     LNK_EDGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4ki-Hhz8IAostBONk2eAMW-lL3uLlvwF174w9qeQ420RBTDy2B4QJqkF9cILahG_ufTeZMVlndBde/pub?output=csv"
+    #     Q_CREATE_RELS = f"""
+    #     LOAD CSV WITH HEADERS FROM '{LNK_EDGES}' AS row
+    #     MERGE (n:Work {{DIN: row.n_din, type: row.n_type}})
+    #     MERGE (m:Work {{DIN: row.m_din, type: row.m_type}})
+    #     MERGE (n)-[r:FOLLOWS {{weight: row.weight}}]->(m);
+    #     """
+    #     with self.driver.session() as session:
+    #         session.execute_write(utils.clear_database)
+    #         session.run(Q_CREATE_NODES)
+    #         session.run(Q_CREATE_RELS)
 
 
 if __name__ == "__main__":
-    app = Neo4jExplorer()
+    cfg: dict = yml.get_cfg("neo4j")
+
+    # URL = cfg.get("url")
+    # USER = cfg.get("user")
+    # PASS = cfg.get("password")
+
+    X2_URL = cfg.get("x2_url")
+    X2_PASS = cfg.get("x2_password")
+
+    app = Neo4jExplorer(uri=X2_URL, pswd=X2_PASS)
+    # app.hist_graph_copy()
+    app.create_new_graph_algo(
+        ("3.47-3-20", "3.47-5-15", "3.47-3-15", "3.13-11-8", "3.18-20-4",
+         "15.2-27-10", "4.8-75-3")
+    )
     print(app.get_all_dins())
-    app.create_new_graph_algo(["3.47-3-20", "3.47-5-15", "3.47-3-15"])
     app.close()
