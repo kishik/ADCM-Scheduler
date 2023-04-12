@@ -864,7 +864,7 @@ def hist_gantt(request):
     """
     if not request.user.is_authenticated:
         return redirect("/login/")
-    session = data_collect.authentication(url=LAST_URL, user=USER, password=PASS)
+    session = data_collect.authentication(url='neo4j+s://0fdb78bd.databases.neo4j.io:7687', user=USER, password='231099')
     if "hist_restored" not in request.session:
         user_graph = neo4jexplorer.Neo4jExplorer(uri=LAST_URL)
         user_graph.restore_graph()
