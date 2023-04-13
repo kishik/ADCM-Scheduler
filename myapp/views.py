@@ -924,6 +924,9 @@ def schedule(request):
             prev_level += new_level + 1
     max_time = prev_level
     print(max_time)
+    prev_level = 0
+    prev_building = None
+    pre_pre_dur = 0
     koef = all_time.days/(max_time)
     for wbs1 in result.keys():
         if prev_building:
@@ -1130,6 +1133,7 @@ def link_update(request, pk):
 def excel_export(request):
     session = data_collect.authentication(url=URL, user=USER,
                                           password=PASS)
+    global df
     # poisk pervoi daty
     df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
     start_date = min(df['Плановая дата начала'])
@@ -1144,14 +1148,15 @@ def excel_export(request):
         axis=1
     )
     print(finish_date-start_date)
-    # df['Плановая дата начала'] = df[['№ локальной сметы', 'wbs3']].apply(
-    #     lambda x: dates[x[0]+x[1]][0], axis=1
-    # )
-    # df['Плановая дата окончания'] = df[['№ локальной сметы', 'wbs3']].apply(
-    #     lambda x: dates[x[0] + x[1]][1], axis=1
-    # )
+    df['Реальная дата начала'] = df[['wbs2', 'wbs3']].apply(
+        lambda x: dates[x[0]+x[1]][0], axis=1
+    )
+    df['Реальная дата окончания'] = df[['wbs2', 'wbs3']].apply(
+        lambda x: dates[x[0] + x[1]][1], axis=1
+    )
     df.to_excel('output1.xlsx', index=False)
     # poisk roditelya
-
+    df = df.rename(columns={"wbs1": "Проект", "wbs2": "Смета", "wbs3": "Шифр", "name": "НаименованиеПолное", "wbs": "№ локальной сметы № п/п", "number": "c", "value": "c"}, errors="raise")
+    df = df.drop(columns=['wbs3_id'])
     response = FileResponse(open("output1.xlsx", "rb"))
     return response
