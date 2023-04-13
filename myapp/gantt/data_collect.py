@@ -169,8 +169,8 @@ def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
     :param session:
     :param cur_level:
     """
-    if start_din in visited:
-        return
+    # if start_din in visited:
+    #     return
     if start_din not in dins:
         for element in childrenByDin(start_din, session):
             prohod(element, distances, session, dins, cur_level, visited)
