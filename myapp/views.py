@@ -941,7 +941,7 @@ def schedule(request):
 
                     Task2(
                         id=wbs1_str + wbs2_str + wbs3[0] + wbs3[1],
-                        text=f'{wbs3[2]} - {names[wbs3[1]]}({wbs3[0]})',
+                        text=f'{names[wbs3[1]]}({wbs3[0]})',
                         # min(start_date of levels)
                         start_date=datetime.today() + timedelta(prev_level),
                         # duration = max([distances[din] for din in result[wbs1]])
