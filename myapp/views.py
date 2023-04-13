@@ -36,7 +36,7 @@ X2_URL = cfg.get("x2_url")
 X2_PASS = cfg.get("x2_password")
 
 graph_data = []
-
+df = pd.DataFrame()
 
 def login(request):
     if not request.user.is_authenticated:
@@ -461,6 +461,7 @@ def excel_upload(request):
         graph_data = myJson
         global df
         df = d_js
+        # df.to_excel('out.xlsx', index=False)
         print(myJson)
         # переделать template под pandas
         # вставлять готовый текст
@@ -868,7 +869,7 @@ def schedule(request):
     names = {}
 
     for el in graph_data:
-        wbs_id = ((str(el["wbs3_id"]) or ""), str(el["name"]), str(el["wbs"]))
+        wbs_id = ((str(el["wbs3_id"]) or ""), str(el["name"]), str(el["wbs"]), el['Пункт'])
         if el["wbs1"] not in result:
             result[el["wbs1"]] = {}
             result_din[el["wbs1"]] = {}
@@ -883,7 +884,12 @@ def schedule(request):
 
     Task2.objects.all().delete()
     Link.objects.all().delete()
-
+    df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
+    start_date = min(df['Плановая дата начала'])
+    # poisk posledney daty
+    df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'])
+    finish_date = max(df['Плановая дата окончания'])
+    all_time = finish_date - start_date
     data_collect.saving_typed_edges_with_wbs(session, result)
     created = set()
     prev_level = 0
@@ -941,7 +947,7 @@ def schedule(request):
 
                     Task2(
                         id=wbs1_str + wbs2_str + wbs3[0] + wbs3[1],
-                        text=f'{names[wbs3[1]]}({wbs3[0]})',
+                        text=f'({wbs3[0]}) {names[wbs3[1]]}',
                         # min(start_date of levels)
                         start_date=datetime.today() + timedelta(prev_level),
                         # duration = max([distances[din] for din in result[wbs1]])
@@ -953,7 +959,7 @@ def schedule(request):
                     Task2(
                         id=wbs1_str + wbs2 + wbs3[0] + wbs3[1],
 
-                        text=f'{wbs3[2]} - {names[wbs3[1]]}({wbs3[0]})',
+                        text=f'({wbs3[0]}) {names[wbs3[1]]}',
                         # min(start_date of levels)
                         start_date=datetime.today() + timedelta(prev_level) + timedelta(distances[wbs3_str]),
                         # duration = max([distances[din] for din in result[wbs1]])
@@ -1089,22 +1095,22 @@ def link_update(request, pk):
 
 
 def excel_export(request):
-    # session = data_collect.authentication(url=URL, user=USER,
-    #                                       password=PASS)
+    session = data_collect.authentication(url=URL, user=USER,
+                                          password=PASS)
     # poisk pervoi daty
-    # df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
-    # start_date = min(df['Плановая дата начала'])
-    # # poisk posledney daty
-    # df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'])
-    # finish_date = max(df['Плановая дата окончания'])
-    # df.loc[:, 'Предшественник'] = df.apply(
-    #     lambda row: parentsByDin(row.wbs3_id, session),
-    #     axis=1
-    # )
-    # print(finish_date-start_date)
+    df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
+    start_date = min(df['Плановая дата начала'])
+    # poisk posledney daty
+    df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'])
+    finish_date = max(df['Плановая дата окончания'])
+    df.loc[:, 'Предшественник'] = df.apply(
+        lambda row: list(set(parentsByDin(row.wbs3_id, session))),
+        axis=1
+    )
+    print(finish_date-start_date)
 
-    df.to_excel('output.xlsx', index=False)
+    df.to_excel('output1.xlsx', index=False)
     # poisk roditelya
 
-    response = FileResponse(open("output.xlsx", "rb"))
+    response = FileResponse(open("output1.xlsx", "rb"))
     return response
