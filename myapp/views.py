@@ -1089,19 +1089,19 @@ def link_update(request, pk):
 
 
 def excel_export(request):
-    session = data_collect.authentication(url=URL, user=USER,
-                                          password=PASS)
+    # session = data_collect.authentication(url=URL, user=USER,
+    #                                       password=PASS)
     # poisk pervoi daty
-    df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
-    start_date = min(df['Плановая дата начала'])
-    # poisk posledney daty
-    df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'])
-    finish_date = max(df['Плановая дата окончания'])
-    df.loc[:, 'Предшественник'] = df.apply(
-        lambda row: parentsByDin(row.wbs3_id, session),
-        axis=1
-    )
-    print(finish_date-start_date)
+    # df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
+    # start_date = min(df['Плановая дата начала'])
+    # # poisk posledney daty
+    # df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'])
+    # finish_date = max(df['Плановая дата окончания'])
+    # df.loc[:, 'Предшественник'] = df.apply(
+    #     lambda row: parentsByDin(row.wbs3_id, session),
+    #     axis=1
+    # )
+    # print(finish_date-start_date)
 
     df.to_excel('output.xlsx', index=False)
     # poisk roditelya
