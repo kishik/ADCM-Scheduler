@@ -1,13 +1,15 @@
+import os
 import re
 from datetime import datetime, timedelta
 
 import pandas as pd
 import requests
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, JsonResponse, FileResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, UpdateView
 from django.views.generic.edit import FormView
+from neo4j import GraphDatabase
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
@@ -20,7 +22,9 @@ from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs
 from myapp.serializers import LinkSerializer, TaskSerializer
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
+from .gantt.data_collect import parentsByDin
 from .graph_creation import add, neo4jexplorer
+from .graph_creation.graph_copy import graph_copy
 
 cfg: dict = yml.get_cfg("neo4j")
 
@@ -413,21 +417,39 @@ def excel_upload(request):
         data_raw = data_raw[data_raw["Шифр"].str.startswith("ОКЦ") == False]
         # info = 'Проект,Смета,Шифр,НаименованиеПолное'
         # data = data_raw
+        user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+        driver_hist = GraphDatabase.driver('neo4j+s://0fdb78bd.databases.neo4j.io:7687', auth=(USER, '231099'))
+        driver_user = GraphDatabase.driver(URL, auth=(USER, '23109900'))
+        # тут ресторю в свой граф из эксель
+        time_now = datetime.now()
+        try:
+            print(os.getcwd())
+            graph_copy(driver_hist.session(), driver_user.session())
+        except Exception as e:
+            print("views.py 402", e.args)
+        # переделать под series pandas
 
         d = data_raw
+        user_graph.create_new_graph_algo(set(d['Шифр'].unique()))
+        a = set(d['Шифр'].unique())
         d_js = pd.DataFrame()
         # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
+        d_js['СПП'] = d['СПП']
         d_js['wbs1'] = d['Проект']
         d_js['wbs2'] = d['Смета']
+        d_js['Пункт'] = d['№ п/п']
         d_js['wbs3_id'] = d['Шифр']
         d_js['wbs3'] = d['Шифр']
         d_js['name'] = d['НаименованиеПолное']
-        d_js['wbs'] = d[['Смета', 'Пункт']].apply(
+        d_js['wbs'] = d[['Смета', '№ п/п']].apply(
             lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
         )
         d_js['number'] = d['Смета'].apply(lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0]))
-        d_js['value'] = 0
-
+        d_js['value'] = d['Объем']
+        d_js['Единица измерения'] = d['Единица измерения']
+        d_js['Плановая дата начала'] = d['Плановая дата начала']
+        d_js['Плановая дата окончания'] = d['Плановая дата окончания']
+        d_js['Предшественник'] = None
         myJson = d_js.to_dict('records')
         myJson.sort(
             key=lambda x: (
@@ -437,6 +459,8 @@ def excel_upload(request):
         )
         global graph_data
         graph_data = myJson
+        global df
+        df = d_js
         print(myJson)
         # переделать template под pandas
         # вставлять готовый текст
@@ -1062,3 +1086,25 @@ def link_update(request, pk):
     if request.method == "DELETE":
         link.delete()
         return JsonResponse({"action": "deleted"})
+
+
+def excel_export(request):
+    session = data_collect.authentication(url=URL, user=USER,
+                                          password=PASS)
+    # poisk pervoi daty
+    df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
+    start_date = min(df['Плановая дата начала'])
+    # poisk posledney daty
+    df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'])
+    finish_date = max(df['Плановая дата окончания'])
+    df.loc[:, 'Предшественник'] = df.apply(
+        lambda row: parentsByDin(row.wbs3_id, session),
+        axis=1
+    )
+    print(finish_date-start_date)
+
+    df.to_excel('output.xlsx', index=False)
+    # poisk roditelya
+
+    response = FileResponse(open("output.xlsx", "rb"))
+    return response
