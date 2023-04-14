@@ -11,7 +11,7 @@ services:
 #      - SQLITE_DB=db.sqlite3
 
   web:
-    image: sha256:fa54143d6f6bc00c6f19df29e015faac889787a565bef5e13067ef15d64a2b97
+    image: sha256:1c3d1fab81344f3862f3f212e047c7fe74261363d6d7cb19c5a141df762f7533
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code

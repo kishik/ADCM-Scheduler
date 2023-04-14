@@ -437,21 +437,22 @@ def excel_upload(request):
         # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
         d_js['СПП'] = d['СПП']
         d_js['wbs1'] = d['Проект']
-        d_js['wbs2'] = d['Смета']
+        d_js['wbs2'] = d['Наименование локальной сметы']
         d_js['Пункт'] = d['№ п/п']
         d_js['wbs3_id'] = d['Шифр']
         d_js['wbs3'] = d['Шифр']
-        d_js['name'] = d['НаименованиеПолное']
-        d_js['wbs'] = d[['Смета', '№ п/п']].apply(
+        d_js['name'] = d['Строка сметы']
+        d_js['wbs'] = d[['Наименование локальной сметы', '№ п/п']].apply(
             lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
         )
-        d_js['number'] = d['Смета'].apply(lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0]))
+        d_js['number'] = d['Наименование локальной сметы'].apply(lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0]))
         d_js['value'] = d['Объем']
         d_js['Единица измерения'] = d['Единица измерения']
         d_js['Плановая дата начала'] = d['Плановая дата начала']
         d_js['Плановая дата окончания'] = d['Плановая дата окончания']
         d_js['Предшественник'] = None
         d_js['№ локальной сметы'] = d['№ локальной сметы']
+        d_js['Код'] = d['Код']
         myJson = d_js.to_dict('records')
         myJson.sort(
             key=lambda x: (
@@ -871,7 +872,7 @@ def schedule(request):
     names = {}
 
     for el in graph_data:
-        wbs_id = ((str(el["wbs3_id"]) or ""), str(el["name"]), str(el["wbs"]), el['Пункт'])
+        wbs_id = ((str(el["wbs3_id"]) or ""), str(el["name"]), str(el["wbs"]), el['Пункт'], el['Код'])
         if el["wbs1"] not in result:
             result[el["wbs1"]] = {}
             result_din[el["wbs1"]] = {}
@@ -1143,10 +1144,16 @@ def excel_export(request):
     # d_js['wbs'] = d[['Смета', '№ п/п']].apply(
     #     lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
     # )
+    # codes = dict()
+    # for index, row in df.iterrows():
+    #     if row['wbs2'] not in codes:
+    #         codes['wbs2'] = []
+    #     if row['wbs3'] not in codes[row['wbs2']][row['wbs3']]:
     df.loc[:, 'Предшественник'] = df.apply(
         lambda row: list(set(parentsByDin(row.wbs3_id, session))),
         axis=1
     )
+
     print(finish_date-start_date)
     df['Реальная дата начала'] = df[['wbs2', 'wbs3']].apply(
         lambda x: dates[x[0]+x[1]][0], axis=1
@@ -1154,9 +1161,10 @@ def excel_export(request):
     df['Реальная дата окончания'] = df[['wbs2', 'wbs3']].apply(
         lambda x: dates[x[0] + x[1]][1], axis=1
     )
-    df.to_excel('output1.xlsx', index=False)
+
     # poisk roditelya
-    df = df.rename(columns={"wbs1": "Проект", "wbs2": "Смета", "wbs3": "Шифр", "name": "НаименованиеПолное", "wbs": "№ локальной сметы № п/п", "number": "c", "value": "c"}, errors="raise")
-    df = df.drop(columns=['wbs3_id'])
+    df = df.rename(columns={"wbs1": "Проект", "wbs2": "Смета", "wbs3": "Шифр", "name": "Строка сметы", "wbs": "№ локальной сметы № п/п", "value": "Объем"})
+    df = df.drop(columns=['wbs3_id', 'number', '№ локальной сметы № п/п'])
+    df.to_excel('output1.xlsx', index=False)
     response = FileResponse(open("output1.xlsx", "rb"))
     return response
