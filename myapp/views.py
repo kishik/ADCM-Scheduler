@@ -1163,7 +1163,7 @@ def excel_export(request):
     )
 
     # poisk roditelya
-    df = df.rename(columns={"wbs1": "Проект", "wbs2": "Смета", "wbs3": "Шифр", "name": "Строка сметы", "wbs": "№ локальной сметы № п/п", "value": "Объем"})
+    df = df.rename(columns={"wbs1": "Проект", "wbs2": "Наименование локальной сметы", "wbs3": "Шифр", "name": "Строка сметы", "wbs": "№ локальной сметы № п/п", "value": "Объем", 'Пункт': '№ п/п'})
     df = df.drop(columns=['wbs3_id', 'number', '№ локальной сметы № п/п'])
     df.to_excel('output1.xlsx', index=False)
     response = FileResponse(open("output1.xlsx", "rb"))
