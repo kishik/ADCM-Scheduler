@@ -887,10 +887,10 @@ def schedule(request):
 
     Task2.objects.all().delete()
     Link.objects.all().delete()
-    df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
+    df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'], format="%d.%m.%Y")
     start_date = min(df['Плановая дата начала'])
     # poisk posledney daty
-    df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'])
+    df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'], format="%d.%m.%Y")
     finish_date = max(df['Плановая дата окончания'])
     all_time = finish_date - start_date
     data_collect.saving_typed_edges_with_wbs(session, result)
