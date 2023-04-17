@@ -418,6 +418,7 @@ def excel_upload(request):
         data_raw = data_raw[data_raw["Шифр"].str.startswith("ОКЦ") == False]
         # info = 'Проект,Смета,Шифр,НаименованиеПолное'
         # data = data_raw
+
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
         driver_hist = GraphDatabase.driver('neo4j+s://0fdb78bd.databases.neo4j.io:7687', auth=(USER, '231099'))
         driver_user = GraphDatabase.driver(URL, auth=(USER, '23109900'))
@@ -437,22 +438,25 @@ def excel_upload(request):
         # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
         d_js['СПП'] = d['СПП']
         d_js['wbs1'] = d['Проект']
+        d_js['№ локальной сметы'] = d['№ локальной сметы']
         d_js['wbs2'] = d['Наименование локальной сметы']
         d_js['Пункт'] = d['№ п/п']
         d_js['wbs3_id'] = d['Шифр']
         d_js['wbs3'] = d['Шифр']
+        d_js['Код'] = d['Код']
         d_js['name'] = d['Строка сметы']
         d_js['wbs'] = d[['Наименование локальной сметы', '№ п/п']].apply(
             lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
         )
         d_js['number'] = d['Наименование локальной сметы'].apply(lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0]))
+        d_js['Предшественник'] = None
         d_js['value'] = d['Объем']
         d_js['Единица измерения'] = d['Единица измерения']
         d_js['Плановая дата начала'] = d['Плановая дата начала']
         d_js['Плановая дата окончания'] = d['Плановая дата окончания']
-        d_js['Предшественник'] = None
-        d_js['№ локальной сметы'] = d['№ локальной сметы']
-        d_js['Код'] = d['Код']
+
+
+
         myJson = d_js.to_dict('records')
         myJson.sort(
             key=lambda x: (

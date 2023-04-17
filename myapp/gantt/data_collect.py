@@ -169,8 +169,8 @@ def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
     :param session:
     :param cur_level:
     """
-    # if start_din in visited:
-    #     return
+    if start_din in visited:
+        return
     if start_din not in dins:
         for element in childrenByDin(start_din, session):
             prohod(element, distances, session, dins, cur_level, visited)
@@ -185,11 +185,11 @@ def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
             if start_din == element:
                 continue
             if get_edge_type(session, start_din, element) == "FS":
-                prohod(element, distances, session, dins, cur_level + 1)
+                prohod(element, distances, session, dins, cur_level + 1, visited.copy())
                 continue
             elif get_edge_type(session, start_din, element) == "SS":
                 # если связь типа старт-старт то prohod(element, distances, session, cur_level)
-                prohod(element, distances, session, dins, cur_level)
+                prohod(element, distances, session, dins, cur_level, visited.copy())
 
 
 def calculateDistance(session, dins):
@@ -199,11 +199,10 @@ def calculateDistance(session, dins):
     :return: dict нодов с их глубиной в графе
     """
     distances = {}
-    visited_nodes = []
     for node in allNodes(session):
         if parentsByDin(node, session).size > 0:
             continue
-        prohod(start_din=node, distances=distances, session=session, cur_level=0, dins=dins, visited=visited_nodes)
+        prohod(start_din=node, distances=distances, session=session, cur_level=0, dins=dins, visited=list())
     return distances
 
 
