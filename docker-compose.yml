@@ -11,30 +11,14 @@ services:
 #      - SQLITE_DB=db.sqlite3
 
   web:
-    image: sha256:295887aa44985d43587998a39f9947b561bebf39db04dac372879b13e42dc2f8
-    command: python manage.py runserver 0.0.0.0:8000 && celery -A protodjango worker -l info
+    image: sha256:e85c1b61691c2ec967d2975409c344fde13eb057bc329a92fbde571cb79a0218
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code
     ports:
       - "8000:8000"
-#    environment:
-#      - DEBUG=1
-#      - SECRET_KEY=dbaa1_i7%*3r9-=z-+_mz4r-!qeed@(-a_r(g@k8jo8y3r27%m
-#      - CELERY_BROKER=redis://redis:6379/0
-#      - CELERY_BACKEND=redis://redis:6379/0
-    depends_on:
-        - redis
 #    depends_on:
 #      - db
-
-  cache:
-    image: redis:6.2-alpine
-    restart: always
-    ports:
-      - '6379:6379'
-    command: redis-server --save 20 1
-    volumes:
-      - cache:/data
 
   neo4j_user:
     image: neo4j:community
@@ -77,21 +61,3 @@ services:
 #      - NEO4J_dbms.memory.heap.initial_size=1G
 #      - NEO4J_dbms_memory_heap_max__size=1G
       - NEO4J_AUTH=neo4j/23109900
-
-#  celery:
-#    image: celery
-#    command: celery worker --app=core --loglevel=info
-#    volumes:
-#      - .:/code
-#    environment:
-#      - DEBUG=1
-#      - SECRET_KEY=dbaa1_i7%*3r9-=z-+_mz4r-!qeed@(-a_r(g@k8jo8y3r27%m
-#      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
-#      - CELERY_BROKER=redis://redis:6379/0
-#      - CELERY_BACKEND=redis://redis:6379/0
-#    depends_on:
-#      - web
-#      - redis
-
-  redis:
-    image: redis:5-alpine

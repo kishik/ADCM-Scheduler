@@ -41,6 +41,8 @@ urlpatterns = [
     path("", include("django.contrib.auth.urls")),
     path("sdr/<int:pk>/", WbsUpdateView.as_view(), name="wbs_edit"),
     path("urn_index/", views.urn_index),
+    path("excel/", views.excel_upload),
+    path("excel/", views.uploading, name="uploading"),
     path("urn_view/<int:id>/", views.urn_view),
     path("urn_ifc/<int:id>", views.urn_ifc),
     path("urn_create/", views.urn_create),
@@ -58,11 +60,13 @@ urlpatterns = [
     path("sdr_choose/<int:id>/", views.sdr),
     path("new_gantt/", views.new_gantt),
     path("hist_gantt/", views.hist_gantt),
+    path("excel_export/", views.excel_export),
     re_path(r"^data/task/(?P<pk>[0-9]+)$", views.task_update),
     re_path(r"^data/task", views.task_add),
     re_path(r"^data/link/(?P<pk>[0-9]+)$", views.link_update),
     re_path(r"^data/link", views.link_add),
     re_path(r"^data/(.*)$", views.data_list),
+    # path('__debug__/', include('debug_toolbar.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 urlpatterns = format_suffix_patterns(urlpatterns)

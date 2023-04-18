@@ -1,20 +1,15 @@
-import asyncio
-import json
-import operator
+import os
 import re
 from datetime import datetime, timedelta
 
-import httpx
 import pandas as pd
 import requests
-from asgiref.sync import sync_to_async
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, JsonResponse, FileResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
-from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, UpdateView
 from django.views.generic.edit import FormView
+from neo4j import GraphDatabase
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
@@ -23,33 +18,26 @@ from rest_framework.response import Response
 import myapp.graph_creation.yml as yml
 from myapp.forms import AddLink, AddNode, RuleForm, UploadFileForm, WbsForm
 from myapp.loaders.aggregator import WorkAggregator
-from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs, WorkItem, WorkVolume, JobItem, Project
+from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs
 from myapp.serializers import LinkSerializer, TaskSerializer
-
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
+from .gantt.data_collect import parentsByDin
 from .graph_creation import add, neo4jexplorer
-from .tasks import sync_project
-
-# from .tasks import my_task
+from .graph_creation.graph_copy import graph_copy
 
 cfg: dict = yml.get_cfg("neo4j")
 
 URL = cfg.get("url")
 USER = cfg.get("user")
 PASS = cfg.get("password")
-NEW_URL = cfg.get("new_url")
-NEW_USER = cfg.get("new_user")
-NEW_PASS = cfg.get("new_password")
-LAST_URL = cfg.get("last_url")
+
+X2_URL = cfg.get("x2_url")
+X2_PASS = cfg.get("x2_password")
 
 graph_data = []
-
-
-# def progress_view(request):
-#     result = my_task.delay(10)
-#     return render(request, 'myapp/display_progress.html', context={'task_id': result.task_id})
-
+df = pd.DataFrame()
+dates = dict()
 
 def login(request):
     if not request.user.is_authenticated:
@@ -77,14 +65,14 @@ def new_graph(request):
     """
     if not request.user.is_authenticated:
         return redirect("/login/")
-    # user_graph = neo4jexplorer.Neo4jExplorer(uri=NEW_URL)
+    # user_graph = neo4jexplorer.Neo4jExplorer(uri=X2_URL)
     # try:
     #     user_graph.restore_graph()
     # except Exception:
     #     print("passed")
     context = {
         "form": UploadFileForm(),
-        "url": NEW_URL,
+        "url": 'neo4j+s://0fdb78bd.databases.neo4j.io:7687',
         "user_graph": USER,
         "pass": PASS,
         "link": AddLink(),
@@ -239,7 +227,7 @@ def upload(request):
 
     if request.method == "POST":
         # historical_graph_creation.main(request.FILES['file'])
-        session = data_collect.authentication(url=URL, user=USER, password=PASS)
+        session = data_collect.authentication(url=X2_URL, user=USER, password=X2_PASS)
         add.from_one_file(session, request.FILES["file"])
 
     return redirect("/new_graph/")
@@ -415,98 +403,123 @@ def saveModel(request):
     return redirect("/settings/")
 
 
-class Volumes(View):
-    template_name = 'myapp/volumes.html'
+def excel_upload(request):
+    if request.method == "POST":
+        path = request.FILES['excel_file']
+        # data_raw = pd.read_excel(path, dtype=str, skiprows=7)
+        data_raw = pd.read_excel(
+            path,
+            dtype=str,
+            # usecols="A:F"
+            # skiprows=[0, 1, 2, 3],
+            # index_col=3,
+        )
+        data_raw = data_raw[data_raw["Шифр"].str.startswith("1.") == False]
+        data_raw = data_raw[data_raw["Шифр"].str.startswith("ОКЦ") == False]
+        # info = 'Проект,Смета,Шифр,НаименованиеПолное'
+        # data = data_raw
 
-    def get(self, request):
-        project = ActiveLink.objects.filter(userId=request.user.id).last()
-        wbs = Wbs.objects.filter(id=request.session["wbs"]) if request.session["wbs"] != 0 else Wbs.objects.all()
-
-        # import xlwt
-        #
-        # # Initialize a workbook
-        # book = xlwt.Workbook(encoding="utf-8")
-        #
-        # # Add a sheet to the workbook
-        # sheet1 = book.add_sheet("Python Sheet 1")
-        # if len(myJson['data']) > 0:
-        #     i = 0
-        #     for k, v in myJson['data'][0].items():
-        #         sheet1.write(0, i, k)
-        #         i = i + 1
-        #     i = 1
-        #     j = 0
-        #     for element in myJson['data']:
-        #         for k, v in element.items():
-        #             sheet1.write(i, j, v)
-        #             j = j + 1
-        #         j = 0
-        #         i = i + 1
-        #     name = r"C:\Users\kishi\PycharmProjects\protodjango\spreadsheet.xls"
-        #     book.save(name)
-        # Write to the sheet of the workbook
-        # sheet1.write(0, 0, "This is the First Cell of the First Sheet")
-        #
-        # # Save the workbook
-        # book.save("spreadsheet.xls")
-        # project = Project.objects.last()
-        result = sync_project()
-        # WorkAggregator(project, wbs).load_models()
-
-        myJson = {
-            "data": [
-                {
-
-                    "wbs1": element.group_0 or "None",
-                    "wbs2": element.group_1 or "",
-                    "wbs3_id": element.group_2 or "None",
-                    "wbs3": element.group_3 or "None",
-
-                    "name": element.name or "None",
-                    "value": element.value if element.value is not None else element.count,
-                    "wbs": f"{element.group_0}{element.group_3}",
-                    # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
-
-                }
-                for element in JobItem.objects.all()
-            ]
-        }
-
-        dins = {item.din for item in JobItem.objects.all()}
-
-        # add async
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+        driver_hist = GraphDatabase.driver('neo4j+s://0fdb78bd.databases.neo4j.io:7687', auth=(USER, '231099'))
+        driver_user = GraphDatabase.driver(URL, auth=(USER, '23109900'))
         # тут ресторю в свой граф из эксель
         time_now = datetime.now()
         try:
-            user_graph.restore_graph()
+            print(os.getcwd())
+            graph_copy(driver_hist.session(), driver_user.session())
         except Exception as e:
             print("views.py 402", e.args)
-        print(datetime.now() - time_now)
-        # заменить функцией copy
-        # graph_copy.graph_copy(authentication(url=NEW_URL, user=NEW_USER, password=NEW_PASS),
-        #                       authentication(url=URL, user=USER, password=PASS))
-        #
-        global graph_data
-        graph_data = myJson["data"]
-        graph_data.sort(
+        # переделать под series pandas
+
+        d = data_raw
+        user_graph.create_new_graph_algo(set(d['Шифр'].unique()))
+        a = set(d['Шифр'].unique())
+        d_js = pd.DataFrame()
+        # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
+        d_js['СПП'] = d['СПП']
+        d_js['wbs1'] = d['Проект']
+        d_js['№ локальной сметы'] = d['№ локальной сметы']
+        d_js['wbs2'] = d['Наименование локальной сметы']
+        d_js['Пункт'] = d['№ п/п']
+        d_js['wbs3_id'] = d['Шифр']
+        d_js['wbs3'] = d['Шифр']
+        d_js['Код'] = d['Код']
+        d_js['name'] = d['Строка сметы']
+        d_js['wbs'] = d[['Наименование локальной сметы', '№ п/п']].apply(
+            lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
+        )
+        d_js['number'] = d['Наименование локальной сметы'].apply(lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0]))
+        d_js['Предшественник'] = None
+        d_js['value'] = d['Объем']
+        d_js['Единица измерения'] = d['Единица измерения']
+        d_js['Плановая дата начала'] = d['Плановая дата начала']
+        d_js['Плановая дата окончания'] = d['Плановая дата окончания']
+
+
+
+        myJson = d_js.to_dict('records')
+        myJson.sort(
             key=lambda x: (
-                x.get("wbs1", "") or "",
-                x.get("wbs2", "") or "",
-                x.get("wbs3_id", "") or "",
+                x.get("number", "") or "",
+                x.get("wbs", "") or ""
             )
         )
-        time_now = datetime.now()
-        user_graph.create_new_graph_algo(dins)
-        print(datetime.now() - time_now)
-        # print(myJson["data"])
+        global graph_data
+        graph_data = myJson
+        global df
+        df = d_js
+        # df.to_excel('out.xlsx', index=False)
+        print(myJson)
+        # переделать template под pandas
+        # вставлять готовый текст
         return render(
             request,
-            self.template_name,
+            "myapp/excel_table.html",
             {
-                "myJson": myJson["data"],
-            },
+                "myJson": myJson,
+            }
         )
+
+    return render(
+        request,
+        "myapp/excel.html"
+    )
+
+
+# myJson = {
+#     "data": [
+#         {
+#
+#             "wbs1": item.building or "None",
+#             "wbs2": item.storey.name if item.storey else "",
+#             "wbs3_id": item.din or "None",
+#             "wbs3": item.work_type or "None",
+#
+#             "name": item.name or "None",
+#             "value": volume.value if volume.value is not None else volume.count,
+#             "wbs": f"{item.building}{item.din}",
+#             # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+#
+#         }
+#         for item, volume in data.items()
+#     ]
+# }
+
+
+def uploading(request):
+    print('hi, outside')
+    path = request.FILES['excel_file']
+    data = pd.read_excel(
+        path,
+        dtype=str,
+        usecols="A,B,E,F,J",
+        index_col=0,
+    )
+    # обработка excel
+    return render(
+        request,
+        "myapp/excel_table.html"
+    )
 
 
 def volumes(request):
@@ -568,29 +581,9 @@ def volumes(request):
         ]
     }
 
-    myJson = {
-        "data": [
-            {
-
-                "wbs1": element.group_0 or "None",
-                "wbs2": element.group_1 or "None",
-                "wbs3_id": element.group_2 or "None",
-                "wbs3": element.group_3 or "None",
-
-                "name": element.name or "None",
-                "value": element.volume if element.volume is not None else element.count,
-                "wbs": f"{element.group_0}{element.group_2}",
-                # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
-
-            }
-            for element in JobItem.objects.all()
-        ]
-    }
-
-    dins = {element.group_2 for element in JobItem.objects.all()}
-
     dins = {item.din for item, volume in data.items()}
 
+    # add async
     user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
     # тут ресторю в свой граф из эксель
     time_now = datetime.now()
@@ -599,10 +592,8 @@ def volumes(request):
     except Exception as e:
         print("views.py 402", e.args)
     print(datetime.now() - time_now)
-
-    # global graph_data
+    global graph_data
     graph_data = myJson["data"]
-    # graph_data = JobItem.objects.all()
     graph_data.sort(
         key=lambda x: (
             x.get("wbs1", "") or "",
@@ -613,7 +604,7 @@ def volumes(request):
     time_now = datetime.now()
     user_graph.create_new_graph_algo(dins)
     print(datetime.now() - time_now)
-
+    # print(myJson["data"])
     return render(
         request,
         "myapp/volumes.html",
@@ -621,39 +612,6 @@ def volumes(request):
             "myJson": myJson["data"],
         },
     )
-
-
-class Sdrs(View):
-    template_name = 'myapp/sdr.html'
-
-    def get(self, request):
-        if not request.user.is_authenticated:
-            return redirect("/login/")
-        form = WbsForm()
-        sdrs_all = Wbs.objects.all()
-
-        return render(request, self.template_name, {"form": form, "sdrs_all": sdrs_all})
-
-    def post(self, request):
-        # create a form instance and populate it with data from the request:
-        form = WbsForm(request.POST)
-
-        # check whether it's valid:
-        if form.is_valid():
-            wbs = Wbs()
-            wbs.wbs_code = form["wbs_code"].data
-            wbs.docsdiv = form["docsdiv"].data
-            wbs.wbs1 = form["wbs1"].data
-            wbs.wbs2 = form["wbs2"].data
-            wbs.wbs3 = form["wbs3"].data
-            wbs.specs = form["specs"].data
-            wbs.userId = request.user.id
-            wbs.isActive = True
-            wbs.save()
-            # process the data in form.cleaned_data as required
-            # ...
-            # redirect to a new URL:
-            return HttpResponseRedirect("/sdrs/")
 
 
 def sdrs(request):
@@ -870,10 +828,15 @@ def hist_gantt(request):
     """
     if not request.user.is_authenticated:
         return redirect("/login/")
-    session = data_collect.authentication(url=LAST_URL, user=USER, password=PASS)
+    user_graph = neo4jexplorer.Neo4jExplorer()
+    user_graph.hist_graph_copy()
+
+    # Проверяем правильность получения исторических данных:
+    gesns = user_graph.get_all_dins()
+    print("number of unique GESNs:", len(gesns), gesns[0])
+
+    session = user_graph.driver.session()
     if "hist_restored" not in request.session:
-        user_graph = neo4jexplorer.Neo4jExplorer(uri=LAST_URL)
-        user_graph.restore_graph()
         request.session["hist_restored"] = True
     Task2.objects.all().delete()
     Link.objects.all().delete()
@@ -885,7 +848,7 @@ def hist_gantt(request):
     for node in data:
         Task2(
             id=node,
-            text=data_collect.get_name_by_din(session, node) + " DIN-" + str(node),
+            text=data_collect.get_name_by_din(session, node) + " GESN-" + str(node),
             start_date=datetime.today() + timedelta(days=distances[node]),
             duration=duration,
         ).save()
@@ -907,36 +870,13 @@ def schedule(request):
     distances = ()
     dins = []
     unique_wbs1 = set()
-
-    myJson = {
-        "data": [
-            {
-
-                "wbs1": element.group_0 or "None",
-                "wbs2": element.group_1 or "None",
-                "wbs3_id": element.group_2 or "None",
-                "wbs3": element.group_3 or "None",
-
-                "name": element.name or "None",
-                "value": element.volume if element.volume is not None else element.count,
-                "wbs": f"{element.group_0}{element.group_2}",
-                # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
-
-            }
-            for element in JobItem.objects.all()
-        ]
-    }
-
-    graph_data = myJson["data"]
-
-    # global graph_data
-    # graph_data = JobItem.objects.all()
+    global graph_data
     result = {}
     result_din = {}
     names = {}
 
     for el in graph_data:
-        wbs_id = (el["wbs3_id"] or "") + str(el["name"])
+        wbs_id = ((str(el["wbs3_id"]) or ""), str(el["name"]), str(el["wbs"]), el['Пункт'], el['Код'])
         if el["wbs1"] not in result:
             result[el["wbs1"]] = {}
             result_din[el["wbs1"]] = {}
@@ -947,16 +887,52 @@ def schedule(request):
             result[el["wbs1"]][el["wbs2"]].append(wbs_id)
             result_din[el["wbs1"]][el["wbs2"]].append(el["wbs3_id"])
         dins.append(el["wbs3_id"])
-        names[wbs_id] = el["name"]
+        names[wbs_id[1]] = el["name"]
 
     Task2.objects.all().delete()
     Link.objects.all().delete()
-
+    df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'], format="%d.%m.%Y")
+    start_date = min(df['Плановая дата начала'])
+    # poisk posledney daty
+    df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'], format="%d.%m.%Y")
+    finish_date = max(df['Плановая дата окончания'])
+    all_time = finish_date - start_date
     data_collect.saving_typed_edges_with_wbs(session, result)
     created = set()
     prev_level = 0
     prev_building = None
     pre_pre_dur = 0
+    max_time = 0
+
+    global dates
+    dates = dict()
+    # for wbs1 in result.keys():
+    #     for i in result[wbs1].keys():
+    #         max_time +=
+
+    for wbs1 in result.keys():
+        if prev_building:
+            pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
+            prev_building.save()
+
+        if not wbs1:
+            continue
+
+        for wbs2 in result[wbs1].keys():
+            if not wbs2:
+                continue
+            wbs2_str = str(wbs2)
+            # здесь нужно считать дистанцию
+            distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
+            new_level = int(max(distances.values(), default=0))
+
+            prev_level += new_level + 1
+    max_time = prev_level
+    print(max_time)
+    prev_level = 0
+    prev_building = None
+    pre_pre_dur = 0
+    koef = all_time.days/(max_time)
     for wbs1 in result.keys():
         if prev_building:
             pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
@@ -970,9 +946,9 @@ def schedule(request):
                 id=wbs1_str,
                 text=wbs1,
                 # min(start_date of levels)
-                start_date=datetime.today() + timedelta(prev_level),
+                start_date=datetime.today() + timedelta(prev_level*koef),
                 # duration = max([distances[din] for din in result[wbs1]])
-                duration=10,
+                duration=all_time.days,
             ).save()
             prev_building = Task2.objects.get(id=wbs1_str)
             created.add(wbs1_str)
@@ -982,20 +958,20 @@ def schedule(request):
             wbs2_str = str(wbs2)
             # здесь нужно считать дистанцию
             distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
-            new_level = int(max(distances.values(), default=1))
+            new_level = int(max(distances.values(), default=0))
             if (wbs1_str + wbs2_str) not in created:
                 Task2(
                     id=wbs1_str + wbs2_str,
                     text=wbs2,
                     # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(prev_level),
+                    start_date=datetime.today() + timedelta(prev_level*koef),
                     # duration = max([distances[din] for din in result[wbs1]])
-                    duration=new_level + 1 if distances and int(max(distances.values()) > 0) else 1,
+                    duration=(new_level + 1) * koef if distances and int(max(distances.values()) > 0) else 1*koef,
                     parent=wbs1_str,
                 ).save()
                 created.add((wbs1_str + wbs2_str))
 
-            for wbs3 in result[wbs1][wbs2]:
+            for wbs3 in sorted(result[wbs1][wbs2], key=lambda x: x[2]):
                 if not wbs3:
                     try:
                         if wbs3 != 0:
@@ -1003,32 +979,39 @@ def schedule(request):
                     except:
                         continue
 
-                wbs3_str = wbs3[:3]
+                # брать гэсн этой работы
+                wbs3_str = wbs3[0]
                 if wbs3_str not in distances:
+
+                    dates[wbs2+wbs3[0]] = (datetime.today() + timedelta(prev_level*koef), datetime.today() + timedelta(prev_level*koef) + timedelta(1*koef))
                     Task2(
-                        id=wbs1_str + wbs2_str + wbs3,
-                        text=names[wbs3] + " DIN(" + wbs3_str + ")",
+                        id=wbs1_str + wbs2_str + wbs3[0] + wbs3[1],
+                        text=f'({wbs3[0]}) {names[wbs3[1]]}',
                         # min(start_date of levels)
-                        start_date=datetime.today() + timedelta(prev_level),
+                        start_date=datetime.today() + timedelta(prev_level*koef),
                         # duration = max([distances[din] for din in result[wbs1]])
-                        duration=1,
+                        duration=1*koef,
                         parent=wbs1_str + wbs2_str,
                     ).save()
                 else:
+
+                    dates[wbs2+wbs3[0]] = (datetime.today() + timedelta(prev_level*koef) + timedelta(distances[wbs3_str]*koef), datetime.today() + timedelta(prev_level*koef) + timedelta(distances[wbs3_str]*koef) + timedelta(1*koef))
                     Task2(
-                        id=wbs1_str + wbs2 + wbs3,
-                        text=names[wbs3] + " DIN(" + wbs3_str + ")",
+                        id=wbs1_str + wbs2 + wbs3[0] + wbs3[1],
+
+                        text=f'({wbs3[0]}) {names[wbs3[1]]}',
                         # min(start_date of levels)
-                        start_date=datetime.today() + timedelta(prev_level) + timedelta(distances[wbs3_str]),
+                        start_date=datetime.today() + timedelta(prev_level*koef) + timedelta(distances[wbs3_str]*koef),
                         # duration = max([distances[din] for din in result[wbs1]])
-                        duration=1,
+                        duration=1*koef,
                         parent=wbs1_str + wbs2_str,
                     ).save()
 
             prev_level += new_level + 1
-    if prev_building:
-        prev_building.duration = prev_level - pre_pre_dur
-        prev_building.save()
+
+    # if prev_building:
+    #     prev_building.duration = (prev_level - pre_pre_dur) * koef
+    #     prev_building.save()
     session.close()
     # form = FileFieldForm()
     # context = {'form': form}
@@ -1039,7 +1022,7 @@ def schedule(request):
 def add_link(request):
     if not request.user.is_authenticated:
         return redirect("/login/")
-    session = data_collect.authentication(url=NEW_URL, user=USER, password=PASS)
+    session = data_collect.authentication(url=X2_URL, user=USER, password=X2_PASS)
     add.edge(session, request.POST["from_din"], request.POST["to_din"], request.POST["weight"])
     session.close()
     return redirect("/new_graph/")
@@ -1049,7 +1032,7 @@ def add_link(request):
 def add_node(request):
     if not request.user.is_authenticated:
         return redirect("/login/")
-    session = data_collect.authentication(url=NEW_URL, user=USER, password=PASS)
+    session = data_collect.authentication(url=X2_URL, user=USER, password=X2_PASS)
     add.node(session=session, node_din=request.POST["din"], node_name=request.POST["name"])
     session.close()
     return redirect("/new_graph/")
@@ -1150,3 +1133,56 @@ def link_update(request, pk):
     if request.method == "DELETE":
         link.delete()
         return JsonResponse({"action": "deleted"})
+
+
+def excel_export(request):
+    session = data_collect.authentication(url=URL, user=USER,
+                                          password=PASS)
+    global df
+    # poisk pervoi daty
+    df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
+    start_date = min(df['Плановая дата начала'])
+    # poisk posledney daty
+    df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'])
+    finish_date = max(df['Плановая дата окончания'])
+    # d_js['wbs'] = d[['Смета', '№ п/п']].apply(
+    #     lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
+    # )
+    # codes = dict()
+    # for index, row in df.iterrows():
+    #     if row['wbs2'] not in codes:
+    #         codes['wbs2'] = []
+    #     if row['wbs3'] not in codes[row['wbs2']][row['wbs3']]:
+    df.loc[:, 'Предшественник'] = df.apply(
+        lambda row: list(set(parentsByDin(row.wbs3_id, session))),
+        axis=1
+    )
+
+    print(finish_date-start_date)
+    df['Реальная дата начала'] = df[['wbs2', 'wbs3']].apply(
+        lambda x: dates[x[0]+x[1]][0], axis=1
+    )
+    df['Реальная дата окончания'] = df[['wbs2', 'wbs3']].apply(
+        lambda x: dates[x[0] + x[1]][1], axis=1
+    )
+
+    # poisk roditelya
+    df = df.rename(columns={"wbs1": "Проект", "wbs2": "Наименование локальной сметы", "wbs3": "Шифр", "name": "Строка сметы", "wbs": "№ локальной сметы № п/п", "value": "Объем", 'Пункт': '№ п/п'})
+    df = df.drop(columns=['wbs3_id', 'number', '№ локальной сметы № п/п'])
+    ef = pd.DataFrame()
+    # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
+    EXCHANGE_FORM_FIELDS = ['СПП', 'Проект', '№ локальной сметы', 'Наименование локальной сметы', '№ п/п', 'Шифр',
+                            'Код', 'Строка сметы', 'Предшественник', 'Объем', 'Единица измерения']
+    for field in EXCHANGE_FORM_FIELDS:
+        ef[field] = df[field]
+    ef['Плановая дата начала'] = df['Реальная дата начала'].apply(
+        lambda x: x.strftime('%d.%m.%Y'))
+    ef['Плановая дата окончания'] = df['Реальная дата окончания'].apply(
+        lambda x: x.strftime('%d.%m.%Y'))
+
+    # Убрать из, кода. Но корректно выводить предшественника
+    ef['Предшественник'] = ef['Предшественник'].apply(lambda x: '')
+    name = ef['СПП'][0]
+    ef.to_excel(f'{name}.xlsx', index=False)
+    response = FileResponse(open(f'{name}.xlsx', "rb"))
+    return response

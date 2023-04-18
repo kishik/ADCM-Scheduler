@@ -47,8 +47,7 @@ INSTALLED_APPS = [
     "crispy_forms",
     "myapp",
     "registration",
-    "django_celery_results",
-    "celery_progress"
+    # "debug_toolbar",
     # 'myapp.yml',
     # 'django_webix',
 ]
@@ -61,6 +60,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 ROOT_URLCONF = "protodjango.urls"
@@ -140,6 +140,12 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
+INTERNAL_IPS = [
+    # ...
+    "127.0.0.1",
+    # ...
+]
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
@@ -161,16 +167,3 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 100,
     "DEFAULT_FILTER_BACKENDS": ("rest_framework.filters.DjangoFilterBackend",),
 }
-
-# REDIS settings
-# Настройки Redis условные и у вас они могут отличатся в зависимости от конфигурации
-REDIS_HOST = 'localhost'
-REDIS_PORT = '6379'
-
-# CELERY settings
-CELERY_BROKER_URL = 'redis://' + REDIS_HOST + ':' + REDIS_PORT + '/0'
-CELERY_BROKER_TRANSPORT_OPTION = {'visibility_timeout': 3600}
-CELERY_RESULT_BACKEND = 'django-db'
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
