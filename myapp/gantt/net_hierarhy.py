@@ -2,7 +2,7 @@ import argparse
 import csv
 import pathlib
 from pathlib import Path
-from typing import Union, List, Dict
+from typing import Dict, List, Union
 
 import ifcopenshell
 import networkx as nx
@@ -15,10 +15,8 @@ AGGREGATE_QTOS = {"Area", "NetVolume", "GrossVolume", "Length", "NetArea"}
 
 def filter_ifc(element: entity_instance) -> bool:
     return (
-                   element.is_a("IfcElement")
-                   or element.is_a("IfcSpatialStructureElement")
-                   or element.is_a("IfcObjectDefinition")
-           ) and not (element.is_a("IfcGrid") or element.is_a("IfcAnnotation"))
+        element.is_a("IfcElement") or element.is_a("IfcSpatialStructureElement") or element.is_a("IfcObjectDefinition")
+    ) and not (element.is_a("IfcGrid") or element.is_a("IfcAnnotation"))
 
 
 def traverse(element, parent, filter_fn):
@@ -43,9 +41,7 @@ def traverse(element, parent, filter_fn):
 
 def dict_merge(dct, merge_dct) -> None:
     for k, v in merge_dct.items():
-        if (
-                k in dct and isinstance(dct[k], dict) and isinstance(merge_dct[k], dict)
-        ):  # noqa
+        if k in dct and isinstance(dct[k], dict) and isinstance(merge_dct[k], dict):  # noqa
             dict_merge(dct[k], merge_dct[k])
         elif not dct.get(k):
             dct[k] = merge_dct[k]
@@ -242,13 +238,7 @@ def main(files: List[Union[str, Path]]) -> List[Dict[str, str]]:
                 parents = G.in_edges(g)
                 if len(parents) > 0:
                     lower_storey = next(
-                        iter(
-                            sorted(
-                                (G.nodes[p].get("Elevation", -1000000), p)
-                                for p, _ in parents
-                                if p in storeys
-                            )
-                        ),
+                        iter(sorted((G.nodes[p].get("Elevation", -1000000), p) for p, _ in parents if p in storeys)),
                         None,
                     )
                     if lower_storey and lower_storey[1] != storey:
@@ -268,20 +258,24 @@ def main(files: List[Union[str, Path]]) -> List[Dict[str, str]]:
                     if a in sub_node:
                         attrs[a] = attrs.setdefault(a, 0) + sub_node[a]
 
-            node_lst.append({
-                # "storey": storey,
-                # "count": count,
-                # "length": attrs.get("Length"),
-                # "area": attrs.get("Area", attrs.get("NetArea")),
-                # "ifc_type": n["is_a"],
-                "wbs1": attrs.get("ADCM_Title", 'No title'),
-                "wbs2": G.nodes[storey].get("ADCM_Level", 'No level'),
-                "wbs3_id": attrs.get("ADCM_DIN", 'No DIN'),
-                "wbs3": attrs.get("ADCM_RD", 'No RD'),
-                "name": n.get("group_type", 'No type'),
-                "value": attrs.get("NetVolume", attrs.get("GrossVolume", attrs.get("Area", attrs.get("NetArea", "No volume")))),
-                "wbs": "".join(filter(None, [attrs.get("ADCM_Title"), attrs.get("ADCM_DIN")]))
-            })
+            node_lst.append(
+                {
+                    # "storey": storey,
+                    # "count": count,
+                    # "length": attrs.get("Length"),
+                    # "area": attrs.get("Area", attrs.get("NetArea")),
+                    # "ifc_type": n["is_a"],
+                    "wbs1": attrs.get("ADCM_Title", "No title"),
+                    "wbs2": G.nodes[storey].get("ADCM_Level", "No level"),
+                    "wbs3_id": attrs.get("ADCM_DIN", "No DIN"),
+                    "wbs3": attrs.get("ADCM_RD", "No RD"),
+                    "name": n.get("group_type", "No type"),
+                    "value": attrs.get(
+                        "NetVolume", attrs.get("GrossVolume", attrs.get("Area", attrs.get("NetArea", "No volume")))
+                    ),
+                    "wbs": "".join(filter(None, [attrs.get("ADCM_Title"), attrs.get("ADCM_DIN")])),
+                }
+            )
 
     return node_lst
 

@@ -6,33 +6,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('myapp', '0001_initial'),
+        ("myapp", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='task2',
-            name='duration',
+            model_name="task2",
+            name="duration",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='task2',
-            name='end_date',
+            model_name="task2",
+            name="end_date",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='task2',
-            name='parent',
+            model_name="task2",
+            name="parent",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AlterField(
-            model_name='task2',
-            name='progress',
+            model_name="task2",
+            name="progress",
             field=models.FloatField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='task2',
-            name='type',
+            model_name="task2",
+            name="type",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
     ]

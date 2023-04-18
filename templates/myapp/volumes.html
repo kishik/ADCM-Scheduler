@@ -32,6 +32,7 @@ table.dataTable thead .sorting_desc_disabled:before {
 
 </style>
 
+{#<script src="{% static 'celery_progress/celery_progress.js' %}"></script>#}
 <!--<div class="d-flex justify-content-center" id="load">-->
 <!--<div class="order-4 p-2" id="wrap"></div>-->
 <!--</div>-->
@@ -41,6 +42,31 @@ table.dataTable thead .sorting_desc_disabled:before {
 <!--         .prependTo("#wrap");-->
 <!--  });-->
 <!--});</script>-->
+{#    <div class='progress-wrapper'>#}
+{#        <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;">&nbsp;</div>#}
+{#      </div>#}
+{#      <div id="progress-bar-message">Waiting for progress to start...</div>#}
+{#      <script src="{% static 'celery_progress/celery_progress.js' %}"></script>#}
+{#      <script>#}
+{#      var progressUrl = "{% url 'celery_progress:task_status' task_id %}";#}
+{##}
+{#      function customResult(resultElement, result) {#}
+{#        $( resultElement ).append(#}
+{#           $('<p>').text('Sum of all seconds is ' + result)#}
+{#        );#}
+{#      }#}
+{##}
+{##}
+{#      CeleryProgressBar.initProgressBar(progressUrl, {#}
+{#            onResult: customResult,#}
+{#      })#}
+{##}
+{#    </script>#}
+{##}
+{#    <div class='progress-wrapper'>#}
+{#  <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;">&nbsp;</div>#}
+{#</div>#}
+{#<div id="progress-bar-message">Waiting for progress to start...</div>#}
 
 {% regroup myJson by wbs1 as myList %}
 

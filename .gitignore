@@ -1,5 +1,8 @@
 \.idea
-\data
+#\data
 \logs
 *.xml
 *.iml
+*.pyc
+.pdm.toml
+.vscode

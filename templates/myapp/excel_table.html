@@ -1,0 +1,126 @@
+{% extends "myapp/hat.html" %}
+{% load static %}
+{% block content %}
+
+<script src="https://use.fontawesome.com/27c34d562b.js"></script>
+
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css" rel="stylesheet">
+
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js" type="text/javascript"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js" type="text/javascript"></script>
+
+<link rel="stylesheet" href="{%  static 'myapp/css/bootstrap-treefy.css' %}"/>
+<script src="{%  static 'myapp/js/javascript.js' %}"></script>
+{#<link rel="stylesheet" href="{%  static 'myapp/css/dhtmlxgantt.css' %}"/>#}
+<script src="{%  static 'myapp/js/bootstrap-treefy.js' %}"></script>
+
+
+
+{#<style>#}
+{##}
+{#table.dataTable thead .sorting:after,#}
+{#table.dataTable thead .sorting:before,#}
+{#table.dataTable thead .sorting_asc:after,#}
+{#table.dataTable thead .sorting_asc:before,#}
+{#table.dataTable thead .sorting_asc_disabled:after,#}
+{#table.dataTable thead .sorting_asc_disabled:before,#}
+{#table.dataTable thead .sorting_desc:after,#}
+{#table.dataTable thead .sorting_desc:before,#}
+{#table.dataTable thead .sorting_desc_disabled:after,#}
+{#table.dataTable thead .sorting_desc_disabled:before {#}
+{#  bottom: .5em;#}
+{##}
+{#</style>#}
+
+<!--<div class="d-flex justify-content-center" id="load">-->
+<!--<div class="order-4 p-2" id="wrap"></div>-->
+<!--</div>-->
+<!--    <script>$(function(){-->
+<!--$('a').click(function(){-->
+<!--     $('<div class="spinner-border" role="status"></div>')-->
+<!--         .prependTo("#wrap");-->
+<!--  });-->
+<!--});</script>-->
+
+
+
+
+
+
+{% regroup myJson by wbs1 as myList %}
+
+<table class="table table-striped" id="table">
+  <thead>
+    <tr>
+            <th data-field="wbs1" scope="col">wbs1</th>
+            <th data-field="wbs2" scope="col">wbs2</th>
+            <th data-field="wbs3_id" scope="col">wbs3_id</th>
+            <th data-field="wbs3" scope="col">wbs3</th>
+            <th data-field="name" scope="col">name</th>
+            <th data-field="value" scope="col">value</th>
+            <th data-field="wbs" scope="col">wbs</th>
+    </tr>
+  </thead>
+  <tbody>
+
+  {% for grouper, el in myList %}
+      <tr data-node="treetable-{{ grouper }}">
+      <td>{{ grouper }}</td>
+          <td style="visibility: hidden">{{ grouper }}</td><td style="visibility: hidden">{{ el.0.wbs3_id }}</td><td style="visibility: hidden">{{ el.0.wbs3 }}</td>
+          <td style="visibility: hidden">{{ grouper }}</td><td style="visibility: hidden">{{ grouper }}</td><td style="visibility: hidden">{{ grouper }}</td>
+      </tr>
+
+
+  {% for subel in el %}
+<tr data-node="treetable-{{ subel.wbs3_id }}" data-pnode="treetable-parent-{{ grouper }}">
+<td class="sorting_1"><span class="treetable-indent"></span><span class="treetable-expander"></span>{{subel.wbs1}}</td>
+            <td>{{subel.wbs2}}</td>
+            <td>{{subel.wbs3_id}}</td>
+            <td>{{subel.wbs3_id}}</td>
+            <td>{{subel.name}}</td>
+
+
+            <td>{{subel.value}}</td>
+            <td>{{subel.wbs}}</td>
+{#            <td>{{subel.number}}</td>#}
+  </tr>
+{% endfor %}
+  {% endfor %}
+  </tbody>
+</table>
+
+<script>
+$(document).ready(function () {
+  $('#table').DataTable();
+  $('.dataTables_length').addClass('bs-select');
+});
+</script>
+
+{#<script>$("#table").treeFy({#}
+{##}
+{#// Custom template#}
+{#expanderTemplate: '<span class="treetable-expander"></span>',#}
+{#indentTemplate: '<span class="treetable-indent"></span>',#}
+{##}
+{#// CSS classes for expander#}
+{#expanderExpandedClass: 'fa fa-angle-down',#}
+{#expanderCollapsedClass: 'fa fa-angle-right',#}
+{##}
+{#// Index of the column which expander should be added to.#}
+{#treeColumn: 0,#}
+{##}
+{#// Initial CSS class#}
+{#initStatusClass: 'treetable-expanded'#}
+{##}
+{#});#}
+{#</script>#}
+
+
+
+
+{% endblock %}
+      {#  {% for subk, subv in subel.items %}#}
+{#            <td>{{ subv }}</td>#}
+{##}
+{##}
+{#        {% endfor %}#}
