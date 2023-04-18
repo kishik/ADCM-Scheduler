@@ -1169,6 +1169,20 @@ def excel_export(request):
     # poisk roditelya
     df = df.rename(columns={"wbs1": "Проект", "wbs2": "Наименование локальной сметы", "wbs3": "Шифр", "name": "Строка сметы", "wbs": "№ локальной сметы № п/п", "value": "Объем", 'Пункт': '№ п/п'})
     df = df.drop(columns=['wbs3_id', 'number', '№ локальной сметы № п/п'])
-    df.to_excel('output1.xlsx', index=False)
-    response = FileResponse(open("output1.xlsx", "rb"))
+    ef = pd.DataFrame()
+    # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
+    EXCHANGE_FORM_FIELDS = ['СПП', 'Проект', '№ локальной сметы', 'Наименование локальной сметы', '№ п/п', 'Шифр',
+                            'Код', 'Строка сметы', 'Предшественник', 'Объем', 'Единица измерения']
+    for field in EXCHANGE_FORM_FIELDS:
+        ef[field] = df[field]
+    ef['Плановая дата начала'] = df['Реальная дата начала'].apply(
+        lambda x: x.strftime('%d.%m.%Y'))
+    ef['Плановая дата окончания'] = df['Реальная дата окончания'].apply(
+        lambda x: x.strftime('%d.%m.%Y'))
+
+    # Убрать из, кода. Но корректно выводить предшественника
+    ef['Предшественник'] = ef['Предшественник'].apply(lambda x: '')
+    name = ef['СПП'][0]
+    ef.to_excel(f'{name}.xlsx', index=False)
+    response = FileResponse(open(f'{name}.xlsx', "rb"))
     return response

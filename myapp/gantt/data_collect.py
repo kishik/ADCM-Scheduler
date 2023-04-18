@@ -171,6 +171,7 @@ def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
     """
     if start_din in visited:
         return
+    visited.append(start_din)
     if start_din not in dins:
         for element in childrenByDin(start_din, session):
             prohod(element, distances, session, dins, cur_level, visited)
@@ -180,7 +181,7 @@ def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
 
 
         distances[start_din] = max(cur_level, distances[start_din])
-        visited.append(start_din)
+
         for element in childrenByDin(start_din, session):
             if start_din == element:
                 continue
