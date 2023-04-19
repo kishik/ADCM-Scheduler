@@ -43,7 +43,7 @@ def add_node(tx: Transaction, din: str, name: str) -> None:
     Q_CREATE_NODE = '''
         MERGE (s:Work {DIN: $n_din, name: $n_name, type: 'start'})
         MERGE (f:Work {DIN: $n_din, name: $n_name, type: 'finish'})
-        MERGE (s)-[r:EXCECUTION {weight: 100}]->(f)
+        MERGE (s)-[r:EXECUTION {weight: 100}]->(f)
         '''
     tx.run(Q_CREATE_NODE, n_din=din, n_name=name)
 
@@ -107,7 +107,7 @@ def main(location):
         session.execute_write(clear_database)
         session.execute_write(make_graph, df)
         session.run(
-            "MATCH (n1)-[:EXCECUTION]->(n2) "
+            "MATCH (n1)-[:EXECUTION]->(n2) "
             "WHERE size(()-->(n1))=0 AND size((n2)-->())=0 "
             "DETACH DELETE n1, n2"
         )

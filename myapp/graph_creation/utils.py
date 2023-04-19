@@ -39,7 +39,7 @@ def add_double_node(tx: Transaction, din: str, name: str) -> None:
     Q_CREATE_NODE = """
         MERGE (s:Work {DIN: $n_din, name: $n_name, type: 'start'})
         MERGE (f:Work {DIN: $n_din, name: $n_name, type: 'finish'})
-        MERGE (s)-[r:EXCECUTION {weight: 100}]->(f)
+        MERGE (s)-[r:EXECUTION {weight: 100}]->(f)
         """
     tx.run(Q_CREATE_NODE, n_din=din, n_name=name)
 

@@ -15,7 +15,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-import myapp.graph_creation.yml as yml
+from myapp.graph_creation import yml
 from myapp.forms import AddLink, AddNode, RuleForm, UploadFileForm, WbsForm
 from myapp.loaders.aggregator import WorkAggregator
 from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs
@@ -38,6 +38,7 @@ X2_PASS = cfg.get("x2_password")
 graph_data = []
 df = pd.DataFrame()
 dates = dict()
+
 
 def login(request):
     if not request.user.is_authenticated:
@@ -448,14 +449,13 @@ def excel_upload(request):
         d_js['wbs'] = d[['Наименование локальной сметы', '№ п/п']].apply(
             lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
         )
-        d_js['number'] = d['Наименование локальной сметы'].apply(lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0]))
+        d_js['number'] = d['Наименование локальной сметы'].apply(
+            lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0]))
         d_js['Предшественник'] = None
         d_js['value'] = d['Объем']
         d_js['Единица измерения'] = d['Единица измерения']
         d_js['Плановая дата начала'] = d['Плановая дата начала']
         d_js['Плановая дата окончания'] = d['Плановая дата окончания']
-
-
 
         myJson = d_js.to_dict('records')
         myJson.sort(
@@ -932,7 +932,7 @@ def schedule(request):
     prev_level = 0
     prev_building = None
     pre_pre_dur = 0
-    koef = all_time.days/(max_time)
+    koef = all_time.days / (max_time)
     for wbs1 in result.keys():
         if prev_building:
             pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
@@ -946,7 +946,7 @@ def schedule(request):
                 id=wbs1_str,
                 text=wbs1,
                 # min(start_date of levels)
-                start_date=datetime.today() + timedelta(prev_level*koef),
+                start_date=datetime.today() + timedelta(prev_level * koef),
                 # duration = max([distances[din] for din in result[wbs1]])
                 duration=all_time.days,
             ).save()
@@ -964,9 +964,9 @@ def schedule(request):
                     id=wbs1_str + wbs2_str,
                     text=wbs2,
                     # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(prev_level*koef),
+                    start_date=datetime.today() + timedelta(prev_level * koef),
                     # duration = max([distances[din] for din in result[wbs1]])
-                    duration=(new_level + 1) * koef if distances and int(max(distances.values()) > 0) else 1*koef,
+                    duration=(new_level + 1) * koef if distances and int(max(distances.values()) > 0) else 1 * koef,
                     parent=wbs1_str,
                 ).save()
                 created.add((wbs1_str + wbs2_str))
@@ -983,27 +983,32 @@ def schedule(request):
                 wbs3_str = wbs3[0]
                 if wbs3_str not in distances:
 
-                    dates[wbs2+wbs3[0]] = (datetime.today() + timedelta(prev_level*koef), datetime.today() + timedelta(prev_level*koef) + timedelta(1*koef))
+                    dates[wbs2 + wbs3[0]] = (datetime.today() + timedelta(prev_level * koef),
+                                             datetime.today() + timedelta(prev_level * koef) + timedelta(1 * koef))
                     Task2(
                         id=wbs1_str + wbs2_str + wbs3[0] + wbs3[1],
                         text=f'({wbs3[0]}) {names[wbs3[1]]}',
                         # min(start_date of levels)
-                        start_date=datetime.today() + timedelta(prev_level*koef),
+                        start_date=datetime.today() + timedelta(prev_level * koef),
                         # duration = max([distances[din] for din in result[wbs1]])
-                        duration=1*koef,
+                        duration=1 * koef,
                         parent=wbs1_str + wbs2_str,
                     ).save()
                 else:
 
-                    dates[wbs2+wbs3[0]] = (datetime.today() + timedelta(prev_level*koef) + timedelta(distances[wbs3_str]*koef), datetime.today() + timedelta(prev_level*koef) + timedelta(distances[wbs3_str]*koef) + timedelta(1*koef))
+                    dates[wbs2 + wbs3[0]] = (
+                    datetime.today() + timedelta(prev_level * koef) + timedelta(distances[wbs3_str] * koef),
+                    datetime.today() + timedelta(prev_level * koef) + timedelta(distances[wbs3_str] * koef) + timedelta(
+                        1 * koef))
                     Task2(
                         id=wbs1_str + wbs2 + wbs3[0] + wbs3[1],
 
                         text=f'({wbs3[0]}) {names[wbs3[1]]}',
                         # min(start_date of levels)
-                        start_date=datetime.today() + timedelta(prev_level*koef) + timedelta(distances[wbs3_str]*koef),
+                        start_date=datetime.today() + timedelta(prev_level * koef) + timedelta(
+                            distances[wbs3_str] * koef),
                         # duration = max([distances[din] for din in result[wbs1]])
-                        duration=1*koef,
+                        duration=1 * koef,
                         parent=wbs1_str + wbs2_str,
                     ).save()
 
@@ -1158,16 +1163,18 @@ def excel_export(request):
         axis=1
     )
 
-    print(finish_date-start_date)
+    print(finish_date - start_date)
     df['Реальная дата начала'] = df[['wbs2', 'wbs3']].apply(
-        lambda x: dates[x[0]+x[1]][0], axis=1
+        lambda x: dates[x[0] + x[1]][0], axis=1
     )
     df['Реальная дата окончания'] = df[['wbs2', 'wbs3']].apply(
         lambda x: dates[x[0] + x[1]][1], axis=1
     )
 
     # poisk roditelya
-    df = df.rename(columns={"wbs1": "Проект", "wbs2": "Наименование локальной сметы", "wbs3": "Шифр", "name": "Строка сметы", "wbs": "№ локальной сметы № п/п", "value": "Объем", 'Пункт': '№ п/п'})
+    df = df.rename(
+        columns={"wbs1": "Проект", "wbs2": "Наименование локальной сметы", "wbs3": "Шифр", "name": "Строка сметы",
+                 "wbs": "№ локальной сметы № п/п", "value": "Объем", 'Пункт': '№ п/п'})
     df = df.drop(columns=['wbs3_id', 'number', '№ локальной сметы № п/п'])
     ef = pd.DataFrame()
     # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]

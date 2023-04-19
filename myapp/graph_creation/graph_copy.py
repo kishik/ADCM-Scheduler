@@ -11,7 +11,7 @@ RETURN n.name AS n_name, n.DIN AS n_din
 Q_NODES_CREATE = """
 MERGE (s:Work {DIN: $n_din, name: $n_name, type: 'start'})
 MERGE (f:Work {DIN: $n_din, name: $n_name, type: 'finish'})
-MERGE (s)-[r:EXCECUTION {weight: 100}]->(f)
+MERGE (s)-[r:EXECUTION {weight: 100}]->(f)
 """
 Q_RELS_OBTAIN = """
 MATCH (n)-[r:FOLLOWS]->(m) 

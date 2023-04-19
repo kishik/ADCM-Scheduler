@@ -68,7 +68,7 @@ class Neo4jExplorer:
         Q_NODES_CREATE = """
         MERGE (s:Work {DIN: $n_din, name: $n_name, type: 'start'})
         MERGE (f:Work {DIN: $n_din, name: $n_name, type: 'finish'})
-        MERGE (s)-[r:EXCECUTION {weight: 100}]->(f)
+        MERGE (s)-[r:EXECUTION {weight: 100}]->(f)
         """
         Q_RELS_OBTAIN = """
         MATCH (n)-[r:FOLLOWS]->(m) 
@@ -171,27 +171,6 @@ class Neo4jExplorer:
         self.driver.session().run(q_del_3x_loop)
         self.driver.session().run(q_del_4x_loop)
         print("4x loops deleted")
-
-    # Старый метод, ДЛЯ ГЭСН НЕ ПОДХОДИТ!!!
-    # def restore_graph(self):
-    #     LNK_NODES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvNoXaiLn2YlT_LFi0NUmA-Igumgoi5Puh-gXvBgaOeNoaoFAWwqjt-G6zMUvrhTNcndUmTdP7qpaT/pub?output=csv"
-    #     Q_CREATE_NODES = f"""
-    #     LOAD CSV WITH HEADERS FROM '{LNK_NODES}' AS row
-    #     MERGE (s:Work {{DIN: row.din, name: row.name, type: 'start'}})
-    #     MERGE (f:Work {{DIN: row.din, name: row.name, type: 'finish'}})
-    #     MERGE (s)-[r:EXCECUTION {{weight: 100}}]->(f);
-    #     """
-    #     LNK_EDGES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4ki-Hhz8IAostBONk2eAMW-lL3uLlvwF174w9qeQ420RBTDy2B4QJqkF9cILahG_ufTeZMVlndBde/pub?output=csv"
-    #     Q_CREATE_RELS = f"""
-    #     LOAD CSV WITH HEADERS FROM '{LNK_EDGES}' AS row
-    #     MERGE (n:Work {{DIN: row.n_din, type: row.n_type}})
-    #     MERGE (m:Work {{DIN: row.m_din, type: row.m_type}})
-    #     MERGE (n)-[r:FOLLOWS {{weight: row.weight}}]->(m);
-    #     """
-    #     with self.driver.session() as session:
-    #         session.execute_write(utils.clear_database)
-    #         session.run(Q_CREATE_NODES)
-    #         session.run(Q_CREATE_RELS)
 
 
 if __name__ == "__main__":
