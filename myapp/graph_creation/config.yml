@@ -14,3 +14,5 @@ neo4j:
 
   last_url: 'neo4j://127.0.0.1:7688'
   file: 'data/2021-11-19 Roder связи.xlsx'
+
+  new_url: 'neo4j+s://7a837942.databases.neo4j.io:7687'

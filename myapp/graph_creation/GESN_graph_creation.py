@@ -1,12 +1,8 @@
 import os
 
 import numpy as np
-from neo4j import GraphDatabase, Transaction
 import pandas as pd
-
-from myapp.graph_creation import yml
-from myapp.graph_creation.graph_copy import graph_copy
-from myapp.graph_creation.neo4jexplorer import Neo4jExplorer
+from neo4j import GraphDatabase, Transaction
 
 pd.options.mode.chained_assignment = None
 
@@ -74,41 +70,44 @@ def clear_database(tx: Transaction):
     tx.run("MATCH (n) DETACH DELETE n;")
 
 
-def gesn_upload(file):
-    df1 = pd.read_excel(file)
-    df1.rename(
-        columns={"Проект": "wbs1", "Смета": "wbs2", "Шифр": "wbs3_id", "Наименование": "name"},
-        inplace=True
-    )
-    df1 = df1[["wbs1", "wbs2", "wbs3_id", "name"]]
-    df1.dropna(subset=["wbs3_id"], inplace=True)
-    df1.drop_duplicates(inplace=True)
-
-    HIST_URI = "neo4j+s://99c1a702.databases.neo4j.io:7687"
-    LOCAL_URI = "neo4j://127.0.0.1:7687"
-    USER = "neo4j"
-    PSWD = "231099"
-    hist_driver = GraphDatabase.driver(HIST_URI, auth=(USER, PSWD))
-    local_driver = GraphDatabase.driver(LOCAL_URI, auth=(USER, "23109900"))
-    graph_copy(hist_driver.session(), local_driver.session())
-
-    app = Neo4jExplorer(uri=LOCAL_URI)
-    hist_gesns = app.get_all_dins()
-    input_gesns = df1.wbs3_id.unique()
-    targ_gesns = np.intersect1d(hist_gesns, input_gesns)
-    app.create_new_graph_algo(targ_gesns)
-
+# def gesn_upload(file):
+#     df1 = pd.read_excel(file)
+#     df1.rename(
+#         columns={"Проект": "wbs1", "Смета": "wbs2", "Шифр": "wbs3_id", "Наименование": "name"},
+#         inplace=True
+#     )
+#     df1 = df1[["wbs1", "wbs2", "wbs3_id", "name"]]
+#     df1.dropna(subset=["wbs3_id"], inplace=True)
+#     df1.drop_duplicates(inplace=True)
+#
+#     HIST_URI = "neo4j+s://99c1a702.databases.neo4j.io:7687"
+#     LOCAL_URI = "neo4j://127.0.0.1:7687"
+#     USER = "neo4j"
+#     PSWD = "231099"
+#     hist_driver = GraphDatabase.driver(HIST_URI, auth=(USER, PSWD))
+#     local_driver = GraphDatabase.driver(LOCAL_URI, auth=(USER, "23109900"))
+#     graph_copy(hist_driver.session(), local_driver.session())
+#
+#     app = Neo4jExplorer(uri=LOCAL_URI)
+#     hist_gesns = app.get_all_dins()
+#     input_gesns = df1.wbs3_id.unique()
+#     targ_gesns = np.intersect1d(hist_gesns, input_gesns)
+#     app.create_new_graph_algo(targ_gesns)
 
 def main(location):
     df = read_graph_data(location)
-    cfg = yml.get_cfg("neo4j")
-    driver = GraphDatabase.driver(cfg.get("x2_url"), auth=("neo4j", "231099"))
+    # cfg = yml.get_cfg("neo4j")
+    # print(cfg.get("new_url"))
+    driver = GraphDatabase.driver(
+        'neo4j+s://7a837942.databases.neo4j.io:7687',
+        auth=("neo4j", "23109900")
+    )
     with driver.session() as session:
         session.execute_write(clear_database)
-        session.execute_write(make_graph, df)
+        # session.execute_write(make_graph, df)
         session.run(
             "MATCH (n1)-[:EXECUTION]->(n2) "
-            "WHERE size(()-->(n1))=0 AND size((n2)-->())=0 "
+            "WHERE not ()-->(n1) AND not (n2)-->() "
             "DETACH DELETE n1, n2"
         )
     driver.close()
