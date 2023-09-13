@@ -1,6 +1,8 @@
 version: "3.9"
 
 services:
+
+
 #  db:
 #    image: nouchka/sqlite3:latest
 #    volumes:
@@ -9,21 +11,19 @@ services:
 #      - SQLITE_DB=db.sqlite3
 
   web:
-    build: adcm-scheduler-excel/
-    container_name: web-scheduler
+    image: kishikmaxim/adcm:v0.5.13
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code
     ports:
       - "8000:8000"
-    depends_on:
-      - neo4j_user
-      - neo4j_historical
-      - create_app
+#    depends_on:
+#      - db
 
   neo4j_user:
     image: neo4j:community
-    container_name: neo4j_user
+
+
     restart: unless-stopped
     ports:
       - "7474:7474"
@@ -41,34 +41,23 @@ services:
 #      - NEO4J_dbms_memory_heap_max__size=1G
       - NEO4J_AUTH=neo4j/23109900
 
-  
   neo4j_historical:
-    image: neo4j:latest
-    container_name: neo4j_historical
+    image: neo4j:community
+
+
     restart: unless-stopped
     ports:
-      - "7475:7474" # HTTP
-      - "7688:7687" # Bolt
+      - "7475:7474"
+      - "7688:7687"
     volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-      - neo4j_import:/var/lib/neo4j/import
+      - ./conf:/conf_hist
+      - ./data:/data_hist
+      - ./import:/import_hist
+      - ./logs:/logs_hist
+      - ./plugins:/plugins_hist
     environment:
-      NEO4J_AUTH: neo4j/23109900
-
-  create_app:
-    build: neo-historical/
-    container_name: python_app_container
-    restart: on-failure
-    volumes:
-      - ./neo-historical:/app
-    depends_on:
-      - neo4j_historical
-
-
-volumes:
-  neo4j_data:
-  neo4j_logs:
-  neo4j_import:
-
-
+      # Raise memory limits
+#      - NEO4J_dbms_memory_pagecache_size=1G
+#      - NEO4J_dbms.memory.heap.initial_size=1G
+#      - NEO4J_dbms_memory_heap_max__size=1G
+      - NEO4J_AUTH=neo4j/23109900
