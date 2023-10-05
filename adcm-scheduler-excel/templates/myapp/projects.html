@@ -1,0 +1,53 @@
+{% extends "myapp/hat.html" %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% csrf_token %}
+
+{% block content %}
+
+    <div class="container">
+    <br>
+    <p>
+  <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+    Добавить проект
+  </button>
+</p>
+<div class="collapse" id="collapseExample">
+  <form method="POST" action="/project_create/">
+        {% csrf_token %}
+        <p>
+            <label>Введите имя</label>
+            <input class="form-control" type="text" name="name" />
+        </p>
+        <p>
+            <label>Введите ссылку</label>
+            <input class="form-control" type="text" name="link" />
+        </p>
+        <input class="btn btn-primary" type="submit" value="Сохранить" >
+    </form>
+    <br><br>
+</div>
+
+
+
+    {% if projects.count > 0 %}
+    <h2>Список URN</h2>
+    <table class="table">
+    <thead>
+        <tr>
+            <th scope="col" class="col-4">Раздел</th>
+            <th scope="col">URN</th>
+        </tr>
+    </thead>
+        {% for project in projects %}
+            {% if project.isActive %}
+            <tr><td class="">{{ project.name }}</td><td class="">{{ project.link }}</td></tr>
+                <tr><td><a href="/project_edit/{{project.id}}">Изменить</a></td>
+                    <td><a href="/project_delete/{{project.id}}">Удалить</a></td>
+                    <td><a target="_blank" href="/project_view/{{ project.id }}">Показать</a></td>
+            {% endif %}
+        {% endfor %}
+    </table>
+    {% endif %}
+    </div>
+{% endblock %}

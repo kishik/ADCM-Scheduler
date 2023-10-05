@@ -18,6 +18,13 @@ class URN(models.Model):
         parts = urllib.parse.urlparse(self.urn)
         file = unquote(Path(parts.path).name)
         return "urn:" not in self.urn or (file and file.endswith(".ifc"))
+    
+
+class Project(models.Model):
+    name = models.TextField(max_length=99, blank=True)
+    link = models.CharField(max_length=200)
+    userId = models.IntegerField()
+    isActive = models.BooleanField()
 
 
 class Rule(models.Model):

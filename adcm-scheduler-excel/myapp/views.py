@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from myapp.graph_creation import yml
 from myapp.forms import AddLink, AddNode, RuleForm, UploadFileForm, WbsForm
 from myapp.loaders.aggregator import WorkAggregator
-from myapp.models import URN, ActiveLink, Link, Rule, Task2, Wbs
+from myapp.models import URN, ActiveLink, Link, Project, Rule, Task2, Wbs
 from myapp.serializers import LinkSerializer, TaskSerializer
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
@@ -150,6 +150,26 @@ def urn_index(request):
     return render(request, "myapp/urn_index.html", {"urns": urns, "project": project.projectId, "form": form})
 
 
+def projects(request):
+    """
+    Выводит проекты
+    :param request:
+    :return:
+    """
+    if not request.user.is_authenticated:
+        return redirect("/login/")
+    projects = Project.objects.all()
+
+    project = ActiveLink.objects.filter(userId=request.user.id).last()
+    if not project:
+        project = ActiveLink()
+        project.projectId = None
+        project.modelId = None
+
+    form = FileFieldForm()
+    return render(request, "myapp/projects.html", {"projects": projects, "project": project.projectId, "form": form})
+
+
 def urn_ifc(request, id):
     if not request.user.is_authenticated:
         return redirect("/login/")
@@ -192,6 +212,24 @@ def urn_create(request):
     return HttpResponseRedirect("/urn_index/")
 
 
+def project_create(request):
+    """
+    Создание project
+    :param request:
+    :return:
+    """
+    if not request.user.is_authenticated:
+        return redirect("/login/")
+    if request.method == "POST":
+        project = Project()
+        project.name = request.POST.get("name")
+        project.link = request.POST.get("link")
+        project.isActive = True
+        project.userId = request.user.id
+        project.save()
+    return HttpResponseRedirect("/projects/")
+
+
 def urn_edit(request, id):
     """
     Изменение URN
@@ -215,6 +253,29 @@ def urn_edit(request, id):
     except URN.DoesNotExist:
         return HttpResponseNotFound("<h2>URN not found</h2>")
 
+
+def project_edit(request, id):
+    """
+    Изменение project
+    :param request:
+    :param id:
+    :return:
+    """
+    if not request.user.is_authenticated:
+        return redirect("/login/")
+    try:
+        project = Project.objects.get(id=id)
+        if project.userId != request.user.id:
+            return HttpResponseNotFound("<h2>It's not your project</h2>")
+        if request.method == "POST":
+            project.name = request.POST.get("name")
+            project.link = request.POST.get("link")
+            project.save()
+            return HttpResponseRedirect("/projects/")
+        else:
+            return render(request, "myapp/project_edit.html", {"project": project})
+    except Project.DoesNotExist:
+        return HttpResponseNotFound("<h2>project not found</h2>")
 
 def urn_delete(request, id):
     """

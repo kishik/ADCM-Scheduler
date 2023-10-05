@@ -11,7 +11,7 @@ services:
   web:
     build: adcm-scheduler-excel/
     container_name: web-scheduler
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python3.9 manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code
     ports:
@@ -56,14 +56,27 @@ services:
     environment:
       NEO4J_AUTH: neo4j/23109900
 
+  viewer:
+    build: viewer/
+    container_name: viewer
+    # command: uvicorn main:app --host 0.0.0.0 --port 8070
+    restart: unless-stopped
+    ports:
+      - "8070:8070" # fastapi
+      - "3000:3000" # viewer
+
   create_app:
     build: neo-historical/
     container_name: python_app_container
+    
     restart: on-failure
     volumes:
       - ./neo-historical:/app
     depends_on:
       - neo4j_historical
+
+
+  
 
 
 volumes:

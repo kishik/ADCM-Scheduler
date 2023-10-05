@@ -1,0 +1,21 @@
+{% extends "myapp/hat.html" %}
+
+{% load crispy_forms_tags %}
+{% block content %}
+<br>
+<div class="container">
+<form method="POST">
+        {% csrf_token %}
+        <p>
+            <label>Введите name</label><br>
+            <input class="form-control" type="text" name="name" value="{{project.name}}" />
+        </p>
+        <p>
+            <label>Введите link</label><br>
+            <input class="form-control" type="text" name="link" value="{{project.link}}" />
+        </p>
+        <input class="btn btn-primary" type="submit" value="Сохранить" >
+    </form>
+</div>
+
+{% endblock %}
