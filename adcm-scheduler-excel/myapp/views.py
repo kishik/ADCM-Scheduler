@@ -227,6 +227,9 @@ def project_create(request):
         project.isActive = True
         project.userId = request.user.id
         project.save()
+        post_data = {'name': project.name, 'link': project.link}
+        response = requests.post('http://viewer:8070/', json=post_data)
+        content = response.content
     return HttpResponseRedirect("/projects/")
 
 
