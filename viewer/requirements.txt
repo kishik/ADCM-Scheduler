@@ -3,5 +3,4 @@ fastapi
 gdown
 pydantic
 requests
- 
 uvicorn

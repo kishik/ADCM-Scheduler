@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import gdown
 import re
+import shutil
 
 
 class Project(BaseModel):
@@ -22,8 +23,14 @@ async def deploy_project(project: Project):
     url = f"{k[39:-12]}"
     print(f'https://drive.google.com/drive/folders/{url}')
     gdown.download_folder(f'https://drive.google.com/drive/folders/{url}', quiet=True, use_cookies=False, output=f'{project.name}')
-    os.system('ls')
+    # os.system('ls')
     # os.system('wget --no-check-certificate \'https://docs.google.com/uc?export=download&id=FILEID\' -O FILENAME')
     os.chdir('./xeokit-bim-viewer-app/')
     os.system(f'node ./createProject.js -p {project.name} -s ../{project.name}/**/*.ifc')
+    os.chdir('..')
+    files = [f for f in os.listdir(f'./{project.name}')]
+    for file in files:
+        print(f'./{project.name}/{file}')
+        print(f'./xeokit-bim-viewer-app/data/projects/{project.name}/models/{file[:-4]}/source/geometry.ifc')
+        shutil.move(f'./{project.name}/{file}', f'./xeokit-bim-viewer-app/data/projects/{project.name}/models/{file[:-4]}/source/geometry.ifc')
     return 200

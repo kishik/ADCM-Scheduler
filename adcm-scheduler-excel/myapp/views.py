@@ -645,9 +645,11 @@ def volumes(request):
     #
     # # Save the workbook
     # book.save("spreadsheet.xls")
-
+    
+    # project_name = Project.objects.get(id=request.session["project_id"]).name
+    # link = f'viewer:3000/{project_name}/'
     data = WorkAggregator(project, wbs).load_models()
-
+    # здесь передаю ссылку на папку в контейнере
     myJson = {
         "data": [
             {
@@ -697,7 +699,7 @@ def volumes(request):
     )
 
 
-def sdrs(request):
+def sdrs(request, id=None):
     """
     Вывод правил выгрузки
     :param request:
@@ -707,6 +709,8 @@ def sdrs(request):
         return redirect("/login/")
     form = WbsForm()
     sdrs_all = Wbs.objects.all()
+    if id is not None:
+        request.session["project_id"] = id
     if request.method == "POST":
         # create a form instance and populate it with data from the request:
         form = WbsForm(request.POST)
