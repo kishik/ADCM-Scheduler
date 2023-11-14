@@ -87,7 +87,7 @@ class IfcToNxConverter:
         atts["coordinates"] = get_coordinates(elem)
         return atts
 
-    def create_net_graph(self, path: str):
+    def create_net_graph(self, root: str):
         """
         Создает граф в поле self.G
         :param path: путь до директории с IFC файлами
@@ -99,8 +99,12 @@ class IfcToNxConverter:
             :return: element id
             """
             return element.id()
-
-        file_list = list(map(lambda file: os.path.join(path, file), os.listdir(path)))
+        file_list = []
+        for path, subdirs, files in os.walk(root):
+            for name in files:
+                if name.endswith('.ifc'):
+                    file_list.append(os.path.join(path, name))
+        # file_list = list(map(lambda file: os.path.join(path, file), os.listdir(path)))
         for ifc_path in file_list:
             print(ifc_path)
             ifc_file = ifcopenshell.open(ifc_path)
