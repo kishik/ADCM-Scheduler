@@ -2,7 +2,8 @@ import os
 import re
 from datetime import datetime, timedelta
 import logging
-
+import json
+import pickle
 import pandas as pd
 import requests
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, JsonResponse, FileResponse
@@ -648,26 +649,44 @@ def volumes(request):
     
     # project_name = Project.objects.get(id=request.session["project_id"]).name
     # link = f'viewer:3000/{project_name}/'
-    data = WorkAggregator(project, wbs).load_models()
-    # здесь передаю ссылку на папку в контейнере
-    myJson = {
-        "data": [
-            {
+    project_id = request.session["project_id"]
+    project = Project.objects.get(id=project_id)
+    # data = WorkAggregator(project, wbs).load_models()
 
-                "wbs1": item.building or "None",
-                "wbs2": item.storey.name if item.storey else "",
-                "wbs3_id": item.din or "None",
-                "wbs3": item.work_type or "None",
+    # if not request.user.is_authenticated:
+    #     return redirect("/login/")
+    # if request.method == "POST":
+    #     project = Project()
+    #     project.name = request.POST.get("name")
+    #     project.link = request.POST.get("link")
+    #     project.isActive = True
+    #     project.userId = request.user.id
+    #     project.save()
+    #     post_data = {'name': project.name, 'link': project.link}
+    response = requests.post(f'http://viewer/load/{project.name}:8070/')
+    data = json.loads(response.json())
+    #     content = response.content
+    # return HttpResponseRedirect("/projects/")
 
-                "name": item.name or "None",
-                "value": volume.value if volume.value is not None else volume.count,
-                "wbs": f"{item.building}{item.din}",
-                # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+    # # здесь передаю ссылку на папку в контейнере
+    # myJson = {
+    #     "data": [
+    #         {
 
-            }
-            for item, volume in data.items()
-        ]
-    }
+    #             "wbs1": item.building or "None",
+    #             "wbs2": item.storey.name if item.storey else "",
+    #             "wbs3_id": item.din or "None",
+    #             "wbs3": item.work_type or "None",
+
+    #             "name": item.name or "None",
+    #             "value": volume.value if volume.value is not None else volume.count,
+    #             "wbs": f"{item.building}{item.din}",
+    #             # "wbs3_id": ''.join((item.building or "", item.storey.name if item.storey else "", item.name)),
+
+    #         }
+    #         for item, volume in data.items()
+    #     ]
+    # }
 
     dins = {item.din for item, volume in data.items()}
 
@@ -680,7 +699,8 @@ def volumes(request):
     except Exception as e:
         print("views.py 402", e.args)
     global graph_data
-    graph_data = myJson["data"]
+    # graph_data = myJson["data"]
+    graph_data = data.copy()
     graph_data.sort(
         key=lambda x: (
             x.get("wbs1", "") or "",
@@ -694,7 +714,8 @@ def volumes(request):
         request,
         "myapp/volumes.html",
         {
-            "myJson": myJson["data"],
+            # "myJson": myJson["data"],
+            "myJson": data
         },
     )
 
@@ -953,7 +974,8 @@ def schedule(request):
     """
     if not request.user.is_authenticated:
         return redirect("/login/")
-
+    
+    # project.name
     session = data_collect.authentication(url=URL, user=USER, password=PASS)
     # distances = data_collect.calculateDistance(session=session)
     distances = ()

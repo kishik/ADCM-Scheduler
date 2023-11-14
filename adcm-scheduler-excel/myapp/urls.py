@@ -26,7 +26,7 @@ urlpatterns = [
     path("", views.work_in_progress),
     path("models/", views.urn_show),
     path("families/", views.families),
-    path("sdrs/<int:pk>/", views.sdrs),
+    path("sdrs/<int:id>/", views.sdrs),
     path("volumes/", views.volumes, name="volumes"),
     path("schedule/", views.schedule),
     # path('graph/', views.graph_show),

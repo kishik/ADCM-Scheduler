@@ -4,3 +4,7 @@ gdown
 pydantic
 requests
 uvicorn
+ifcopenshell
+networkx
+pandas
+neo4j
