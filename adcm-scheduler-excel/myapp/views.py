@@ -663,8 +663,8 @@ def volumes(request):
     #     project.userId = request.user.id
     #     project.save()
     #     post_data = {'name': project.name, 'link': project.link}
-    response = requests.post(f'http://viewer/load/{project.name}:8070/')
-    data = json.loads(response.json())
+    response = requests.post(f'http://viewer:8070/load/{project.name}/')
+    data = response.json()
     #     content = response.content
     # return HttpResponseRedirect("/projects/")
 
@@ -688,7 +688,7 @@ def volumes(request):
     #     ]
     # }
 
-    dins = {item.din for item, volume in data.items()}
+    dins = {item['wbs3_id'] for item in data}
 
     # add async
     user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
