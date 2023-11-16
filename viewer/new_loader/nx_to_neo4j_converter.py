@@ -3,7 +3,7 @@ import math
 import pandas as pd
 from neo4j import GraphDatabase, Transaction
 
-ELEMENTS_URI = "neo4j://neo4j_user:7687"
+ELEMENTS_URI = "neo4j://neo4j_elements:7687"
 GROUPS_URI = "neo4j://neo4j_historical:7687"
 USER = "neo4j"
 PSWD = "23109900"

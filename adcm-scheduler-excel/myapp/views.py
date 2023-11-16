@@ -663,8 +663,16 @@ def volumes(request):
     #     project.userId = request.user.id
     #     project.save()
     #     post_data = {'name': project.name, 'link': project.link}
-    response = requests.post(f'http://viewer:8070/load/{project.name}/')
-    data = response.json()
+    # add async
+    user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+    # тут ресторю в свой граф из эксель
+    time_now = datetime.now()
+    try:
+        user_graph.hist_graph_copy()
+    except Exception as e:
+        print("views.py 402", e.args)
+    response = requests.get(f'http://viewer:8070/load/{project.name}/')
+    data = json.loads(response.json())
     #     content = response.content
     # return HttpResponseRedirect("/projects/")
 
@@ -687,17 +695,11 @@ def volumes(request):
     #         for item, volume in data.items()
     #     ]
     # }
-
+    for i in range(len(data)):
+        data[i]['wbs'] = f"{data[i]['wbs1']}{data[i]['wbs3_id']}"
     dins = {item['wbs3_id'] for item in data}
 
-    # add async
-    user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
-    # тут ресторю в свой граф из эксель
-    time_now = datetime.now()
-    try:
-        user_graph.hist_graph_copy()
-    except Exception as e:
-        print("views.py 402", e.args)
+    
     global graph_data
     # graph_data = myJson["data"]
     graph_data = data.copy()
