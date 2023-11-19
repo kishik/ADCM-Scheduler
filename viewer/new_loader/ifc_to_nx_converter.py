@@ -71,18 +71,16 @@ class IfcToNxConverter:
         atts.setdefault("ADCM_JobType", None)
         atts.setdefault("ADCM_Part", None)
 
-        # atts.setdefault(
-        #     "Elevation",
-        #     element.Elevation if element.is_a("IfcBuildingStorey") else None,
-        # )
+        atts.setdefault(
+            "Elevation",
+            elem.Elevation if elem.is_a("IfcBuildingStorey") else None,
+        )
 
         def get_coordinates(el):
             if not hasattr(el, "ObjectPlacement"):
-                return None
-            # if not el.ObjectPlacement.RelativePlacement.Axis:
-            #     return None
-            coords = el.ObjectPlacement.RelativePlacement.Location.Coordinates
-            return None if coords == (0.0, 0.0, 0.0) else coords
+                return 0.0, 0.0, 0.0
+            return el.ObjectPlacement.RelativePlacement.Location.Coordinates
+            # return None if coords == (0.0, 0.0, 0.0) else coords
 
         atts["coordinates"] = get_coordinates(elem)
         return atts
@@ -99,12 +97,12 @@ class IfcToNxConverter:
             :return: element id
             """
             return element.id()
+
         file_list = []
         for path, subdirs, files in os.walk(root):
             for name in files:
                 if name.endswith('.ifc'):
                     file_list.append(os.path.join(path, name))
-        # file_list = list(map(lambda file: os.path.join(path, file), os.listdir(path)))
         for ifc_path in file_list:
             print(ifc_path)
             ifc_file = ifcopenshell.open(ifc_path)
@@ -126,3 +124,4 @@ class IfcToNxConverter:
         :return: networkx.MultiDiGraph
         """
         return self.G
+    

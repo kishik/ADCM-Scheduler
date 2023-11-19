@@ -16,7 +16,7 @@ from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-
+import time
 from myapp.graph_creation import yml
 from myapp.forms import AddLink, AddNode, RuleForm, UploadFileForm, WbsForm
 from myapp.loaders.aggregator import WorkAggregator
@@ -80,7 +80,7 @@ def new_graph(request):
         "form": UploadFileForm(),
         "url": JS_URL,
         "user_graph": USER,
-        "pass": JS_URL,
+        "pass": PASS,
         "link": AddLink(),
         "node": AddNode(),
     }
@@ -671,6 +671,8 @@ def volumes(request):
         user_graph.hist_graph_copy()
     except Exception as e:
         print("views.py 402", e.args)
+    
+    time.sleep(100)
     response = requests.get(f'http://viewer:8070/load/{project.name}/')
     data = json.loads(response.json())
     #     content = response.content
@@ -940,8 +942,8 @@ def hist_gantt(request):
         return redirect("/login/")
     hist_graph = neo4jexplorer.Neo4jExplorer(uri=X2_URL, pswd=X2_PASS)
     hist_graph.del_loops()
-    user_graph = neo4jexplorer.Neo4jExplorer()
-    user_graph.hist_graph_copy()
+    # user_graph = neo4jexplorer.Neo4jExplorer()
+    # user_graph.hist_graph_copy()
 
     # Проверяем правильность получения исторических данных:
     # gesns = user_graph.get_all_dins()
