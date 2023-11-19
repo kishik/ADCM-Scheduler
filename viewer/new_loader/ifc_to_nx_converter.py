@@ -90,7 +90,7 @@ class IfcToNxConverter:
     def create_net_graph(self, root: str):
         """
         Создает граф в поле self.G
-        :param path: путь до директории с IFC файлами
+        :param root: путь до директории с IFC файлами
         """
 
         def node(element):

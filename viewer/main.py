@@ -55,5 +55,5 @@ async def deploy_project(project_name: str):
     G = nx_exp.get_net_graph()
     neo4j_exp.create_neo4j(G)
 
-    neo4j_exp.close()
-    return JSONResponse(content=json.dumps(neo4j_exp.get_dict()))
+    return JSONResponse(content=json.dumps(neo4j_exp.get_nodes()))
+    # neo4j_exp.close()

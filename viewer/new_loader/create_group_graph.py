@@ -19,7 +19,7 @@ def add_class_rel(tx: Transaction, pred_name: str, flw_name: str):
 
 def create_group_graph():
     group_driver = GraphDatabase.driver(
-        "bolt://neo4j_historical:7687",
+        "bolt://localhost:7688",
         auth=("neo4j", "23109900")
     )
     group_driver.verify_connectivity()
@@ -29,6 +29,7 @@ def create_group_graph():
         # 'IfcDoor',
         'IfcBuildingElementProxy',
         # 'IfcWindow',
+        "IfcStair",
         'IfcSlab',
         "IfcFlowTerminal",
         "IfcFurniture",
@@ -45,5 +46,10 @@ def create_group_graph():
         session.execute_write(add_class_rel, 'IfcWall', "IfcFlowTerminal")
         session.execute_write(add_class_rel, 'IfcWall', 'IfcCurtainWall')
         session.execute_write(add_class_rel, 'IfcWall', "IfcFurniture")
+        session.execute_write(add_class_rel, 'IfcWall', "IfcStair")
         session.execute_write(add_class_rel, 'IfcBuildingElementProxy', 'IfcDoor')
         session.execute_write(add_class_rel, 'IfcDoor', 'IfcWindow')
+
+
+if __name__ == "__main__":
+    create_group_graph()
