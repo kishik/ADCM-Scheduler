@@ -1,5 +1,6 @@
-import pandas as pd
 import logging
+
+import pandas as pd
 from neo4j import GraphDatabase
 
 from myapp.graph_creation import utils, yml
@@ -61,8 +62,11 @@ class Neo4jExplorer:
             session.run("MATCH (n) DETACH DELETE n")  # Предварительная очистка базы данных
             session.run(Q_CREATE)
 
-    def hist_graph_copy(self):
-        _hist_uri = self.cfg.get("x2_url")
+    def hist_graph_copy(self, uri=None):
+        if not uri:
+            _hist_uri = uri
+        else:
+            _hist_uri = self.cfg.get("x2_url")
         _hist_user = self.cfg.get("user")
         _hist_pass = self.cfg.get("hist_password")
         logger.debug(f'Historical graph copy: {_hist_uri}')
@@ -114,10 +118,8 @@ class Neo4jExplorer:
 
     def removing_node(self, din: str):
         Q_PRED_FLW_OBTAIN = """
-        MATCH (pred)-[:FOLLOWS]->(m)
-            WHERE m.DIN = $din AND pred.type = 'finish'
-        MATCH (n)-[:FOLLOWS]->(flw)
-            WHERE n.DIN = $din AND flw.type = 'start'
+        MATCH (pred)-[]->(m) WHERE m.DIN = $din
+        MATCH (n)-[]->(flw) WHERE n.DIN = $din
         RETURN pred.DIN AS pred_din, flw.DIN AS flw_din
         """
         with self.driver.session() as session:
@@ -129,8 +131,7 @@ class Neo4jExplorer:
                     WHERE pred.DIN = $din1 AND pred.type = 'finish'
                     MATCH (flw)
                     WHERE flw.DIN = $din2 AND flw.type = 'start'
-                    MERGE (pred)-[r:FOLLOWS]->(flw)
-                    SET r.weight = coalesce(r.weight, 1);
+                    MERGE (pred)-[:TRAVERSE]->(flw)
                     """,  # weight of new edges?
                     din1=row.pred_din,
                     din2=row.flw_din,
@@ -142,10 +143,10 @@ class Neo4jExplorer:
     def get_all_dins(self):
         Q_DATA_OBTAIN = """
         MATCH (n)
-        RETURN n.DIN AS din
+        RETURN DISTINCT n.DIN AS din
         """
         result = pd.DataFrame(self.driver.session().run(Q_DATA_OBTAIN).data())
-        return result.din.unique()
+        return result.din.to_numpy()
 
     def create_new_graph_algo(self, target_ids):
         self.del_loops()
@@ -178,20 +179,20 @@ class Neo4jExplorer:
 
 
 if __name__ == "__main__":
-    cfg: dict = yml.get_cfg("neo4j")
+    # cfg: dict = yml.get_cfg("neo4j")
 
     # URL = cfg.get("url")
     # USER = cfg.get("user")
     # PASS = cfg.get("password")
 
-    X2_URL = cfg.get("x2_url")
-    X2_PASS = cfg.get("x2_password")
+    # X2_URL = cfg.get("x2_url")
+    # X2_PASS = cfg.get("x2_password")
 
-    app = Neo4jExplorer(uri=X2_URL, pswd=X2_PASS)
+    app = Neo4jExplorer(uri="bolt://localhost:7687", pswd="23109900")
     # app.hist_graph_copy()
-    app.create_new_graph_algo(
-        ("3.47-3-20", "3.47-5-15", "3.47-3-15", "3.13-11-8", "3.18-20-4",
-         "15.2-27-10", "4.8-75-3")
-    )
-    # print(app.get_all_dins())
+    dins = app.get_all_dins()
+    print(dins)
+    print(dins[dins != None][:-2])
+    # app.create_new_graph_algo(['370', '330', '410', '390', '351'])
+    app.create_new_graph_algo(dins[dins != None][:-2])
     app.close()
