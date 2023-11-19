@@ -56,6 +56,43 @@ services:
     environment:
       NEO4J_AUTH: neo4j/23109900
 
+
+  # neo4j_elements:
+  #   image: neo4j:community
+  #   container_name: neo4j_elements
+  #   restart: unless-stopped
+  #   ports:
+  #     - "7473:7474" # HTTP
+  #     - "7686:7687" # Bolt
+  #   volumes:
+  #     - ./conf:/conf_user
+  #     - ./data:/data_user
+  #     - ./import:/import_user
+  #     - ./logs:/logs_user
+  #     - ./plugins:/plugins_user
+  #   environment:
+  #     NEO4J_AUTH: neo4j/23109900
+  #   depends_on:
+  #     - neo4j_user
+  #     - neo4j_historical
+     
+
+
+  # neo4j_groups:
+  #   image: neo4j:latest
+  #   container_name: neo4j_groups
+  #   restart: unless-stopped
+  #   ports:
+  #     - "7472:7474" # HTTP
+  #     - "7685:7687" # Bolt
+  #   volumes:
+  #     - neo4j_data:/data
+  #     - neo4j_logs:/logs
+  #     - neo4j_import:/var/lib/neo4j/import
+  #   environment:
+  #     NEO4J_AUTH: neo4j/23109900
+  
+
   viewer:
     build: viewer/
     container_name: viewer
@@ -74,6 +111,7 @@ services:
       - ./neo-historical:/app
     depends_on:
       - neo4j_historical
+      # - neo4j_elements
 
 
   

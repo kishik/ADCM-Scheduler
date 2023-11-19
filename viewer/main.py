@@ -9,7 +9,7 @@ import shutil
 import json
 import os
 import pickle
-
+from fastapi.responses import JSONResponse
 from new_loader.ifc_to_nx_converter import IfcToNxConverter
 from new_loader.nx_to_neo4j_converter import NxToNeo4jConverter
 from new_loader.create_group_graph import create_group_graph
@@ -56,4 +56,4 @@ async def deploy_project(project_name: str):
     neo4j_exp.create_neo4j(G)
 
     neo4j_exp.close()
-    return json.dumps(neo4j_exp.get_dict(), indent=4, default=str)
+    return JSONResponse(content=json.dumps(neo4j_exp.get_dict()))
