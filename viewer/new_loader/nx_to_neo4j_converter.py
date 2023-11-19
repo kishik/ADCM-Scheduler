@@ -25,40 +25,10 @@ class NxToNeo4jConverter:
     def close(self):
         self.element_driver.close()
 
-    # def create_groups_graph(self):
-    #     classes = (
-    #         'IfcWall',
-    #         # 'IfcDoor',
-    #         'IfcBuildingElementProxy',
-    #         # 'IfcWindow',
-    #         'IfcSlab',
-    #         "IfcFlowTerminal",
-    #         "IfcFurniture",
-    #         'IfcCurtainWall',)
-    #
-    #     # Create group data
-    #     def add_class(tx: Transaction, class_name: str):
-    #         q_class = '''
-    #         MERGE (n:IfcClass {name: $name})
-    #         '''
-    #         tx.run(q_class, name=class_name)
-    #
-    #     with self.group_driver.session() as session:
-    #         session.run('MATCH (n) DETACH DELETE n')
-    #         for i in classes:
-    #             session.execute_write(add_class, i)
-    #
-    #         session.execute_write(NxToNeo4jConverter.add_class_rel, 'IfcBuildingElementProxy', 'IfcWall')
-    #         session.execute_write(NxToNeo4jConverter.add_class_rel, 'IfcBuildingElementProxy', 'IfcSlab')
-    #         session.execute_write(NxToNeo4jConverter.add_class_rel, 'IfcWall', 'IfcWindow')
-    #         session.execute_write(NxToNeo4jConverter.add_class_rel, 'IfcWall', "IfcFlowTerminal")
-    #         session.execute_write(NxToNeo4jConverter.add_class_rel, 'IfcWall', 'IfcCurtainWall')
-    #         session.execute_write(NxToNeo4jConverter.add_class_rel, 'IfcWall', "IfcFurniture")
-    #         session.execute_write(NxToNeo4jConverter.add_class_rel, 'IfcBuildingElementProxy', 'IfcDoor')
-    #         session.execute_write(NxToNeo4jConverter.add_class_rel, 'IfcDoor', 'IfcWindow')
-
     @staticmethod
-    def add_node(tx: Transaction, id_, stor_id_, props_):
+    def add_node(tx: Transaction, id_, stor_id_, props_: dict):
+        if "ADCM_DIN" in props_.keys():
+            props_["DIN"] = props_.pop("ADCM_DIN")
         q = """
         CREATE (n:Element)
         SET n = $props
@@ -103,13 +73,13 @@ class NxToNeo4jConverter:
         tx.run(q_traverse, id1=str(id1), id2=str(id2))
 
     @staticmethod
-    def add_class_rel(tx: Transaction, pred_name: str, flw_name: str):
-        q_rel = '''
-        MATCH (a:IfcClass) WHERE a.name = $name1
-        MATCH (b:IfcClass) WHERE b.name = $name2
+    def link_classes(tx: Transaction, id1: str, id2: str):
+        q_link_classes = '''
+        MATCH (a:IfcClass {id: $id1})
+        MATCH (b:IfcClass {id: $id2})
         MERGE (a)-[r:FOLLOWS]->(b)
         '''
-        tx.run(q_rel, name1=pred_name, name2=flw_name)
+        tx.run(q_link_classes, id1=id1, id2=id2)
 
     def create_neo4j(self, G) -> None:
         """
@@ -137,25 +107,21 @@ class NxToNeo4jConverter:
                 #     G.successors(stor_id))
                 # ))
                 contained_classes = set(G.nodes[i]['is_a'] for i in G.successors(stor_id))
-                print(stor_id, contained_classes)
+
                 # add groups (classes) to the graph
                 cls_to_id = dict()
                 for j, cls_name in enumerate(contained_classes):
                     cls_to_id[cls_name] = str(stor_id) + '_' + str(j)
                     session.execute_write(NxToNeo4jConverter.add_ifc_class, stor_id, cls_to_id[cls_name], cls_name)
 
-                def link_classes(tx: Transaction, class1: str, class2: str):
-                    q_class = '''
-                    MATCH (a:IfcClass {id: $id1})
-                    MATCH (b:IfcClass {id: $id2})
-                    MERGE (a)-[r:FOLLOWS]->(b)
-                    '''
-                    tx.run(q_class, id1=cls_to_id.get(class1), id2=cls_to_id.get(class2))
-
                 # connect ifc classes (groups)
                 with self.element_driver.session() as session2:
                     self.group_link_df.apply(
-                        lambda row: session2.execute_write(link_classes, row.type1, row.type2),
+                        lambda row: session2.execute_write(
+                            NxToNeo4jConverter.link_classes,
+                            cls_to_id.get(row.type1),
+                            cls_to_id.get(row.type2)
+                        ),
                         axis=1,
                     )
 
@@ -222,33 +188,34 @@ class NxToNeo4jConverter:
             RETURN n.id AS id, n.Elevation As elevation'''
             level_df = pd.DataFrame(self.element_driver.session().run(q_storeys).data())
             level_df.sort_values(by=['elevation'], inplace=True, ignore_index=True)
+
+            def connect_storeys(stor1, stor2):
+                with self.element_driver.session() as session:
+                    q_get_last = f'''MATCH (s:Element {{stor_id: '{str(stor1)}' }})
+                    WHERE NOT (s)-[]->(:Element {{stor_id: '{str(stor1)}' }})
+                    RETURN s.id AS id
+                    LIMIT 1'''
+                    last_res = session.run(q_get_last).data()
+                    q_get_first = f'''MATCH (s:Element {{stor_id: '{str(stor2)}' }})
+                    WHERE NOT (:Element {{stor_id: '{str(stor2)}' }})-[]->(s)
+                    RETURN s.id AS id
+                    LIMIT 1'''
+                    first_res = session.run(q_get_first).data()
+                    if len(last_res) > 0 and len(first_res) > 0:
+                        q_rel = f'''MATCH (a:Element) WHERE a.id = '{last_res[0]['id']}'
+                            MATCH (b:Element) WHERE b.id = '{first_res[0]['id']}'
+                            MERGE (a)-[r:TRAVERSE]->(b)
+                            '''
+                        session.run(q_rel)
+
             with self.element_driver.session() as session:
                 for ind, row in level_df.iterrows():
                     if ind != 0:
-                        session.execute_write(NxToNeo4jConverter.traverse, pred_id, row.id)
-                        self.connect_storeys(pred_id, row.id)
+                        session.execute_write(NxToNeo4jConverter.link_classes, pred_id, row.id)
+                        connect_storeys(pred_id, row.id)
                     pred_id = row.id
 
-    def connect_storeys(self, stor1, stor2):
-        with self.element_driver.session() as session:
-            q_get_last = f'''MATCH (s:Element {{stor_id: '{str(stor1)}' }})
-            WHERE NOT (s)-[]->(:Element {{stor_id: '{str(stor1)}' }})
-            RETURN s.id AS id
-            LIMIT 1'''
-            last_res = session.run(q_get_last).data()
-            q_get_first = f'''MATCH (s:Element {{stor_id: '{str(stor2)}' }})
-            WHERE NOT (:Element {{stor_id: '{str(stor2)}' }})-[]->(s)
-            RETURN s.id AS id
-            LIMIT 1'''
-            first_res = session.run(q_get_first).data()
-            if len(last_res) > 0 and len(first_res) > 0:
-                q_rel = f'''MATCH (a:Element) WHERE a.id = '{last_res[0]['id']}'
-                    MATCH (b:Element) WHERE b.id = '{first_res[0]['id']}'
-                    MERGE (a)-[r:TRAVERSE]->(b)
-                    '''
-                session.run(q_rel)
-
-    def get_result(self):
+    def get_nodes(self):
         query = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.ADCM_Title as wbs1, el.ADCM_Level as wbs2, 
         el.ADCM_DIN as wbs3_id, el.ADCM_JobType as wbs3, el.name as name 
         UNION MATCH (el)-[:TRAVERSE]->(relEl) RETURN 
@@ -267,19 +234,12 @@ class NxToNeo4jConverter:
         #     edge_df.to_excel(writer, sheet_name="Связи")
         return records
 
-    def save_edges(self):
+    def get_edges(self):
         query = """
-        MATCH (el)-[:TRAVERSE]->(relEl) 
-        RETURN el.ADCM_Title as pred_wbs1, el.ADCM_Level as pred_wbs2, el.ADCM_DIN as pred_din, el.id as pred_id, 
-        relEl.ADCM_Title as flw_wbs1, relEl.ADCM_Level as flw_wbs2, relEl.ADCM_DIN as flw_din, relEl.id as flw_id
-        """
-        link_df = pd.DataFrame(self.element_driver.session().run(query).data())
-        link_df.apply(
-            lambda row: Link(
-                source=row.pred_wbs1 + row.pred_wbs2 + row.pred_din + row.pred_id,
-                target=row.flw_wbs1 + row.flw_wbs2 + row.flw_din + row.flw_id,
-                type="FS",  # или "0"
-                lag=0,
-            ).save(),
-            axis=1
-        )
+                MATCH (el)-[:TRAVERSE]->(flw) 
+                RETURN el.id as source, flw.id as target
+                """
+        edges = self.element_driver.session().run(query).data()
+        for edge in edges:
+            edge.update({"type": "0", "lag": 0})
+        return edges

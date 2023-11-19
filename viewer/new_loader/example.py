@@ -1,10 +1,6 @@
-import json
-import os
-import pickle
-
+from create_group_graph import create_group_graph
 from ifc_to_nx_converter import IfcToNxConverter
 from nx_to_neo4j_converter import NxToNeo4jConverter
-from create_group_graph import create_group_graph
 
 if __name__ == "__main__":
     create_group_graph()

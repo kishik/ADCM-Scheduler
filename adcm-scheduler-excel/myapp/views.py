@@ -667,12 +667,12 @@ def volumes(request):
     user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
     # тут ресторю в свой граф из эксель
     time_now = datetime.now()
-    try:
-        user_graph.hist_graph_copy()
-    except Exception as e:
-        print("views.py 402", e.args)
+    # try:
+    #     user_graph.hist_graph_copy()
+    # except Exception as e:
+    #     print("views.py 402", e.args)
     
-    time.sleep(100)
+    # time.sleep(100)
     response = requests.get(f'http://viewer:8070/load/{project.name}/')
     data = json.loads(response.json())
     #     content = response.content
@@ -713,7 +713,7 @@ def volumes(request):
         )
     )
     time_now = datetime.now()
-    user_graph.create_new_graph_algo(dins)
+    # user_graph.create_new_graph_algo(dins)
     return render(
         request,
         "myapp/volumes.html",

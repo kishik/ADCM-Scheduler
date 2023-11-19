@@ -55,5 +55,21 @@ async def deploy_project(project_name: str):
     G = nx_exp.get_net_graph()
     neo4j_exp.create_neo4j(G)
 
-    
-    return JSONResponse(content=json.dumps(neo4j_exp.get_result()))
+    return JSONResponse(content=json.dumps(neo4j_exp.get_nodes()))
+    # neo4j_exp.close()
+
+
+@app.get("/links/{project_name}")
+async def deploy_project(project_name: str):
+    path = f'./xeokit-bim-viewer-app/data/projects/{project_name}/models/'
+
+    create_group_graph()
+    nx_exp = IfcToNxConverter()
+    nx_exp.create_net_graph(path)
+
+    neo4j_exp = NxToNeo4jConverter()
+    G = nx_exp.get_net_graph()
+    neo4j_exp.create_neo4j(G)
+
+    return JSONResponse(content=json.dumps(neo4j_exp.get_edges()))
+
