@@ -7,6 +7,7 @@ from neo4j import GraphDatabase, Session
 import myapp.graph_creation.yml as yml
 from myapp.models import Link
 import sys
+
 sys.setrecursionlimit(10000)
 cfg: dict = yml.get_cfg("neo4j")
 
@@ -178,7 +179,6 @@ def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
     else:
         if start_din not in distances:
             distances[start_din] = 0
-
 
         distances[start_din] = max(cur_level, distances[start_din])
 

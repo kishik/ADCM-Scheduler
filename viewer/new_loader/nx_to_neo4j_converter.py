@@ -3,6 +3,9 @@ import math
 import pandas as pd
 from neo4j import GraphDatabase, Transaction
 
+from data_collection import calculateDistance, allNodes
+
+
 ELEMENTS_URI = "neo4j://neo4j_elements:7687"
 GROUPS_URI = "neo4j://neo4j_groups:7687"
 USER = "neo4j"
@@ -217,22 +220,16 @@ class NxToNeo4jConverter:
 
     def get_nodes(self):
         query = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.ADCM_Title as wbs1, el.ADCM_Level as wbs2, 
-        el.ADCM_DIN as wbs3_id, el.ADCM_JobType as wbs3, el.name as name 
+        el.DIN as wbs3_id, el.ADCM_JobType as wbs3, el.name as name 
         UNION MATCH (el)-[:TRAVERSE]->(relEl) RETURN 
-        relEl.id as id, relEl.ADCM_Title as wbs1, relEl.ADCM_Level as wbs2, relEl.ADCM_DIN as wbs3_id, 
+        relEl.id as id, relEl.ADCM_Title as wbs1, relEl.ADCM_Level as wbs2, relEl.DIN as wbs3_id, 
         relEl.ADCM_JobType as wbs3, relEl.name as name"""
-        records = self.element_driver.session().run(query).data()
-        node_df = pd.DataFrame(records)
-
-        query_edges = """MATCH (el)-[:TRAVERSE]->(relEl) 
-        RETURN el.id as pred_id, relEl.id as flw_id;
-        """
-        edge_df = pd.DataFrame(self.element_driver.session().run(query_edges).data())
-
-        # with pd.ExcelWriter('../result/nodes.xlsx', engine='openpyxl') as writer:
-        #     node_df.to_excel(writer, sheet_name="Работы")
-        #     edge_df.to_excel(writer, sheet_name="Связи")
-        return records
+        with self.element_driver.session() as session:
+            nodes = session.run(query).data()
+            distances = calculateDistance(session, allNodes(session))
+        for i in nodes:
+            i.update({"distance": distances.get(i.get("id"))})
+        return nodes
 
     def get_edges(self):
         query = """
