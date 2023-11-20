@@ -981,260 +981,281 @@ def schedule(request):
     
     # project.name
     session = data_collect.authentication(url=URL, user=USER, password=PASS)
-    # distances = data_collect.calculateDistance(session=session)
-    distances = ()
-    dins = []
-    unique_wbs1 = set()
+    # # distances = data_collect.calculateDistance(session=session)
+    # distances = ()
+    # dins = []
+    # unique_wbs1 = set()
     global graph_data
-    result = {}
-    result_din = {}
-    names = {}
+    # result = {}
+    # result_din = {}
+    # names = {}
 
-    for el in graph_data:
-        wbs_id = ((str(el["wbs3_id"]) or ""), str(el["name"]), str(el["wbs"]), el['wbs2'])
-        # el['Пункт'], el['Код'] вместо 1 последней
-        if el["wbs1"] not in result:
-            result[el["wbs1"]] = {}
-            result_din[el["wbs1"]] = {}
-        if el["wbs2"] not in result[el["wbs1"]]:
-            result[el["wbs1"]][el["wbs2"]] = []
-            result_din[el["wbs1"]][el["wbs2"]] = []
-        if el["name"] not in result[el["wbs1"]][el["wbs2"]]:
-            result[el["wbs1"]][el["wbs2"]].append(wbs_id)
-            result_din[el["wbs1"]][el["wbs2"]].append(el["wbs3_id"])
-        dins.append(el["wbs3_id"])
-        names[wbs_id[1]] = el["name"]
+    # for el in graph_data:
+    #     wbs_id = ((str(el["wbs3_id"]) or ""), str(el["name"]), str(el["wbs"]), el['wbs2'])
+    #     # el['Пункт'], el['Код'] вместо 1 последней
+    #     if el["wbs1"] not in result:
+    #         result[el["wbs1"]] = {}
+    #         result_din[el["wbs1"]] = {}
+    #     if el["wbs2"] not in result[el["wbs1"]]:
+    #         result[el["wbs1"]][el["wbs2"]] = []
+    #         result_din[el["wbs1"]][el["wbs2"]] = []
+    #     if el["name"] not in result[el["wbs1"]][el["wbs2"]]:
+    #         result[el["wbs1"]][el["wbs2"]].append(wbs_id)
+    #         result_din[el["wbs1"]][el["wbs2"]].append(el["wbs3_id"])
+    #     dins.append(el["wbs3_id"])
+    #     names[wbs_id[1]] = el["name"]
 
     Task2.objects.all().delete()
     Link.objects.all().delete()
-    if not df.empty:
-        df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'], format="%d.%m.%Y")
-        start_date = min(df['Плановая дата начала'])
-        # poisk posledney daty
-        df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'], format="%d.%m.%Y")
-        finish_date = max(df['Плановая дата окончания'])
-        all_time = finish_date - start_date
-
-    data_collect.saving_typed_edges_with_wbs(session, result)
-    created = set()
-    prev_level = 0
-    prev_building = None
-    pre_pre_dur = 0
-    max_time = 0
-
-    global dates
-    dates = dict()
-    # for wbs1 in result.keys():
-    #     for i in result[wbs1].keys():
-    #         max_time +=
-    if not df.empty:
-        for wbs1 in result.keys():
-            if prev_building:
-                pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
-                prev_building.save()
-
-            if not wbs1:
-                continue
-
-            for wbs2 in result[wbs1].keys():
-                if not wbs2:
-                    continue
-                wbs2_str = str(wbs2)
-                # здесь нужно считать дистанцию
-                distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
-                new_level = int(max(distances.values(), default=0))
-
-                prev_level += new_level + 1
-        max_time = prev_level
-        prev_level = 0
-        prev_building = None
-        pre_pre_dur = 0
-        koef = all_time.days / (max_time)
-        for wbs1 in result.keys():
-            if prev_building:
-                pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
-                prev_building.save()
-
-            if not wbs1:
-                continue
-            wbs1_str = str(wbs1)
-            if wbs1_str not in created:
-                Task2(
-                    id=wbs1_str,
-                    text=wbs1,
+    for node in graph_data:
+        Task2(
+                    id=node['id'],
+                    text=node['name'],
                     # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(prev_level * koef),
-                    # duration = max([distances[din] for din in result[wbs1]])
-                    duration=all_time.days,
-                ).save()
-                prev_building = Task2.objects.get(id=wbs1_str)
-                created.add(wbs1_str)
-            for wbs2 in result[wbs1].keys():
-                if not wbs2:
-                    continue
-                wbs2_str = str(wbs2)
-                # здесь нужно считать дистанцию
-                distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
-                new_level = int(max(distances.values(), default=0))
-                if (wbs1_str + wbs2_str) not in created:
-                    Task2(
-                        id=wbs1_str + wbs2_str,
-                        text=wbs2,
-                        # min(start_date of levels)
-                        start_date=datetime.today() + timedelta(prev_level * koef),
-                        # duration = max([distances[din] for din in result[wbs1]])
-                        duration=(new_level + 1) * koef if distances and int(max(distances.values()) > 0) else 1 * koef,
-                        parent=wbs1_str,
-                    ).save()
-                    created.add((wbs1_str + wbs2_str))
-
-                for wbs3 in sorted(result[wbs1][wbs2], key=lambda x: x[2]):
-                    if not wbs3:
-                        try:
-                            if wbs3 != 0:
-                                pass
-                        except:
-                            continue
-
-                    # брать гэсн этой работы
-                    wbs3_str = wbs3[0]
-                    if wbs3_str not in distances:
-
-                        dates[wbs2 + wbs3[0]] = (datetime.today() + timedelta(prev_level * koef),
-                                                 datetime.today() + timedelta(prev_level * koef) + timedelta(1 * koef))
-                        Task2(
-                            id=wbs1_str + wbs2_str + wbs3[0] + wbs3[1],
-                            text=f'({wbs3[0]}) {names[wbs3[1]]}',
-                            # min(start_date of levels)
-                            start_date=datetime.today() + timedelta(prev_level * koef),
-                            # duration = max([distances[din] for din in result[wbs1]])
-                            duration=1 * koef,
-                            parent=wbs1_str + wbs2_str,
-                        ).save()
-                    else:
-
-                        dates[wbs2 + wbs3[0]] = (
-                        datetime.today() + timedelta(prev_level * koef) + timedelta(distances[wbs3_str] * koef),
-                        datetime.today() + timedelta(prev_level * koef) + timedelta(distances[wbs3_str] * koef) + timedelta(
-                            1 * koef))
-                        Task2(
-                            id=wbs1_str + wbs2 + wbs3[0] + wbs3[1],
-
-                            text=f'({wbs3[0]}) {names[wbs3[1]]}',
-                            # min(start_date of levels)
-                            start_date=datetime.today() + timedelta(prev_level * koef) + timedelta(
-                                distances[wbs3_str] * koef),
-                            # duration = max([distances[din] for din in result[wbs1]])
-                            duration=1 * koef,
-                            parent=wbs1_str + wbs2_str,
-                        ).save()
-
-                prev_level += new_level + 1
-    else:
-        for wbs1 in result.keys():
-            if prev_building:
-                pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
-                prev_building.save()
-
-            if not wbs1:
-                continue
-
-            for wbs2 in result[wbs1].keys():
-                if not wbs2:
-                    continue
-                wbs2_str = str(wbs2)
-                # здесь нужно считать дистанцию
-                distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
-                new_level = int(max(distances.values(), default=0))
-
-                prev_level += new_level + 1
-        max_time = prev_level
-        prev_level = 0
-        prev_building = None
-        pre_pre_dur = 0
-
-        for wbs1 in result.keys():
-            if prev_building:
-                pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
-                prev_building.save()
-
-            if not wbs1:
-                continue
-            wbs1_str = str(wbs1)
-            if wbs1_str not in created:
-                Task2(
-                    id=wbs1_str,
-                    text=wbs1,
-                    # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(prev_level),
+                    start_date=datetime.today(),
                     # duration = max([distances[din] for din in result[wbs1]])
                     duration=1,
                 ).save()
-                prev_building = Task2.objects.get(id=wbs1_str)
-                created.add(wbs1_str)
-            top_duration = 0
-            for wbs2 in result[wbs1].keys():
-                if not wbs2:
-                    continue
-                wbs2_str = str(wbs2)
-                # здесь нужно считать дистанцию
-                distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
-                new_level = int(max(distances.values(), default=0))
-                if (wbs1_str + wbs2_str) not in created:
-                    Task2(
-                        id=wbs1_str + wbs2_str,
-                        text=wbs2,
-                        # min(start_date of levels)
-                        start_date=datetime.today() + timedelta(prev_level),
-                        # duration = max([distances[din] for din in result[wbs1]])
-                        duration=(new_level + 1) if distances and int(max(distances.values()) > 0) else 1,
-                        parent=wbs1_str,
-                    ).save()
-                    created.add((wbs1_str + wbs2_str))
-                top_duration += (new_level + 1) if distances and int(max(distances.values()) > 0) else 1
-                for wbs3 in sorted(result[wbs1][wbs2], key=lambda x: x[2]):
-                    if not wbs3:
-                        try:
-                            if wbs3 != 0:
-                                pass
-                        except:
-                            continue
+    project_id = request.session["project_id"]
+    project = Project.objects.get(id=project_id)
+    response = requests.get(f'http://viewer:8070/links/{project.name}/')
+    data = json.loads(response.json())
+    for el in data:
+        Link(
+                                        source=str(el['source']),
+                                        target=str(el['target']),
+                                        type=str(el['type']),
+                                        lag=el['lag'],
+                                    ).save()
+    # if not df.empty:
+    #     df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'], format="%d.%m.%Y")
+    #     start_date = min(df['Плановая дата начала'])
+    #     # poisk posledney daty
+    #     df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'], format="%d.%m.%Y")
+    #     finish_date = max(df['Плановая дата окончания'])
+    #     all_time = finish_date - start_date
 
-                    # брать гэсн этой работы
-                    wbs3_str = wbs3[0]
-                    if wbs3_str not in distances:
+    # data_collect.saving_typed_edges_with_wbs(session, result)
+    # created = set()
+    # prev_level = 0
+    # prev_building = None
+    # pre_pre_dur = 0
+    # max_time = 0
 
-                        dates[wbs2 + wbs3[0]] = (datetime.today() + timedelta(prev_level),
-                                                 datetime.today() + timedelta(prev_level) + timedelta(1))
-                        Task2(
-                            id=wbs1_str + wbs2_str + wbs3[0] + wbs3[1],
-                            text=f'({wbs3[0]}) {names[wbs3[1]]}',
-                            # min(start_date of levels)
-                            start_date=datetime.today() + timedelta(prev_level),
-                            # duration = max([distances[din] for din in result[wbs1]])
-                            duration=1,
-                            parent=wbs1_str + wbs2_str,
-                        ).save()
-                    else:
+    # global dates
+    # dates = dict()
+    # # for wbs1 in result.keys():
+    # #     for i in result[wbs1].keys():
+    # #         max_time +=
+    # if not df.empty:
+    #     for wbs1 in result.keys():
+    #         if prev_building:
+    #             pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
+    #             prev_building.save()
 
-                        dates[wbs2 + wbs3[0]] = (
-                            datetime.today() + timedelta(prev_level) + timedelta(distances[wbs3_str]),
-                            datetime.today() + timedelta(prev_level) + timedelta(
-                                distances[wbs3_str]) + timedelta(1))
-                        Task2(
-                            id=wbs1_str + wbs2 + wbs3[0] + wbs3[1],
+    #         if not wbs1:
+    #             continue
 
-                            text=f'({wbs3[0]}) {names[wbs3[1]]}',
-                            # min(start_date of levels)
-                            start_date=datetime.today() + timedelta(prev_level) + timedelta(
-                                distances[wbs3_str]),
-                            # duration = max([distances[din] for din in result[wbs1]])
-                            duration=1,
-                            parent=wbs1_str + wbs2_str,
-                        ).save()
+    #         for wbs2 in result[wbs1].keys():
+    #             if not wbs2:
+    #                 continue
+    #             wbs2_str = str(wbs2)
+    #             # здесь нужно считать дистанцию
+    #             distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
+    #             new_level = int(max(distances.values(), default=0))
 
-                prev_level += new_level + 1
-            Task2.objects.filter(id=wbs1_str).duration = top_duration
+    #             prev_level += new_level + 1
+    #     max_time = prev_level
+    #     prev_level = 0
+    #     prev_building = None
+    #     pre_pre_dur = 0
+    #     koef = all_time.days / (max_time)
+    #     for wbs1 in result.keys():
+    #         if prev_building:
+    #             pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
+    #             prev_building.save()
+
+    #         if not wbs1:
+    #             continue
+    #         wbs1_str = str(wbs1)
+    #         if wbs1_str not in created:
+    #             Task2(
+    #                 id=wbs1_str,
+    #                 text=wbs1,
+    #                 # min(start_date of levels)
+    #                 start_date=datetime.today() + timedelta(prev_level * koef),
+    #                 # duration = max([distances[din] for din in result[wbs1]])
+    #                 duration=all_time.days,
+    #             ).save()
+    #             prev_building = Task2.objects.get(id=wbs1_str)
+    #             created.add(wbs1_str)
+    #         for wbs2 in result[wbs1].keys():
+    #             if not wbs2:
+    #                 continue
+    #             wbs2_str = str(wbs2)
+    #             # здесь нужно считать дистанцию
+    #             distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
+    #             new_level = int(max(distances.values(), default=0))
+    #             if (wbs1_str + wbs2_str) not in created:
+    #                 Task2(
+    #                     id=wbs1_str + wbs2_str,
+    #                     text=wbs2,
+    #                     # min(start_date of levels)
+    #                     start_date=datetime.today() + timedelta(prev_level * koef),
+    #                     # duration = max([distances[din] for din in result[wbs1]])
+    #                     duration=(new_level + 1) * koef if distances and int(max(distances.values()) > 0) else 1 * koef,
+    #                     parent=wbs1_str,
+    #                 ).save()
+    #                 created.add((wbs1_str + wbs2_str))
+
+    #             for wbs3 in sorted(result[wbs1][wbs2], key=lambda x: x[2]):
+    #                 if not wbs3:
+    #                     try:
+    #                         if wbs3 != 0:
+    #                             pass
+    #                     except:
+    #                         continue
+
+    #                 # брать гэсн этой работы
+    #                 wbs3_str = wbs3[0]
+    #                 if wbs3_str not in distances:
+
+    #                     dates[wbs2 + wbs3[0]] = (datetime.today() + timedelta(prev_level * koef),
+    #                                              datetime.today() + timedelta(prev_level * koef) + timedelta(1 * koef))
+    #                     Task2(
+    #                         id=wbs1_str + wbs2_str + wbs3[0] + wbs3[1],
+    #                         text=f'({wbs3[0]}) {names[wbs3[1]]}',
+    #                         # min(start_date of levels)
+    #                         start_date=datetime.today() + timedelta(prev_level * koef),
+    #                         # duration = max([distances[din] for din in result[wbs1]])
+    #                         duration=1 * koef,
+    #                         parent=wbs1_str + wbs2_str,
+    #                     ).save()
+    #                 else:
+
+    #                     dates[wbs2 + wbs3[0]] = (
+    #                     datetime.today() + timedelta(prev_level * koef) + timedelta(distances[wbs3_str] * koef),
+    #                     datetime.today() + timedelta(prev_level * koef) + timedelta(distances[wbs3_str] * koef) + timedelta(
+    #                         1 * koef))
+    #                     Task2(
+    #                         id=wbs1_str + wbs2 + wbs3[0] + wbs3[1],
+
+    #                         text=f'({wbs3[0]}) {names[wbs3[1]]}',
+    #                         # min(start_date of levels)
+    #                         start_date=datetime.today() + timedelta(prev_level * koef) + timedelta(
+    #                             distances[wbs3_str] * koef),
+    #                         # duration = max([distances[din] for din in result[wbs1]])
+    #                         duration=1 * koef,
+    #                         parent=wbs1_str + wbs2_str,
+    #                     ).save()
+
+    #             prev_level += new_level + 1
+    # else:
+    #     for wbs1 in result.keys():
+    #         if prev_building:
+    #             pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
+    #             prev_building.save()
+
+    #         if not wbs1:
+    #             continue
+
+    #         for wbs2 in result[wbs1].keys():
+    #             if not wbs2:
+    #                 continue
+    #             wbs2_str = str(wbs2)
+    #             # здесь нужно считать дистанцию
+    #             distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
+    #             new_level = int(max(distances.values(), default=0))
+
+    #             prev_level += new_level + 1
+    #     max_time = prev_level
+    #     prev_level = 0
+    #     prev_building = None
+    #     pre_pre_dur = 0
+
+    #     for wbs1 in result.keys():
+    #         if prev_building:
+    #             pre_pre_dur = prev_building.duration = prev_level - pre_pre_dur
+    #             prev_building.save()
+
+    #         if not wbs1:
+    #             continue
+    #         wbs1_str = str(wbs1)
+    #         if wbs1_str not in created:
+    #             Task2(
+    #                 id=wbs1_str,
+    #                 text=wbs1,
+    #                 # min(start_date of levels)
+    #                 start_date=datetime.today() + timedelta(prev_level),
+    #                 # duration = max([distances[din] for din in result[wbs1]])
+    #                 duration=1,
+    #             ).save()
+    #             prev_building = Task2.objects.get(id=wbs1_str)
+    #             created.add(wbs1_str)
+    #         top_duration = 0
+    #         for wbs2 in result[wbs1].keys():
+    #             if not wbs2:
+    #                 continue
+    #             wbs2_str = str(wbs2)
+    #             # здесь нужно считать дистанцию
+    #             distances = data_collect.calculateDistance(session=session, dins=result_din[wbs1][wbs2])
+    #             new_level = int(max(distances.values(), default=0))
+    #             if (wbs1_str + wbs2_str) not in created:
+    #                 Task2(
+    #                     id=wbs1_str + wbs2_str,
+    #                     text=wbs2,
+    #                     # min(start_date of levels)
+    #                     start_date=datetime.today() + timedelta(prev_level),
+    #                     # duration = max([distances[din] for din in result[wbs1]])
+    #                     duration=(new_level + 1) if distances and int(max(distances.values()) > 0) else 1,
+    #                     parent=wbs1_str,
+    #                 ).save()
+    #                 created.add((wbs1_str + wbs2_str))
+    #             top_duration += (new_level + 1) if distances and int(max(distances.values()) > 0) else 1
+    #             for wbs3 in sorted(result[wbs1][wbs2], key=lambda x: x[2]):
+    #                 if not wbs3:
+    #                     try:
+    #                         if wbs3 != 0:
+    #                             pass
+    #                     except:
+    #                         continue
+
+    #                 # брать гэсн этой работы
+    #                 wbs3_str = wbs3[0]
+    #                 if wbs3_str not in distances:
+
+    #                     dates[wbs2 + wbs3[0]] = (datetime.today() + timedelta(prev_level),
+    #                                              datetime.today() + timedelta(prev_level) + timedelta(1))
+    #                     Task2(
+    #                         id=wbs1_str + wbs2_str + wbs3[0] + wbs3[1],
+    #                         text=f'({wbs3[0]}) {names[wbs3[1]]}',
+    #                         # min(start_date of levels)
+    #                         start_date=datetime.today() + timedelta(prev_level),
+    #                         # duration = max([distances[din] for din in result[wbs1]])
+    #                         duration=1,
+    #                         parent=wbs1_str + wbs2_str,
+    #                     ).save()
+    #                 else:
+
+    #                     dates[wbs2 + wbs3[0]] = (
+    #                         datetime.today() + timedelta(prev_level) + timedelta(distances[wbs3_str]),
+    #                         datetime.today() + timedelta(prev_level) + timedelta(
+    #                             distances[wbs3_str]) + timedelta(1))
+    #                     Task2(
+    #                         id=wbs1_str + wbs2 + wbs3[0] + wbs3[1],
+
+    #                         text=f'({wbs3[0]}) {names[wbs3[1]]}',
+    #                         # min(start_date of levels)
+    #                         start_date=datetime.today() + timedelta(prev_level) + timedelta(
+    #                             distances[wbs3_str]),
+    #                         # duration = max([distances[din] for din in result[wbs1]])
+    #                         duration=1,
+    #                         parent=wbs1_str + wbs2_str,
+    #                     ).save()
+
+    #             prev_level += new_level + 1
+    #         Task2.objects.filter(id=wbs1_str).duration = top_duration
+
     # if prev_building:
     #     prev_building.duration = (prev_level - pre_pre_dur) * koef
     #     prev_building.save()
