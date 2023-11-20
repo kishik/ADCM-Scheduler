@@ -705,6 +705,7 @@ def volumes(request):
     global graph_data
     # graph_data = myJson["data"]
     graph_data = data.copy()
+    data = [{k: v for k, v in d.items() if k != 'distance'} for d in data]
     graph_data.sort(
         key=lambda x: (
             x.get("wbs1", "") or "",
@@ -1012,7 +1013,7 @@ def schedule(request):
                     id=node['id'],
                     text=node['name'],
                     # min(start_date of levels)
-                    start_date=datetime.today(),
+                    start_date=datetime.today() + timedelta(days=node['distance']),
                     # duration = max([distances[din] for din in result[wbs1]])
                     duration=1,
                 ).save()

@@ -3,7 +3,7 @@ import math
 import pandas as pd
 from neo4j import GraphDatabase, Transaction
 
-from data_collection import calculateDistance, allNodes
+from .data_collection import calculateDistance, allNodes
 
 
 ELEMENTS_URI = "neo4j://neo4j_elements:7687"
