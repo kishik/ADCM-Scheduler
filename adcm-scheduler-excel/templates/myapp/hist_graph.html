@@ -96,9 +96,9 @@
             function init_simplified() {  /// at the beginning
 			config_neo4j={
                 container_id: "mynetwork",
-                server_url: "{{ url }}",
-                server_user: "{{ user }}",
-				server_password: "{{ pass }}",
+                server_url: "bolt://localhost:7688",
+                server_user: "neo4j",
+				server_password: "23109900",
                 initial_cypher: "MATCH (n) OPTIONAL MATCH (n)-[r]->(m) RETURN n, r, m"
 			}
 				events = new EventController();	//see events.js !!

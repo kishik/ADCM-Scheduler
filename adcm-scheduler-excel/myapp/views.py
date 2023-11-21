@@ -280,6 +280,26 @@ def project_edit(request, id):
             return render(request, "myapp/project_edit.html", {"project": project})
     except Project.DoesNotExist:
         return HttpResponseNotFound("<h2>project not found</h2>")
+    
+
+def project_delete(request, id):
+    """
+    Удаление URN
+    :param request:
+    :param id:
+    :return:
+    """
+    if not request.user.is_authenticated:
+        return redirect("/login/")
+    try:
+        project = Project.objects.get(id=id)
+        if project.userId != request.user.id:
+            return HttpResponseNotFound("<h2>Это не ваш проект</h2>")
+        project.delete()
+        return HttpResponseRedirect("/projects/")
+    except URN.DoesNotExist:
+        return HttpResponseNotFound("<h2>Проект не найден</h2>")
+    
 
 def urn_delete(request, id):
     """
@@ -605,19 +625,19 @@ def uploading(request):
     )
 
 
-def volumes(request):
+def volumes(request, project_id):
     """
     Ведомость объемов
     :param request:
     :return:vol
     """
-    flag = False
+    # flag = False
     project = ActiveLink.objects.filter(userId=request.user.id).last()
     if not project:
         project = ActiveLink()
         project.projectId = None
         project.modelId = None
-    wbs = Wbs.objects.filter(id=request.session["wbs"]) if request.session["wbs"] != 0 else Wbs.objects.all()
+    # wbs = Wbs.objects.filter(id=request.session["wbs"]) if request.session["wbs"] != 0 else Wbs.objects.all()
 
     # import xlwt
     #
@@ -649,7 +669,7 @@ def volumes(request):
     
     # project_name = Project.objects.get(id=request.session["project_id"]).name
     # link = f'viewer:3000/{project_name}/'
-    project_id = request.session["project_id"]
+    request.session["project_id"] = project_id
     project = Project.objects.get(id=project_id)
     # data = WorkAggregator(project, wbs).load_models()
 
@@ -664,9 +684,9 @@ def volumes(request):
     #     project.save()
     #     post_data = {'name': project.name, 'link': project.link}
     # add async
-    user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+    # user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
     # тут ресторю в свой граф из эксель
-    time_now = datetime.now()
+    # time_now = datetime.now()
     # try:
     #     user_graph.hist_graph_copy()
     # except Exception as e:
@@ -699,7 +719,7 @@ def volumes(request):
     # }
     for i in range(len(data)):
         data[i]['wbs'] = f"{data[i]['wbs1']}{data[i]['wbs3_id']}"
-    dins = {item['wbs3_id'] for item in data}
+    # dins = {item['wbs3_id'] for item in data}
 
     
     global graph_data
@@ -713,7 +733,7 @@ def volumes(request):
             x.get("wbs3_id", "") or "",
         )
     )
-    time_now = datetime.now()
+    # time_now = datetime.now()
     # user_graph.create_new_graph_algo(dins)
     return render(
         request,
@@ -1005,10 +1025,47 @@ def schedule(request):
     #         result_din[el["wbs1"]][el["wbs2"]].append(el["wbs3_id"])
     #     dins.append(el["wbs3_id"])
     #     names[wbs_id[1]] = el["name"]
-
+    wbs = {}
     Task2.objects.all().delete()
     Link.objects.all().delete()
     for node in graph_data:
+        if node['wbs1'] not in wbs.keys():
+            wbs[node['wbs1']] = {}
+            Task2(
+                    id=node['wbs1'],
+                    text=node['wbs1'],
+                    # min(start_date of levels)
+                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']])),
+                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']]) + 1)
+                    # duration = max([distances[din] for din in result[wbs1]])
+                    # duration=1
+                    
+                ).save()
+        if node['wbs2'] not in wbs[node['wbs1']].keys():
+            wbs[node['wbs1']][node['wbs2']] = []
+            Task2(
+                    id=f"{node['wbs1']}{node['wbs2']}",
+                    text=node['wbs2'],
+                    # min(start_date of levels)
+                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])])),
+                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])]) + 1),
+                    # duration = max([distances[din] for din in result[wbs1]])
+                    # duration=1,
+                    parent=node['wbs1']
+                ).save()
+        if node['wbs3_id'] not in wbs[node['wbs1']][node['wbs2']]:
+            wbs[node['wbs1']][node['wbs2']].append(node['wbs3_id'])
+            Task2(
+                    id=f"{node['wbs1']}{node['wbs2']}{node['wbs3_id']}",
+                    text=node['wbs3_id'],
+                    # min(start_date of levels)
+                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3_id'] == node['wbs3_id'])])),
+                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3_id'] == node['wbs3_id'])]) + 1),
+                    # duration = max([distances[din] for din in result[wbs1]])
+                    # duration=1,
+                    parent=f"{node['wbs1']}{node['wbs2']}"
+                ).save()
+
         Task2(
                     id=node['id'],
                     text=node['name'],
@@ -1016,6 +1073,7 @@ def schedule(request):
                     start_date=datetime.today() + timedelta(days=node['distance']),
                     # duration = max([distances[din] for din in result[wbs1]])
                     duration=1,
+                    parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3_id']}"
                 ).save()
     project_id = request.session["project_id"]
     project = Project.objects.get(id=project_id)

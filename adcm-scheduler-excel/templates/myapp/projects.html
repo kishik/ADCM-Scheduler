@@ -16,11 +16,11 @@
   <form method="POST" action="/project_create/">
         {% csrf_token %}
         <p>
-            <label>Введите имя</label>
+            <label>Введите имя проекта</label>
             <input class="form-control" type="text" name="name" />
         </p>
         <p>
-            <label>Введите ссылку</label>
+            <label>Введите ссылку на проект</label>
             <input class="form-control" type="text" name="link" />
         </p>
         <input class="btn btn-primary" type="submit" value="Сохранить" >
@@ -31,21 +31,15 @@
 
 
     {% if projects.count > 0 %}
-    <h2>Список URN</h2>
+    <h2>Список проектов</h2>
     <table class="table">
-    <thead>
-        <tr>
-            <th scope="col" class="col-4">Раздел</th>
-            <th scope="col">URN</th>
-        </tr>
-    </thead>
         {% for project in projects %}
             {% if project.isActive %}
-            <tr><td class="">{{ project.name }}</td><td class="">{{ project.link }}</td></tr>
-                <tr><td><a href="/sdrs/{{project.id}}">Выбрать</a></td>
-                    <td><a href="/project_edit/{{project.id}}">Изменить</a></td>
+            <tr><td><a class="" href="/volumes/{{project.id}}">{{project.name}}</a></td>
+
+                    <!-- <td><a href="/project_edit/{{project.id}}">Изменить</a></td> -->
                     <td><a href="/project_delete/{{project.id}}">Удалить</a></td>
-                    <td><a target="_blank" href="http://0.0.0.0:3000/xeokit-bim-viewer-app/?projectId={{ project.name }}">Показать</a></td>
+                    <td><a target="_blank" href="http://0.0.0.0:3000/xeokit-bim-viewer-app/?projectId={{ project.name }}">Показать</a></td></tr>
             {% endif %}
         {% endfor %}
     </table>
