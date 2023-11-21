@@ -42,22 +42,21 @@ table.dataTable thead .sorting_desc_disabled:before {
 <!--  });-->
 <!--});</script>-->
 
-{% regroup myJson by wbs1 as myList %}
+<!-- {% regroup myJson by wbs1 as myList %} -->
 
 <table class="table table-striped" id="table">
   <thead>
     <tr>
-            <th data-field="id" scope="col">id</th>
             <th data-field="wbs1" scope="col">wbs1</th>
             <th data-field="wbs2" scope="col">wbs2</th>
             <th data-field="wbs3_id" scope="col">wbs3_id</th>
             <th data-field="wbs3" scope="col">wbs3</th>
+            <th data-field="id" scope="col">id</th>
             <th data-field="name" scope="col">name</th>
-            <!-- <th data-field="value" scope="col">value</th> -->
-            <th data-field="wbs" scope="col">wbs</th>
+            <!-- <th data-field="value" scope="col">value</th> -->  
     </tr>
   </thead>
-  <tbody>
+  <!-- <tbody>
   {% with i=0 %}
 
   {% for grouper, el in myList %}
@@ -81,12 +80,19 @@ table.dataTable thead .sorting_desc_disabled:before {
 {% endfor %}
   {% endfor %}
   {% endwith %}
-  </tbody>
+  </tbody> -->
+    <tbody>
+    {% autoescape off %}
+    {{text}}
+    {% endautoescape %}
+    </tbody>
 </table>
 
 <script>
 $(document).ready(function () {
-  $('#table').DataTable();
+  $('#table').DataTable({
+    "lengthMenu": [ [10, 25, 50, 100, 250, -1], [10, 25, 50, 100, 250, "All"] ]
+});
   $('.dataTables_length').addClass('bs-select');
 });
 </script>
@@ -103,9 +109,9 @@ expanderCollapsedClass: 'fa fa-angle-right',
 
 // Index of the column which expander should be added to.
 treeColumn: 0,
-
-// Initial CSS class
-initStatusClass: 'treetable-expanded'
+// initState :'collapsed',
+// // Initial CSS class
+// initStatusClass: 'treetable-collapsed'
 
 });
 </script>

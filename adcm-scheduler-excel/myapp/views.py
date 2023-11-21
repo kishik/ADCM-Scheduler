@@ -726,21 +726,102 @@ def volumes(request, project_id):
     # graph_data = myJson["data"]
     graph_data = data.copy()
     data = [{k: v for k, v in d.items() if k != 'distance'} for d in data]
-    graph_data.sort(
-        key=lambda x: (
-            x.get("wbs1", "") or "",
-            x.get("wbs2", "") or "",
-            x.get("wbs3_id", "") or "",
-        )
-    )
-    # time_now = datetime.now()
+    wbs = {}
+    for node in graph_data:
+        if node['wbs1'] not in wbs.keys():
+            wbs[node['wbs1']] = {}
+
+        if node['wbs2'] not in wbs[node['wbs1']].keys():
+            wbs[node['wbs1']][node['wbs2']] = {}
+
+        if node['wbs3_id'] not in wbs[node['wbs1']][node['wbs2']]:
+            wbs[node['wbs1']][node['wbs2']][node['wbs3_id']] = []
+        wbs[node['wbs1']][node['wbs2']][node['wbs3_id']].append(node)
+    
+    final = []
+    for el in sorted(wbs):
+    #     print(wbs[el])
+        final.append({'id':'', 'wbs1':el, 'wbs2': '', 'wbs3_id':'', 'wbs3':'', 'name':'', 'distance':''})
+        for subel in sorted(wbs[el]):
+    #         print(wbs[el][subel])
+            final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3_id':'', 'wbs3':'', 'name':'', 'distance':''})
+            for miniel in sorted(wbs[el][subel]):
+    #             print(wbs[el][subel][miniel])
+                final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3_id':miniel, 'wbs3':'', 'name':'', 'distance':''})
+                for nanoel in wbs[el][subel][miniel]:
+    #                 print(nanoel)
+                    final.append(nanoel)
+
+    last_lvl = [0, 0, 0, 0]
+    for i, el in enumerate(final):
+        if not el['wbs2']:
+            last_lvl[0] += 1
+            last_lvl[1] = 0
+            last_lvl[2] = 0
+            last_lvl[3] = 0
+            print(f'lvl1 {last_lvl[0]}')
+            final[i].update({'lvl1':last_lvl[0], 'lvl2':'', 'lvl3':'', 'lvl4':'', 
+                            'p_lvl1':'', 'p_lvl2':'', 'p_lvl3':'', 'p_lvl4':''})
+            continue
+        elif not el['wbs3_id']:
+            last_lvl[1] += 1
+            last_lvl[2] = 0
+            last_lvl[3] = 0
+            print(f'lvl2 {last_lvl[0]} {last_lvl[1]}')
+            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':'', 'lvl4':'', 
+                            'p_lvl1':last_lvl[0], 'p_lvl2':'', 'p_lvl3':'', 'p_lvl4':''})
+            continue
+        elif not el['id']:
+            last_lvl[2] += 1
+            last_lvl[3] = 0
+            print(f'lvl3 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]}')
+            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':'', 
+                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':'', 'p_lvl4':''})
+            continue
+        else:
+            last_lvl[3] += 1
+            print(f'lvl4 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]} {last_lvl[3]}')
+            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':last_lvl[3], 
+                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':last_lvl[2], 'p_lvl4':''})
+            
+    text = ''
+    for el in final:
+        if el['lvl2'] == '':
+            text += f'''
+                <tr data-node="treetable-{el['lvl1']}" data-pnode="">
+                    <td>{el['wbs1']}</td><td>{el['wbs2']}</td><td>{el['wbs3_id']}</td><td>{el['wbs3']}</td><td>{el['id']}</td><td>{el['name']}</td>
+                </tr>
+                '''
+            continue
+        if el['lvl3'] == '':
+            text += f'''
+                <tr data-node="treetable-{el['lvl1']}.{el['lvl2']}" data-pnode="treetable-parent-{el['p_lvl1']}">
+                    <td>{el['wbs1']}</td><td>{el['wbs2']}</td><td>{el['wbs3_id']}</td><td>{el['wbs3']}</td><td>{el['id']}</td><td>{el['name']}</td>
+                </tr>
+                '''
+            continue
+        if el['lvl4'] == '':
+            text += f'''
+                <tr data-node="treetable-{el['lvl1']}.{el['lvl2']}.{el['lvl3']}" data-pnode="treetable-parent-{el['p_lvl1']}.{el['p_lvl2']}">
+                    <td>{el['wbs1']}</td><td>{el['wbs2']}</td><td>{el['wbs3_id']}</td><td>{el['wbs3']}</td><td>{el['id']}</td><td>{el['name']}</td>
+                </tr>
+                '''
+            continue
+
+        text += f'''
+            <tr data-node="treetable-{el['lvl1']}.{el['lvl2']}.{el['lvl3']}.{el['lvl4']}" data-pnode="treetable-parent-{el['p_lvl1']}.{el['p_lvl2']}.{el['p_lvl3']}">
+
+                <td>{el['wbs1']}</td><td>{el['wbs2']}</td><td>{el['wbs3_id']}</td><td>{el['wbs3']}</td><td>{el['id']}</td><td>{el['name']}</td>
+            </tr>
+            '''
+        # time_now = datetime.now()
     # user_graph.create_new_graph_algo(dins)
     return render(
         request,
         "myapp/volumes.html",
         {
             # "myJson": myJson["data"],
-            "myJson": data
+            "text": text
         },
     )
 
@@ -1001,7 +1082,7 @@ def schedule(request):
         return redirect("/login/")
     
     # project.name
-    session = data_collect.authentication(url=URL, user=USER, password=PASS)
+    # session = data_collect.authentication(url=URL, user=USER, password=PASS)
     # # distances = data_collect.calculateDistance(session=session)
     # distances = ()
     # dins = []
@@ -1318,7 +1399,7 @@ def schedule(request):
     # if prev_building:
     #     prev_building.duration = (prev_level - pre_pre_dur) * koef
     #     prev_building.save()
-    session.close()
+    # session.close()
     # form = FileFieldForm()
     # context = {'form': form}
     return render(request, "myapp/new_gantt.html")
