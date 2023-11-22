@@ -3,11 +3,10 @@ import math
 import pandas as pd
 from neo4j import GraphDatabase, Transaction
 
-from data_collection import calculateDistance, allNodes
+from data_collection import calculateDistance, allNodes, calculate_hist_distance
 
-
-ELEMENTS_URI = "neo4j://neo4j_elements:7687"
-GROUPS_URI = "neo4j://neo4j_groups:7687"
+ELEMENTS_URI = "neo4j://localhost:7687"
+GROUPS_URI = "neo4j://localhost:7688"
 USER = "neo4j"
 PSWD = "23109900"
 
@@ -226,7 +225,8 @@ class NxToNeo4jConverter:
         relEl.ADCM_JobType as wbs3, relEl.name as name"""
         with self.element_driver.session() as session:
             nodes = session.run(query).data()
-            distances = calculateDistance(session, allNodes(session))
+            # distances = calculateDistance(session, allNodes(session))
+            distances = calculate_hist_distance(session)  # , allNodes(session))
         for i in nodes:
             i.update({"distance": distances.get(i.get("id"))})
         return nodes
