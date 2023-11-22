@@ -3,10 +3,11 @@ import math
 import pandas as pd
 from neo4j import GraphDatabase, Transaction
 
-from data_collection import calculateDistance, allNodes, calculate_hist_distance
+from .data_collection import calculateDistance, allNodes, calculate_hist_distance
 
-ELEMENTS_URI = "neo4j://localhost:7687"
-GROUPS_URI = "neo4j://localhost:7688"
+
+ELEMENTS_URI = "neo4j://neo4j_elements:7687"
+GROUPS_URI = "neo4j://neo4j_groups:7687"
 USER = "neo4j"
 PSWD = "23109900"
 
