@@ -28,7 +28,9 @@ def get_name_by_din(session: Session, din: str) -> str:
     RETURN n.name AS name
     """
     result = session.run(q_get_name, din=din).data()
-    return result[0]["name"]
+    if len(result) > 0:
+        return result[0]["name"]
+    return 'None'
 
 
 # мы должны создавать таски и связи в бд
@@ -111,13 +113,113 @@ def authentication(url=NEW_URL, user=USER, password=PASS, database="neo4j"):
     return session
 
 
+# def allNodes(session):
+#     """
+#     Возвращает все ноды
+#     :return: список нодов
+#     """
+
+#     q_data_obtain = "MATCH (n) RETURN n.DIN AS din"
+#     result = session.run(q_data_obtain).data()
+#     return np.array([item["din"] for item in result])
+
+
+# def parentsByDin(din, session):
+#     """
+#     Возвращает всех родителей элемента din
+#     :param din:
+#     :param session:
+#     :return: np.array массив DINов родителей элемента
+#     """
+
+#     q_data_obtain = """
+#     MATCH (c)-[r]->(a)
+#     WHERE a.DIN = $din
+#     RETURN c.DIN AS din
+#     """
+#     result = session.run(q_data_obtain, din=din).data()
+#     dins_arr = np.array([item["din"] for item in result])
+#     if din in dins_arr:
+#         dins_arr = dins_arr[dins_arr != din]
+#     return dins_arr
+
+
+# def childrenByDin(din, session):
+#     """
+#     Возвращает всех детей элемента din
+#     :param din:
+#     :param session:
+#     :return: list динов
+#     """
+#     q_data_obtain = """
+#     MATCH (a)-[r]->(c)
+#     WHERE a.DIN = $din
+#     RETURN c.DIN AS din
+#     """
+#     result = session.run(q_data_obtain, din=din).data()
+#     children_arr = np.array([item["din"] for item in result])
+#     if din in children_arr:
+#         children_arr = children_arr[children_arr != din]
+#     return children_arr
+
+
+# def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
+#     """
+#     Проходит рекурсивный путь по своим детям, указывая максимальную глубину рекурсии,
+#     сравнивая текущую и полученную сейчас
+#     :param start_din:
+#     :param distances: dict din to level
+#     :param session:
+#     :param cur_level:
+#     """
+#     if start_din in visited:
+#         return
+#     visited.append(start_din)
+#     if start_din not in dins:
+#         for element in childrenByDin(start_din, session):
+#             prohod(element, distances, session, dins, cur_level, visited)
+#     else:
+#         if start_din not in distances:
+#             distances[start_din] = 0
+
+#         distances[start_din] = max(cur_level, distances[start_din])
+
+#         for element in childrenByDin(start_din, session):
+#             if start_din == element:
+#                 continue
+#             if get_edge_type(session, start_din, element) == "FS":
+#                 prohod(element, distances, session, dins, cur_level + 1, visited.copy())
+#                 continue
+#             elif get_edge_type(session, start_din, element) == "SS":
+#                 # если связь типа старт-старт то prohod(element, distances, session, cur_level)
+#                 prohod(element, distances, session, dins, cur_level, visited.copy())
+
+
+# def calculateDistance(session, dins):
+#     """
+#     Запускает проход по всем нодам, не имеющим родителей
+#     dins это дины которые нас интересуют в рамках одного отчета
+#     :return: dict нодов с их глубиной в графе
+#     """
+#     distances = {}
+#     for node in allNodes(session):
+#         if parentsByDin(node, session).size > 0:
+#             continue
+#         prohod(start_din=node, distances=distances, session=session, cur_level=0, dins=dins, visited=list())
+#     return distances
+
+
+
+
+
 def allNodes(session):
     """
     Возвращает все ноды
     :return: список нодов
     """
 
-    q_data_obtain = "MATCH (n) RETURN n.DIN AS din"
+    q_data_obtain = "MATCH (n) WHERE n.DIN IS NOT NULL " \
+                    " RETURN DISTINCT n.DIN  AS din"
     result = session.run(q_data_obtain).data()
     return np.array([item["din"] for item in result])
 
@@ -131,9 +233,9 @@ def parentsByDin(din, session):
     """
 
     q_data_obtain = """
-    MATCH (c)-[r]->(a)
+    MATCH (c)-[r:FOLLOWS]->(a)
     WHERE a.DIN = $din
-    RETURN c.DIN AS din
+    RETURN DISTINCT c.DIN AS din
     """
     result = session.run(q_data_obtain, din=din).data()
     dins_arr = np.array([item["din"] for item in result])
@@ -150,9 +252,9 @@ def childrenByDin(din, session):
     :return: list динов
     """
     q_data_obtain = """
-    MATCH (a)-[r]->(c)
-    WHERE a.DIN = $din
-    RETURN c.DIN AS din
+    MATCH (a)-[r:FOLLOWS]->(c)
+    WHERE a.DIN  = $din
+    RETURN DISTINCT c.DIN AS din
     """
     result = session.run(q_data_obtain, din=din).data()
     children_arr = np.array([item["din"] for item in result])
@@ -165,10 +267,6 @@ def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
     """
     Проходит рекурсивный путь по своим детям, указывая максимальную глубину рекурсии,
     сравнивая текущую и полученную сейчас
-    :param start_din:
-    :param distances: dict din to level
-    :param session:
-    :param cur_level:
     """
     if start_din in visited:
         return
@@ -185,12 +283,8 @@ def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
         for element in childrenByDin(start_din, session):
             if start_din == element:
                 continue
-            if get_edge_type(session, start_din, element) == "FS":
-                prohod(element, distances, session, dins, cur_level + 1, visited.copy())
-                continue
-            elif get_edge_type(session, start_din, element) == "SS":
-                # если связь типа старт-старт то prohod(element, distances, session, cur_level)
-                prohod(element, distances, session, dins, cur_level, visited.copy())
+            # раньше здесь был get_edge_type, но сейчас у нас всегда тип связи "FS"
+            prohod(element, distances, session, dins, cur_level + 1, visited.copy())
 
 
 def calculateDistance(session, dins):
@@ -227,12 +321,12 @@ def prohod_hist(start_din, distances, session, cur_level=0, visited=[]):
     for element in childrenByDin(start_din, session):
         if start_din == element:
             continue
-        if get_edge_type(session, start_din, element) == "FS":
-            prohod_hist(element, distances, session, cur_level + 1)
-            continue
-        elif get_edge_type(session, start_din, element) == "SS":
-            # если связь типа старт-старт то prohod(element, distances, session, cur_level)
-            prohod_hist(element, distances, session, cur_level)
+        # if get_edge_type(session, start_din, element) == "FS":
+        prohod_hist(element, distances, session, cur_level + 1)
+        # continue
+        # elif get_edge_type(session, start_din, element) == "SS":
+        #     # если связь типа старт-старт то prohod(element, distances, session, cur_level)
+        #     prohod_hist(element, distances, session, cur_level)
 
 
 def calculate_hist_distance(session):
@@ -246,6 +340,7 @@ def calculate_hist_distance(session):
             continue
         prohod_hist(start_din=node, distances=distances, session=session, cur_level=0)
     return distances
+
 
 
 def children():
@@ -325,22 +420,10 @@ def delete_clones(session):
     pass
 
 
-def get_typed_edges(session: Session, rel_type: str) -> pd.DataFrame:
-    pred_type = flw_type = None
-    if rel_type == "FS":
-        pred_type = "finish"
-        flw_type = "start"
-    elif rel_type == "SS":
-        pred_type = flw_type = "start"
-    elif rel_type == "FF":
-        pred_type = flw_type = "finish"
-    elif rel_type == "SF":
-        pred_type = "start"
-        flw_type = "finish"
-
+def get_typed_edges(session: Session) -> pd.DataFrame:
+    
     Q_FINISH_START = f"""
     MATCH (n)-[:FOLLOWS]->(m)
-    WHERE n.type = '{pred_type}' AND m.type = '{flw_type}' 
     RETURN n.DIN AS pred_din, m.DIN AS flw_din
     """
     result = session.run(Q_FINISH_START).data()
@@ -348,11 +431,9 @@ def get_typed_edges(session: Session, rel_type: str) -> pd.DataFrame:
 
 
 def saving_typed_edges(session):
-    edges_types = ("FS", "SS", "FF", "SF")
-    for i in range(len(edges_types)):
-        edges = get_typed_edges(session, edges_types[i])
-        for index, row in edges.iterrows():
-            Link(source=str(row["pred_din"]), target=str(row["flw_din"]), type=str(i), lag=0).save()
+    edges = get_typed_edges(session)
+    for index, row in edges.iterrows():
+        Link(source=str(row["pred_din"]), target=str(row["flw_din"]), type='0', lag=0).save()
 
 
 def saving_typed_edges_with_wbs(session, result):
