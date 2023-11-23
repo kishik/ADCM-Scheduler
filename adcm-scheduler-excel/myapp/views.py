@@ -24,7 +24,7 @@ from myapp.models import URN, ActiveLink, Link, Project, Rule, Task2, Wbs
 from myapp.serializers import LinkSerializer, TaskSerializer
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
-from .gantt.data_collect import parentsByDin
+# from .gantt.data_collect import parentsByDin
 from .graph_creation import add, neo4jexplorer
 from .graph_creation.graph_copy import graph_copy
 
@@ -1061,7 +1061,7 @@ def hist_gantt(request):
     distances = data_collect.calculate_hist_distance(session=session)
     data_collect.saving_typed_edges(session)
     duration = 1
-    data = data_collect.allNodes(session)
+    data = data_collect.hist_allNodes(session)
     data = sorted(data, key=lambda x: distances.get(0) or 0)
     for node in data:
         Task2(
@@ -1521,55 +1521,55 @@ def link_update(request, pk):
         return JsonResponse({"action": "deleted"})
 
 
-def excel_export(request):
-    session = data_collect.authentication(url=URL, user=USER,
-                                          password=PASS)
-    global df
-    # poisk pervoi daty
-    df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
-    start_date = min(df['Плановая дата начала'])
-    # poisk posledney daty
-    df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'])
-    finish_date = max(df['Плановая дата окончания'])
-    # d_js['wbs'] = d[['Смета', '№ п/п']].apply(
-    #     lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
-    # )
-    # codes = dict()
-    # for index, row in df.iterrows():
-    #     if row['wbs2'] not in codes:
-    #         codes['wbs2'] = []
-    #     if row['wbs3'] not in codes[row['wbs2']][row['wbs3']]:
-    df.loc[:, 'Предшественник'] = df.apply(
-        lambda row: list(set(parentsByDin(row.wbs3_id, session))),
-        axis=1
-    )
+# def excel_export(request):
+#     session = data_collect.authentication(url=URL, user=USER,
+#                                           password=PASS)
+#     global df
+#     # poisk pervoi daty
+#     df['Плановая дата начала'] = pd.to_datetime(df['Плановая дата начала'])
+#     start_date = min(df['Плановая дата начала'])
+#     # poisk posledney daty
+#     df['Плановая дата окончания'] = pd.to_datetime(df['Плановая дата окончания'])
+#     finish_date = max(df['Плановая дата окончания'])
+#     # d_js['wbs'] = d[['Смета', '№ п/п']].apply(
+#     #     lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
+#     # )
+#     # codes = dict()
+#     # for index, row in df.iterrows():
+#     #     if row['wbs2'] not in codes:
+#     #         codes['wbs2'] = []
+#     #     if row['wbs3'] not in codes[row['wbs2']][row['wbs3']]:
+#     df.loc[:, 'Предшественник'] = df.apply(
+#         lambda row: list(set(parentsByDin(row.wbs3_id, session))),
+#         axis=1
+#     )
 
-    df['Реальная дата начала'] = df[['wbs2', 'wbs3']].apply(
-        lambda x: dates[x[0] + x[1]][0], axis=1
-    )
-    df['Реальная дата окончания'] = df[['wbs2', 'wbs3']].apply(
-        lambda x: dates[x[0] + x[1]][1], axis=1
-    )
+#     df['Реальная дата начала'] = df[['wbs2', 'wbs3']].apply(
+#         lambda x: dates[x[0] + x[1]][0], axis=1
+#     )
+#     df['Реальная дата окончания'] = df[['wbs2', 'wbs3']].apply(
+#         lambda x: dates[x[0] + x[1]][1], axis=1
+#     )
 
-    # poisk roditelya
-    df = df.rename(
-        columns={"wbs1": "Проект", "wbs2": "Наименование локальной сметы", "wbs3": "Шифр", "name": "Строка сметы",
-                 "wbs": "№ локальной сметы № п/п", "value": "Объем", 'Пункт': '№ п/п'})
-    df = df.drop(columns=['wbs3_id', 'number', '№ локальной сметы № п/п'])
-    ef = pd.DataFrame()
-    # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
-    EXCHANGE_FORM_FIELDS = ['СПП', 'Проект', '№ локальной сметы', 'Наименование локальной сметы', '№ п/п', 'Шифр',
-                            'Код', 'Строка сметы', 'Предшественник', 'Объем', 'Единица измерения']
-    for field in EXCHANGE_FORM_FIELDS:
-        ef[field] = df[field]
-    ef['Плановая дата начала'] = df['Реальная дата начала'].apply(
-        lambda x: x.strftime('%d.%m.%Y'))
-    ef['Плановая дата окончания'] = df['Реальная дата окончания'].apply(
-        lambda x: x.strftime('%d.%m.%Y'))
+#     # poisk roditelya
+#     df = df.rename(
+#         columns={"wbs1": "Проект", "wbs2": "Наименование локальной сметы", "wbs3": "Шифр", "name": "Строка сметы",
+#                  "wbs": "№ локальной сметы № п/п", "value": "Объем", 'Пункт': '№ п/п'})
+#     df = df.drop(columns=['wbs3_id', 'number', '№ локальной сметы № п/п'])
+#     ef = pd.DataFrame()
+#     # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
+#     EXCHANGE_FORM_FIELDS = ['СПП', 'Проект', '№ локальной сметы', 'Наименование локальной сметы', '№ п/п', 'Шифр',
+#                             'Код', 'Строка сметы', 'Предшественник', 'Объем', 'Единица измерения']
+#     for field in EXCHANGE_FORM_FIELDS:
+#         ef[field] = df[field]
+#     ef['Плановая дата начала'] = df['Реальная дата начала'].apply(
+#         lambda x: x.strftime('%d.%m.%Y'))
+#     ef['Плановая дата окончания'] = df['Реальная дата окончания'].apply(
+#         lambda x: x.strftime('%d.%m.%Y'))
 
-    # Убрать из, кода. Но корректно выводить предшественника
-    ef['Предшественник'] = ef['Предшественник'].apply(lambda x: '')
-    name = ef['СПП'][0]
-    ef.to_excel(f'{name}.xlsx', index=False)
-    response = FileResponse(open(f'{name}.xlsx', "rb"))
-    return response
+#     # Убрать из, кода. Но корректно выводить предшественника
+#     ef['Предшественник'] = ef['Предшественник'].apply(lambda x: '')
+#     name = ef['СПП'][0]
+#     ef.to_excel(f'{name}.xlsx', index=False)
+#     response = FileResponse(open(f'{name}.xlsx', "rb"))
+#     return response

@@ -64,7 +64,7 @@ urlpatterns = [
     path("sdr_choose/<int:id>/", views.sdr),
     path("new_gantt/", views.new_gantt),
     path("hist_gantt/", views.hist_gantt),
-    path("excel_export/", views.excel_export),
+    # path("excel_export/", views.excel_export),
     re_path(r"^data/task/(?P<pk>[0-9]+)$", views.task_update),
     re_path(r"^data/task", views.task_add),
     re_path(r"^data/link/(?P<pk>[0-9]+)$", views.link_update),
