@@ -1,0 +1,48 @@
+{% extends "myapp/hat.html" %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% csrf_token %}
+
+{% block content %}
+
+    <div class="container">
+    <br>
+    <p>
+  <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+    Добавить проект
+  </button>
+</p>
+<div class="collapse" id="collapseExample">
+  <form method="POST" action="/project_create/">
+        {% csrf_token %}
+        <p>
+            <label>Введите имя проекта</label>
+            <input class="form-control" type="text" name="name" />
+        </p>
+        <p>
+            <label>Введите ссылку на проект</label>
+            <input class="form-control" type="text" name="link" />
+        </p>
+        <input class="btn btn-primary" type="submit" value="Сохранить" >
+    </form>
+    <br><br>
+</div>
+
+
+
+    {% if projects.count > 0 %}
+    <h2>Список проектов</h2>
+    <table class="table">
+        {% for project in projects %}
+            {% if project.isActive %}
+            <tr><td><a class="" href="/volumes/{{project.id}}">{{project.name}}</a></td>
+
+                    <!-- <td><a href="/project_edit/{{project.id}}">Изменить</a></td> -->
+                    <td><a href="/project_delete/{{project.id}}">Удалить</a></td>
+                    <td><a target="_blank" href="http://0.0.0.0:3000/xeokit-bim-viewer-app/?projectId={{ project.name }}">Показать</a></td></tr>
+            {% endif %}
+        {% endfor %}
+    </table>
+    {% endif %}
+    </div>
+{% endblock %}

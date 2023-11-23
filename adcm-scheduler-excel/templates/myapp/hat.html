@@ -1,0 +1,70 @@
+{% load bootstrap4 %}
+{% bootstrap_css %}
+{% bootstrap_javascript jquery='full' %}
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+        {# Load the tag library #}
+    {% load bootstrap4 %}
+
+    {# Load CSS and JavaScript #}
+    {% bootstrap_css %}
+    {% bootstrap_javascript jquery='full' %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Default title{% endblock title %}</title>
+
+    <link rel="stylesheet" href="{%  static 'myapp/css/index.css' %}"/>
+
+</head>
+
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light container-fluid">
+  <a class="navbar-brand col-3" href="/">ADCM-Scheduler</a>
+    <p class="col-8"></p>
+    <a  href="/logout/">Выход</a>
+
+</nav>
+{% if user.is_authenticated %}
+<div class="container-fluid">
+
+
+
+
+<div class="row">
+<div class="col-2">
+<div class="nav flex-column nav-pills" id="v-pills-tab_0" role="tablist" aria-orientation="vertical">
+    <h4 class="nav-link">Планирование</h4>
+      <a class="nav-link" id="model_load"  href="/projects/" role="tab" aria-controls="v-pills-model_load" aria-selected="true">Проекты</a>
+{#      <a class="nav-link" id="families"  href="/families/" role="tab" aria-controls="v-pills-families" aria-selected="false">Семейства</a>#}
+      <!-- <a class="nav-link" id="sdrs"  href="/sdrs/" role="tab" aria-controls="v-pills-sdr" aria-selected="false">СДР</a> -->
+      <!-- <a class="nav-link" id="excel"  href="/excel/" role="tab" aria-controls="v-pills-volumes" aria-selected="false">Импорт из excel</a> -->
+      <a class="nav-link" id="volumes"  href="/volumes/" role="tab" aria-controls="v-pills-volumes" aria-selected="false">Ведомость объемов</a>
+      <a class="nav-link" id="schedule"  href="/schedule/" role="tab" aria-controls="v-pills-timetable" aria-selected="false">График</a>
+
+</div>
+
+    <div class="nav flex-column nav-pills" id="v-pills-tab_1" role="tablist" aria-orientation="vertical">
+    <h4 class="nav-link">Администрирование</h4>
+        <a class="nav-link" id="new_graph"  href="/new_graph/" role="tab" aria-controls="v-pills-home" aria-selected="true">Исторический граф</a>
+        <a class="nav-link" id="hist_gantt"  href="/hist_gantt/" role="tab" aria-controls="v-pills-home" aria-selected="true">Исторический Гантт</a>
+        <!-- <a class="nav-link" id="rules"  href="/rules/" role="tab" aria-controls="v-pills-profile" aria-selected="false">Правила выгрузки</a> -->
+        <!-- <a class="nav-link" id="settings"  href="/settings/" role="tab" aria-controls="v-pills-messages" aria-selected="false">Настройки</a> -->
+    </div>
+</div>
+{% endif %}
+
+<div class="col-10">
+    {% block content %}
+    {% endblock %}
+</div>
+</div>
+</div>
+
+<script src="https://unpkg.com/htmx.org@1.7.0" integrity="sha384-EzBXYPt0/T6gxNp0nuPtLkmRpmDBbjg6WmCUZRLXBBwYYmwAUxzlSGej0ARHX0Bo" crossorigin="anonymous"></script>
+
+</body>
+
+</html>

@@ -1,8 +1,6 @@
 version: "3.9"
 
 services:
-
-
 #  db:
 #    image: nouchka/sqlite3:latest
 #    volumes:
@@ -11,23 +9,61 @@ services:
 #      - SQLITE_DB=db.sqlite3
 
   web:
-    image: sha256:e85c1b61691c2ec967d2975409c344fde13eb057bc329a92fbde571cb79a0218
-    command: python manage.py runserver 0.0.0.0:8000
+    build: adcm-scheduler-excel/
+    container_name: web-scheduler
+    command: python3.9 manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code
     ports:
       - "8000:8000"
-#    depends_on:
-#      - db
+    depends_on:
+      # - neo4j_user
+      - neo4j_historical
+      - create_app
 
-  neo4j_user:
-    image: neo4j:community
+#   neo4j_user:
+#     image: neo4j:community
+#     container_name: neo4j_user
+#     restart: unless-stopped
+#     ports:
+#       - "7474:7474"
+#       - "7687:7687"
+#     volumes:
+#       - ./conf:/conf_user
+#       - ./data:/data_user
+#       - ./import:/import_user
+#       - ./logs:/logs_user
+#       - ./plugins:/plugins_user
+#     environment:
+#       # Raise memory limits
+# #      - NEO4J_dbms_memory_pagecache_size=1G
+# #      - NEO4J_dbms.memory.heap.initial_size=1G
+# #      - NEO4J_dbms_memory_heap_max__size=1G
+#       - NEO4J_AUTH=neo4j/23109900
 
-
+  
+  neo4j_historical:
+    image: neo4j:latest
+    container_name: neo4j_historical
     restart: unless-stopped
     ports:
-      - "7474:7474"
-      - "7687:7687"
+      - "7475:7474" # HTTP
+      - "7688:7687" # Bolt
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+    environment:
+      NEO4J_AUTH: neo4j/23109900
+
+
+  neo4j_elements:
+    image: neo4j:community
+    container_name: neo4j_elements
+    restart: unless-stopped
+    ports:
+      - "7473:7474" # HTTP
+      - "7686:7687" # Bolt
     volumes:
       - ./conf:/conf_user
       - ./data:/data_user
@@ -35,29 +71,76 @@ services:
       - ./logs:/logs_user
       - ./plugins:/plugins_user
     environment:
-      # Raise memory limits
-#      - NEO4J_dbms_memory_pagecache_size=1G
-#      - NEO4J_dbms.memory.heap.initial_size=1G
-#      - NEO4J_dbms_memory_heap_max__size=1G
-      - NEO4J_AUTH=neo4j/23109900
+      NEO4J_AUTH: neo4j/23109900
+    depends_on:
+      # - neo4j_user
+      - neo4j_historical
 
-  neo4j_historical:
+
+  neo4j_groups:
     image: neo4j:community
-
-
+    container_name: neo4j_groups
     restart: unless-stopped
     ports:
-      - "7475:7474"
-      - "7688:7687"
+      - "7472:7474" # HTTP
+      - "7685:7687" # Bolt
     volumes:
-      - ./conf:/conf_hist
-      - ./data:/data_hist
-      - ./import:/import_hist
-      - ./logs:/logs_hist
-      - ./plugins:/plugins_hist
+      - ./conf:/conf_user
+      - ./data:/data_user
+      - ./import:/import_user
+      - ./logs:/logs_user
+      - ./plugins:/plugins_user
     environment:
-      # Raise memory limits
-#      - NEO4J_dbms_memory_pagecache_size=1G
-#      - NEO4J_dbms.memory.heap.initial_size=1G
-#      - NEO4J_dbms_memory_heap_max__size=1G
-      - NEO4J_AUTH=neo4j/23109900
+      NEO4J_AUTH: neo4j/23109900
+    depends_on:
+      # - neo4j_user
+      - neo4j_historical
+      - neo4j_elements
+     
+
+
+  # neo4j_groups:
+  #   image: neo4j:latest
+  #   container_name: neo4j_groups
+  #   restart: unless-stopped
+  #   ports:
+  #     - "7472:7474" # HTTP
+  #     - "7685:7687" # Bolt
+  #   volumes:
+  #     - neo4j_data:/data
+  #     - neo4j_logs:/logs
+  #     - neo4j_import:/var/lib/neo4j/import
+  #   environment:
+  #     NEO4J_AUTH: neo4j/23109900
+  
+
+  viewer:
+    build: viewer/
+    container_name: viewer
+    # command: uvicorn main:app --host 0.0.0.0 --port 8070
+    restart: unless-stopped
+    ports:
+      - "8070:8070" # fastapi
+      - "3000:3000" # viewer
+
+  create_app:
+    build: neo-historical/
+    container_name: python_app_container
+    
+    restart: on-failure
+    volumes:
+      - ./neo-historical:/app
+    depends_on:
+      - neo4j_historical
+      - neo4j_elements
+
+
+  
+
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+
+

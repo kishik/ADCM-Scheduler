@@ -1,0 +1,652 @@
+{% extends "myapp/hat.html" %}
+{% load crispy_forms_tags %}
+{% csrf_token %}
+{% block content%}
+<meta charset="utf-8"/>
+
+
+    <script src="https://unpkg.com/neovis.js@2.0.2"></script>
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+	<script src="https://unpkg.com/neo4j-driver"></script>
+    {% crispy form %}
+    {% crispy link link.helper %}
+    {% crispy node node.helper %}
+    <style>
+            #mynetwork #viz {
+
+                /*{#1080-124#}*/
+                height: 736px;
+            }
+    </style>
+
+    <body onload="init_simplified()">
+        <div id="mynetwork"></div>
+
+<!--    <script>console.log({{ url }})</script>-->
+<!--{#    <script>#}-->
+<!--{##}-->
+<!--{#        var viz;#}-->
+<!--{##}-->
+<!--{#        function draw() {#}-->
+<!--{#            var config = {#}-->
+<!--{#                encrypted: "ENCRYPTION_ON",#}-->
+<!--{#                trust: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",#}-->
+<!--{#                containerId: 'viz',#}-->
+<!--{#                neo4j: {#}-->
+<!--{#                    serverUrl: 'neo4j://178ff2cf.databases.neo4j.io',#}-->
+<!--{#                    serverUser: 'neo4j',#}-->
+<!--{#                    serverPassword: '231099'#}-->
+<!--{#                },#}-->
+<!--{#                visConfig: {#}-->
+<!--{#                    nodes: {#}-->
+<!--{#                        shape: 'point'#}-->
+<!--{#                    },#}-->
+<!--{#                    edges: {#}-->
+<!--{#                        arrows: {#}-->
+<!--{#                            to: {#}-->
+<!--{#                                enabled: true#}-->
+<!--{#                            }#}-->
+<!--{#                        }#}-->
+<!--{#                    },#}-->
+<!--{#                },#}-->
+<!--{#                labels: {#}-->
+<!--{#                    Work: {#}-->
+<!--{#                        label: 'DIN',#}-->
+<!--{#                        group: 'community',#}-->
+<!--{#                        [NeoVis.NEOVIS_ADVANCED_CONFIG]: {#}-->
+<!--{#                            cypher: {#}-->
+<!--{#                                value: "MATCH (n) WHERE id(n) = $id RETURN n.size"#}-->
+<!--{#                            },#}-->
+<!--{#                            function: {#}-->
+<!--{#                                title: NeoVis.objectToTitleHtml#}-->
+<!--{#                            },#}-->
+<!--{#                        }#}-->
+<!--{#                    }#}-->
+<!--{#                },#}-->
+<!--{#                relationships: {#}-->
+<!--{#                    INTERACTS: {#}-->
+<!--{#                        value: 'weight',#}-->
+<!--{#                        [NeoVis.NEOVIS_ADVANCED_CONFIG]: {#}-->
+<!--{#                            function: {#}-->
+<!--{#                                title: NeoVis.objectToTitleHtml#}-->
+<!--{#                            },#}-->
+<!--{#                        }#}-->
+<!--{#                    }#}-->
+<!--{#                },#}-->
+<!--{#                initialCypher: 'MATCH (n)-[r]->(m) RETURN n,r,m'#}-->
+<!--{#            };#}-->
+<!--{##}-->
+<!--{#            viz = new NeoVis.default(config);#}-->
+<!--{#			viz.render();#}-->
+<!--{#			console.log(viz);#}-->
+<!--{##}-->
+<!--{#		}#}-->
+<!--{##}-->
+<!--{##}-->
+<!--{#    </script>#}-->
+
+    <script  type="text/javascript" >
+//global viz,network,data,config;
+			var events; // for events.js
+			var viz;
+/*needed*/	var network;   /// network object
+/*needed*/	var container = document.getElementById("mynetwork");
+			var data;
+			var config_neo4j,config_vis;
+            function init_simplified() {  /// at the beginning
+			config_neo4j={
+                container_id: "mynetwork",
+                server_url: "bolt://localhost:7688",
+                server_user: "neo4j",
+				server_password: "23109900",
+                initial_cypher: "MATCH (n) OPTIONAL MATCH (n)-[r]->(m) RETURN n, r, m"
+			}
+				events = new EventController();	//see events.js !!
+            viz = new NeoVis_simplified({
+				container_id: config_neo4j.container_id,
+				server_database: config_neo4j.server_database,
+				server_user: config_neo4j.server_user,
+				server_password: config_neo4j.server_password,
+			});   // must be without trust!
+// {#console.log("dummy viz=NeoVis_simplified(...) created without trust and driver");#}
+			config_vis={
+					nodes: {
+					  shape: "ellipse",
+					  font: {
+						  size:16,
+						  strokeWidth: 5
+					  },
+					  size: 50,
+						widthConstraint: {
+							maximum: 300
+						},
+						heightConstraint: {
+							minimum: 20
+						},
+						mass: 2,
+					  scaling: {
+						min: 40,
+						max: 60,
+						label: {
+							enabled: false
+						}
+					  },
+						labelHighlightBold: true,
+						margin: 5,
+						brokenImage: "./WJI2.png",
+						shapeProperties:{useImageSize: false}
+					},
+				    edges: {
+					    arrows: {
+							to: {
+								enabled: true,
+								type: 'arrow',
+								scaleFactor: 0.25
+							}
+						},
+						arrowStrikethrough: true,
+						color: {
+							  opacity: 0.5
+						},
+						font: {
+							  align: 'middle'
+						}
+					}
+				}
+// {#console.log("dummy initial vis network");#}
+				let data = {nodes: new vis.DataSet([{id:0,label:"root",raw:{} }]),
+							edges: new vis.DataSet([])
+					};
+			viz._data = data;
+			viz._network = new vis.Network(container, data, config_vis);
+// only now driver!
+			viz._driver= neo4j.driver(config_neo4j.server_url,
+			neo4j.auth.basic(config_neo4j.server_user, config_neo4j.server_password),{}
+			);
+// {#console.log("driver set after new new vis.Network");#}
+            viz.registerOnEvent('completed', render_completed_simplified);
+
+// {#console.log("renderWithCypher");#}
+				viz.renderWithCypher(config_neo4j.initial_cypher);
+// {#console.log("rendered");#}
+           }   ///init_simplified
+       function render_completed_simplified(param){   /// called by event in neovis
+// {#console.log("-----------render completed with", (param.record_count)+ " records------------text: "+param.text);#}
+			if(param.record_count===0){
+alert("no result!");
+				return;
+			}
+
+		  try{
+		    let nn =viz._data.nodes.length;
+			let ne =viz._data.edges.length;
+// {#console.log("completed with nodes:"+nn+", edges:"+ne);#}
+		  }catch(e){
+// {#console.log("render_completed 1st ERROR "+e);#}
+		  }
+		  try{
+			network=viz._network;
+			viz.nodes.forEach(item => {
+				let node={};
+			if(item.raw.properties){
+				node=item.raw.properties;
+				node.id=item.id;
+				node.label=item.raw.properties.DIN + '\n' + item.raw.properties.name ||  item.raw.properties.title;
+                // {#console.log(item.raw.properties)#}
+				node.title=item.raw.properties.plot || node.label;
+				node.labels=item.raw.labels;
+                // {#console.log(node.label);#}
+				node.connections=(node.connections && node.connections.low) ? node.connections.low : 0;
+				node.group=(node.group &&node.group.low) ? node.group.low : 0;
+			}else{
+				node=item;
+			}
+			 if(!(node.shape==="image" || node.shape==="database")){
+				  node.shape="ellipse";
+			 }
+			 network.body.data.nodes.getDataSet().update(node);
+			});
+
+			viz._data.nodes.getDataSet().forEach(edge => {
+				edge.arrows={to:{enabled: true,
+								type: 'arrow',
+								scaleFactor: 0.25}
+							};
+			 network.body.data.edges.getDataSet().update(edge);
+			});
+			on_handlers_simplified(network);
+
+		  }catch(e){
+// {#console.log("render_completed 2nd ERROR "+e);#}
+		  }
+		}	///render_completed
+
+       function on_handlers_simplified(network){   /// called by event in neovis
+network.on("hold", function (params) {
+			  if(params.nodes.length>0){
+						hold_simplified(params);
+			  }
+});
+		}	///on_handlers_simplified
+	function hold_simplified(params){   /// by on.hold
+     try{
+        params.event.stopPropagation();
+        params.event.preventDefault();
+    }catch(e){}
+      let nodeId = params.nodes[0] || 0;
+			renderWithCypher_simplified(nodeId);
+  }   ///hold_simplified
+	function renderWithCypher_simplified(nodeId){
+		let query_simplified;  //display query
+            query_simplified = "match (n) where id(n)="+nodeId+" with n";
+            query_simplified += " optional match (n)-[r]-(m)";
+            query_simplified += " return n,r,m order by toInteger(id(m)*rand()) limit 10";
+// {#console.log("cypher-query:"+query_simplified);#}
+				viz.renderWithCypher(query_simplified);
+	}   ///renderWithCypher_simplified
+
+
+//events.js for Browser (from NeoVis, without exports as for node.js):
+/*export*/ const CompletionEvent = 'completed';
+			 const ClickNodeEvent = 'clickNode';
+			 const ClickEdgeEvent = 'clickEdge';
+			 const ErrorEvent = 'error';
+
+/*export*/ class EventController {
+
+	constructor() {
+		this._handlers = {
+			[CompletionEvent]: [],
+            [ErrorEvent]: [],
+            [ClickNodeEvent]: [],
+            [ClickEdgeEvent]: [],
+		};
+	}
+
+	/**
+	 *
+	 * @param {string} eventType - Type of the event to be handled
+	 * @param {callback} handler - Handler to manage the event
+	 */
+	register(eventType, handler) {
+// {#//console.log("register: "+eventType);#}
+		if (this._handlers[eventType] === undefined) {
+			throw new Error('Unknown event: ' + eventType);
+		}
+
+		this._handlers[eventType].push(handler);
+	}
+
+	/**
+	 *
+	 * @param {string} eventType - Type of the event generated
+	 * @param {object} values - Values associated to the event
+	 */
+	generateEvent(eventType, values) {
+// {#//console.log("generateEvent: "+eventType);#}
+		if (this._handlers[eventType] === undefined) {
+			throw new Error('Unknown event: ' + eventType);
+		}
+
+		for (const handler of this._handlers[eventType]) {
+			handler(values);
+		}
+	}
+}
+
+/// neoVis simplified(WJI)
+  class NeoVis_simplified {
+	_nodes = {};
+	_edges = {};
+	_data = {};
+	_network = null;
+	_events = new EventController();
+
+	/**
+	 * Get current vis nodes from the graph
+	 */
+	get nodes() {
+		return this._data.nodes;
+	}
+
+	/**
+	 * Get current vis edges from the graph
+	 */
+	get edges() {
+		return this._data.edges;
+	}
+
+	/**
+	 *
+	 * @constructor
+	 * @param {object} config - configures the visualization and Neo4j server connection
+	 *  {
+	 *    container:
+	 *    server_url:
+	 *    server_password?:
+	 *    server_username?:
+	 *    server_database?:
+	 *
+	 */
+	constructor(config) {
+		this._init(config);
+
+		this._consoleLog(config);
+	}
+
+	_consoleLog(message, level = 'log') {
+		if (level !== 'log' || this._config.console_debug) {
+			// eslint-disable-next-line no-console
+			console[level](message);
+		}
+	}
+
+	_init(config) {
+		this._config = config;
+		this._encrypted = config.encrypted;
+		this._trust = config.trust;
+		this._driver = this._driver && neo4j.driver(  /// create perhaps neo4jVis without driver
+			config.server_url,
+			neo4j.auth.basic(config.server_user, config.server_password),
+			{
+				encrypted: this._encrypted,
+				trust: this._trust,
+				maxConnectionPoolSize: 100,
+				connectionAcquisitionTimeout: 10000,
+			}
+		);
+		this._database = config.server_database;
+		this._query = config.initial_cypher;
+		this._container = document.getElementById(config.container_id);
+	}
+
+	_addNode(node) {
+		this._nodes[node.id] = node;
+	}
+
+	_addEdge(edge) {
+		this._edges[edge.id] = edge;
+	}
+
+	/**
+	 * Build node object for vis from a neo4j Node
+	 * FIXME: use config
+	 * FIXME: move to private api
+	 * @param neo4jNode
+	 * @returns
+	 */
+	async buildNodeVisObject(neo4jNode) {
+		let node = {};
+
+		node.id = neo4jNode.identity.toInt();
+		node.raw = neo4jNode;
+        node.label = neo4jNode.properties.DIN + '\n' + neo4jNode.properties.name;
+        // {#console.log(neo4jNode.properties.name)#}
+		return node;
+	}
+
+	/**
+	 * Build edge object for vis from a neo4j Relationship
+	 * @param r
+	 * @returns
+	 */
+	buildEdgeVisObject(r) {
+
+		let edge = {};
+		edge.id = r.identity.toInt();
+		edge.from = r.start.toInt();
+		edge.to = r.end.toInt();
+		edge.raw = r;
+        // {#console.log(r)#}
+
+		edge.label = r.type;
+		return edge;
+	}
+
+	// public API
+
+	render(query) {
+
+		// connect to Neo4j instance
+		// run query
+		let recordCount = 0;
+		const _query = query || this._query;
+		let session = this._driver.session(this._database && { database: this._database });
+		const dataBuildPromises = [];
+		session
+			.run(_query, { limit: 30 })
+			.subscribe({
+				onNext: (record) => {
+					recordCount++;
+
+					this._consoleLog('CLASS NAME');
+					this._consoleLog(record && record.constructor.name);
+					this._consoleLog(record);
+
+					const dataPromises = Object.values(record.toObject()).map(async (v) => {
+						this._consoleLog('Constructor:');
+						this._consoleLog(v && v.constructor.name);
+						if (v instanceof neo4j.types.Node) {
+							let node = await this.buildNodeVisObject(v);
+							try {
+								this._addNode(node);
+							} catch (e) {
+								this._consoleLog(e, 'error');
+							}
+
+						} else if (v instanceof neo4j.types.Relationship) {
+							let edge = this.buildEdgeVisObject(v);
+							this._addEdge(edge);
+
+						} else if (v instanceof neo4j.types.Path) {
+							this._consoleLog('PATH');
+							this._consoleLog(v);
+							let startNode = await this.buildNodeVisObject(v.start);
+							let endNode = await this.buildNodeVisObject(v.end);
+
+							this._addNode(startNode);
+							this._addNode(endNode);
+
+							for (let obj of v.segments) {
+								this._addNode(await this.buildNodeVisObject(obj.start));
+								this._addNode(await this.buildNodeVisObject(obj.end));
+								this._addEdge(this.buildEdgeVisObject(obj.relationship));
+							}
+
+						} else if (v instanceof Array) {
+							for (let obj of v) {
+								this._consoleLog('Array element constructor:');
+								this._consoleLog(obj && obj.constructor.name);
+								if (obj instanceof neo4j.types.Node) {
+									let node = await this.buildNodeVisObject(obj);
+									this._addNode(node);
+
+								} else if (obj instanceof neo4j.types.Relationship) {
+									let edge = this.buildEdgeVisObject(obj);
+
+									this._addEdge(edge);
+								}
+							}
+						}
+					});
+					dataBuildPromises.push(Promise.all(dataPromises));
+				},
+				onCompleted: async () => {
+					await Promise.all(dataBuildPromises);
+					session.close();
+
+					if (this._network && this._network.body.data.nodes.length > 0) {
+						this._data.nodes.update(Object.values(this._nodes));
+						this._data.edges.update(Object.values(this._edges));
+					} else {
+						let options = {
+							nodes: {
+								shape: 'dot',
+								font: {
+									size: 26,
+									strokeWidth: 7
+								},
+								scaling: {
+								}
+							},
+							edges: {
+								arrows: {
+									to: { enabled: this._config.arrows || true } // FIXME: handle default value
+								},
+								length: 200
+							},
+							layout: {
+								improvedLayout: false,
+								hierarchical: {
+									enabled: this._config.hierarchical || false,
+									sortMethod: this._config.hierarchical_sort_method || 'hubsize'
+								}
+							},
+							physics: { // TODO: adaptive physics settings based on size of graph rendered
+								// enabled: true,
+								// timestep: 0.5,
+								// stabilization: {
+								//     iterations: 10
+								// }
+
+								adaptiveTimestep: true,
+								// barnesHut: {
+								//     gravitationalConstant: -8000,
+								//     springConstant: 0.04,
+								//     springLength: 95
+								// },
+								stabilization: {
+									iterations: 200,
+									fit: true
+								}
+							}
+						};
+
+						this._config.options=this._config.options || options;  ///WJI  ?? not possible
+
+						const container = this._container;
+						this._data = {
+							nodes: new vis.DataSet(Object.values(this._nodes)),
+							edges: new vis.DataSet(Object.values(this._edges))
+						};
+
+						this._consoleLog(this._data.nodes);
+						this._consoleLog(this._data.edges);
+
+						this._network = new vis.Network(container, this._data, this._config.options);
+					}
+					this._consoleLog('completed');
+					setTimeout(
+						() => {
+							this._network.stopSimulation();
+						},
+						10000
+					);
+					this._events.generateEvent(CompletionEvent, { record_count: recordCount });
+
+					let neo4jVis = this;
+					this._network.on('click', function (params) {
+						if (params.nodes.length > 0) {
+							let nodeId = this.getNodeAt(params.pointer.DOM);
+							neo4jVis._events.generateEvent(ClickNodeEvent, { nodeId: nodeId, node: neo4jVis._nodes[nodeId] });
+						} else if (params.edges.length > 0) {
+							let edgeId = this.getEdgeAt(params.pointer.DOM);
+							neo4jVis._events.generateEvent(ClickEdgeEvent, { edgeId: edgeId, edge: neo4jVis._edges[edgeId] });
+						}
+					});
+				},
+				onError: (error) => {
+					this._consoleLog(error, 'error');
+					this._events.generateEvent(ErrorEvent, { error_msg: error });
+				}
+			});
+	}
+
+	/**
+	 * Clear the data for the visualization
+	 */
+	clearNetwork() {
+		this._neo4jNodes = {};
+		this._neo4jEdges = {};
+		this._nodes = {};
+		this._edges = {};
+	  if(this._network)	/// clear only if present (WJI)
+		this._network.setData([]);
+	}
+
+
+	/**
+	 *
+	 * @param {string} eventType Event type to be handled
+	 * @param {callback} handler Handler to manage the event
+	 */
+	registerOnEvent(eventType, handler) {
+		this._events.register(eventType, handler);
+	}
+
+
+	/**
+	 * Reset the config object and reload data
+	 * @param config
+	 */
+	reinit(config) {
+		this._init(config);
+		this.render();
+	}
+
+	/**
+	 * Fetch live data form the server and reload the visualization
+	 */
+	reload() {
+		this.clearNetwork();
+		this.render();
+	}
+
+	/**
+	 * Stabilize the visualization
+	 */
+	stabilize() {
+		this._network.stopSimulation();
+		this._consoleLog('Calling stopSimulation');
+	}
+
+	/**
+	 * Execute an arbitrary Cypher query and re-render the visualization
+	 * @param query
+	 */
+	renderWithCypher(query) {
+		this._config.initial_cypher = query;
+		this.clearNetwork();
+		this._query = query;
+		this.render();
+	}
+
+	/**
+	 * Execute an arbitrary Cypher query and update the current visualization, retaning current nodes
+	 * This function will not change the original query given by renderWithCypher or the inital cypher.
+	 * @param query
+	 */
+	updateWithCypher(query) {
+		this.render(query);
+	}
+
+}
+
+</script>
+
+<!--{#        <div class="container-fluid" onload="draw()" id="viz"></div>#}-->
+
+    <script>
+    // {#draw();#}
+    init_simplified();
+    </script>
+    <style>
+            #mynetwork {
+
+                /*{#1080-124#}*/
+                height: 84%;
+            }
+    </style>
+
+
+{% endblock content %}
