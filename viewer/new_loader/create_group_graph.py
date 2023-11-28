@@ -19,36 +19,45 @@ def add_class_rel(tx: Transaction, pred_name: str, flw_name: str):
 
 def create_group_graph():
     group_driver = GraphDatabase.driver(
-        "bolt://neo4j_groups:7687",
+        "bolt://localhost:7688",
         auth=("neo4j", "23109900")
     )
     group_driver.verify_connectivity()
 
     classes = (
         'IfcWall',
+        'IfcBeam',
         # 'IfcDoor',
         'IfcBuildingElementProxy',
         # 'IfcWindow',
         "IfcStair",
+        "IfcStairFlight",
         'IfcSlab',
         "IfcFlowTerminal",
         "IfcFurniture",
-        'IfcCurtainWall',)
+        'IfcCurtainWall',
+        "IfcFooting",
+        "IfcColumn",
+    )
 
     with group_driver.session() as session:
         session.run('MATCH (n) DETACH DELETE n')
         for i in classes:
-            if i == "IfcStair":
-                print(i)
             session.execute_write(add_class, i)
 
+        session.execute_write(add_class_rel, 'IfcFooting', 'IfcWall')
+        session.execute_write(add_class_rel, 'IfcFooting', 'IfcColumn')
+        session.execute_write(add_class_rel, 'IfcFooting', 'IfcBuildingElementProxy')
         session.execute_write(add_class_rel, 'IfcBuildingElementProxy', 'IfcWall')
         session.execute_write(add_class_rel, 'IfcBuildingElementProxy', 'IfcSlab')
+        session.execute_write(add_class_rel, 'IfcBuildingElementProxy', 'IfcBeam')
+        session.execute_write(add_class_rel, 'IfcBuildingElementProxy', 'IfcColumn')
         session.execute_write(add_class_rel, 'IfcWall', 'IfcWindow')
         session.execute_write(add_class_rel, 'IfcWall', "IfcFlowTerminal")
         session.execute_write(add_class_rel, 'IfcWall', 'IfcCurtainWall')
         session.execute_write(add_class_rel, 'IfcWall', "IfcFurniture")
         session.execute_write(add_class_rel, 'IfcWall', "IfcStair")
+        session.execute_write(add_class_rel, "IfcStair", "IfcStairFlight")
         session.execute_write(add_class_rel, 'IfcBuildingElementProxy', 'IfcDoor')
         session.execute_write(add_class_rel, 'IfcDoor', 'IfcWindow')
 

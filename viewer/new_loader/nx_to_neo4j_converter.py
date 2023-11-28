@@ -25,13 +25,27 @@ class NxToNeo4jConverter:
         self.group_link_df = pd.DataFrame(self.group_driver.session().run(q_rel).data())
         self.group_driver.close()
 
+        df = pd.read_excel(
+            "./02-01-01 _Конструктивные решения_ .xls",
+            index_col=0,
+            header=None,
+            names=["GESN", "name"]
+        ).dropna()
+        df.index = df.index.str[1:]
+        self.gesn_to_name = df.name.to_dict()
+
     def close(self):
         self.element_driver.close()
 
-    @staticmethod
-    def add_node(tx: Transaction, id_, stor_id_, props_: dict):
+    # @staticmethod
+    def add_node(self, tx: Transaction, id_, stor_id_, props_: dict):
         if "ADCM_DIN" in props_.keys():
             props_["DIN"] = props_.pop("ADCM_DIN")
+        if "ADCM_GESN" in props_.keys():
+            gesn = props_.pop("ADCM_GESN")
+            props_["DIN"] = gesn
+            props_["work_name"] = self.gesn_to_name.get(gesn)
+
         q = """
         CREATE (n:Element)
         SET n = $props
@@ -78,8 +92,8 @@ class NxToNeo4jConverter:
     @staticmethod
     def link_classes(tx: Transaction, id1: str, id2: str):
         q_link_classes = '''
-        MATCH (a:IfcClass {id: $id1})
-        MATCH (b:IfcClass {id: $id2})
+        MATCH (a {id: $id1})
+        MATCH (b {id: $id2})
         MERGE (a)-[r:FOLLOWS]->(b)
         '''
         tx.run(q_link_classes, id1=id1, id2=id2)
@@ -93,7 +107,7 @@ class NxToNeo4jConverter:
             session.run('MATCH (n) DETACH DELETE n')
 
             build_id = [node for node, data in G.nodes(data=True) if data.get('is_a') == 'IfcBuilding'][0]
-            session.execute_write(NxToNeo4jConverter.add_node, build_id, None, G.nodes[build_id])
+            session.execute_write(self.add_node, build_id, None, G.nodes[build_id])
 
             # Loop over all storeys in building
             for stor_id in G.successors(build_id):
@@ -101,7 +115,7 @@ class NxToNeo4jConverter:
                 if data.get('is_a') != 'IfcBuildingStorey':
                     continue
                 # Create storey in graph and link it with building
-                session.execute_write(NxToNeo4jConverter.add_node, stor_id, None, data)
+                session.execute_write(self.add_node, stor_id, None, data)
                 session.execute_write(NxToNeo4jConverter.add_edge, build_id, stor_id)
 
                 # # find all groups (IFC classes) in this storey
@@ -149,7 +163,7 @@ class NxToNeo4jConverter:
                     for j, i in enumerate(sorted(elements, key=compute_angle)):
                         s_data = G.nodes[i]
                         if s_data["coordinates"]:
-                            session.execute_write(NxToNeo4jConverter.add_node, i, stor_id, s_data)
+                            session.execute_write(self.add_node, i, stor_id, s_data)
                             session.execute_write(NxToNeo4jConverter.add_el_to_class, cls_to_id[group], i)
                             if j > 0:
                                 session.execute_write(NxToNeo4jConverter.traverse, prev_id, i)
@@ -218,6 +232,18 @@ class NxToNeo4jConverter:
                         connect_storeys(pred_id, row.id)
                     pred_id = row.id
 
+                # deleting loops from neo4j graph
+                q_del_2x_loop = """
+                                match (x)-[r1]->(y)-[r2]->(x)
+                                delete r2
+                                """
+                q_del_1x_loop = """
+                                match (x)-[r]->(x)
+                                delete r
+                                """
+                session.run(q_del_1x_loop)
+                session.run(q_del_2x_loop)
+
     def get_nodes(self):
         query = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.ADCM_Title as wbs1, el.ADCM_Level as wbs2, 
         el.DIN as wbs3_id, el.ADCM_JobType as wbs3, el.name as name 
@@ -226,8 +252,8 @@ class NxToNeo4jConverter:
         relEl.ADCM_JobType as wbs3, relEl.name as name"""
         with self.element_driver.session() as session:
             nodes = session.run(query).data()
-            distances = calculateDistance(session, allNodes(session))
-            # distances = calculate_hist_distance(session)  # , allNodes(session))
+            # distances = calculateDistance(session, allNodes(session))
+            distances = calculate_hist_distance(session)  # , allNodes(session))
         for i in nodes:
             i.update({"distance": distances.get(i.get("id"))})
         return nodes
