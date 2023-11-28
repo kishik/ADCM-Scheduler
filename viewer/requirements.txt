@@ -8,3 +8,4 @@ ifcopenshell
 networkx
 pandas
 neo4j
+xlrd

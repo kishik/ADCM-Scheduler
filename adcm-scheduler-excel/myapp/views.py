@@ -720,9 +720,11 @@ def volumes(request, project_id):
     for i in range(len(data)):
         data[i]['wbs'] = f"{data[i]['wbs1']}{data[i]['wbs3_id']}"
     # dins = {item['wbs3_id'] for item in data}
-
     for i in range(len(data)):
-        data[i] = {k: ('None' if v is None else v) for k, v in data[i].items()}
+        if data[i]['distance'] is None:
+            data[i]['distance'] = 0 
+    for i in range(len(data)):
+        data[i] = {k: (str(0) if v is None else v) for k, v in data[i].items()}
     global graph_data
 
     # graph_data = myJson["data"]

@@ -26,7 +26,7 @@ class NxToNeo4jConverter:
         self.group_driver.close()
 
         df = pd.read_excel(
-            "./02-01-01 _Конструктивные решения_ .xls",
+            "./new_loader/solution.xls",
             index_col=0,
             header=None,
             names=["GESN", "name"]
@@ -252,8 +252,8 @@ class NxToNeo4jConverter:
         relEl.ADCM_JobType as wbs3, relEl.name as name"""
         with self.element_driver.session() as session:
             nodes = session.run(query).data()
-            # distances = calculateDistance(session, allNodes(session))
-            distances = calculate_hist_distance(session)  # , allNodes(session))
+            distances = calculateDistance(session, allNodes(session))
+            # distances = calculate_hist_distance(session)  # , allNodes(session))
         for i in nodes:
             i.update({"distance": distances.get(i.get("id"))})
         return nodes
