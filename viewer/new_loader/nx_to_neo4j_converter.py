@@ -5,7 +5,8 @@ from neo4j import GraphDatabase, Transaction
 
 from .data_collection import calculateDistance, allNodes, calculate_hist_distance
 
-
+# ELEMENTS_URI = "neo4j://localhost:7687"
+# GROUPS_URI = "neo4j://localhost:7688"
 ELEMENTS_URI = "neo4j://neo4j_elements:7687"
 GROUPS_URI = "neo4j://neo4j_groups:7687"
 USER = "neo4j"
@@ -132,15 +133,14 @@ class NxToNeo4jConverter:
                     session.execute_write(NxToNeo4jConverter.add_ifc_class, stor_id, cls_to_id[cls_name], cls_name)
 
                 # connect ifc classes (groups)
-                with self.element_driver.session() as session2:
-                    self.group_link_df.apply(
-                        lambda row: session2.execute_write(
-                            NxToNeo4jConverter.link_classes,
-                            cls_to_id.get(row.type1),
-                            cls_to_id.get(row.type2)
-                        ),
-                        axis=1,
-                    )
+                self.group_link_df.apply(
+                    lambda row: session.execute_write(
+                        NxToNeo4jConverter.link_classes,
+                        cls_to_id.get(row.type1),
+                        cls_to_id.get(row.type2)
+                    ),
+                    axis=1,
+                )
 
                 def insert_elements(group):
                     elements = list(filter(
@@ -203,7 +203,7 @@ class NxToNeo4jConverter:
             q_storeys = '''
             MATCH (n) WHERE n.is_a = 'IfcBuildingStorey'
             RETURN n.id AS id, n.Elevation As elevation'''
-            level_df = pd.DataFrame(self.element_driver.session().run(q_storeys).data())
+            level_df = pd.DataFrame(session.run(q_storeys).data())
             level_df.sort_values(by=['elevation'], inplace=True, ignore_index=True)
 
             def connect_storeys(stor1, stor2):
@@ -225,24 +225,23 @@ class NxToNeo4jConverter:
                             '''
                         session.run(q_rel)
 
-            with self.element_driver.session() as session:
-                for ind, row in level_df.iterrows():
-                    if ind != 0:
-                        session.execute_write(NxToNeo4jConverter.link_classes, pred_id, row.id)
-                        connect_storeys(pred_id, row.id)
-                    pred_id = row.id
+            for ind, row in level_df.iterrows():
+                if ind != 0:
+                    session.execute_write(NxToNeo4jConverter.link_classes, pred_id, row.id)
+                    connect_storeys(pred_id, row.id)
+                pred_id = row.id
 
-                # deleting loops from neo4j graph
-                q_del_2x_loop = """
-                                match (x)-[r1]->(y)-[r2]->(x)
-                                delete r2
-                                """
-                q_del_1x_loop = """
-                                match (x)-[r]->(x)
-                                delete r
-                                """
-                session.run(q_del_1x_loop)
-                session.run(q_del_2x_loop)
+            # deleting loops from neo4j graph
+            q_del_2x_loop = """
+                            match (x)-[r1]->(y)-[r2]->(x)
+                            delete r2
+                            """
+            q_del_1x_loop = """
+                            match (x)-[r]->(x)
+                            delete r
+                            """
+            session.run(q_del_1x_loop)
+            session.run(q_del_2x_loop)
 
     def get_nodes(self):
         query = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.ADCM_Title as wbs1, el.ADCM_Level as wbs2, 
