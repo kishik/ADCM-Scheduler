@@ -1,6 +1,6 @@
 from django.contrib import admin as dj_admin
 
-from .models import URN, ActiveLink
+from .models import ActiveLink
 
 
 class WorkAdmin(dj_admin.ModelAdmin):
@@ -8,4 +8,3 @@ class WorkAdmin(dj_admin.ModelAdmin):
 
 
 dj_admin.site.register(ActiveLink)
-dj_admin.site.register(URN)

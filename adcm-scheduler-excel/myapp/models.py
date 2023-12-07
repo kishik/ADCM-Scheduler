@@ -6,18 +6,6 @@ from urllib.parse import unquote
 
 from django.db import models
 from django.urls import reverse
-
-
-class URN(models.Model):
-    type = models.CharField(max_length=30)
-    urn = models.CharField(max_length=200)
-    userId = models.IntegerField()
-    isActive = models.BooleanField()
-
-    def is_ifc(self):
-        parts = urllib.parse.urlparse(self.urn)
-        file = unquote(Path(parts.path).name)
-        return "urn:" not in self.urn or (file and file.endswith(".ifc"))
     
 
 class Project(models.Model):
@@ -27,40 +15,10 @@ class Project(models.Model):
     isActive = models.BooleanField()
 
 
-class Rule(models.Model):
-    name = models.TextField(max_length=99, blank=True)
-    names = models.TextField(max_length=999, blank=True)
-    fields = models.TextField(max_length=999, blank=True)
-    unique_name = models.TextField(max_length=100, blank=True)
-    filters = models.TextField(max_length=999, blank=True)
-    group_by = models.TextField(max_length=999, blank=True)
-    sum_by = models.TextField(max_length=999, blank=True)
-    operations = models.TextField(max_length=9999, blank=True)
-    userId = models.IntegerField()
-    isActive = models.BooleanField()
-
-    def get_absolute_url(self):  # Тут мы создали новый метод
-        return reverse("rule_edit", args=[str(self.id)])
-
-
 class ActiveLink(models.Model):
     userId = models.CharField(max_length=200)
     projectId = models.CharField(max_length=200)
     modelId = models.CharField(max_length=200)
-
-
-class Wbs(models.Model):
-    wbs_code = models.CharField(max_length=30)
-    docsdiv = models.CharField(max_length=10)
-    wbs1 = models.CharField(max_length=10)
-    wbs2 = models.CharField(max_length=100)
-    wbs3 = models.CharField(max_length=100)
-    specs = models.JSONField()
-    userId = models.IntegerField()
-    isActive = models.BooleanField()
-
-    def get_absolute_url(self):  # Тут мы создали новый метод
-        return reverse("wbs_edit", args=[str(self.id)])
 
 
 class Task(models.Model):

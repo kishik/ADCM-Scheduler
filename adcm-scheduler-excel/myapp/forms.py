@@ -4,58 +4,6 @@ from django import forms
 from django.forms import ModelForm, Textarea
 from django.urls import reverse_lazy
 
-from myapp.models import Rule, Wbs
-
-
-class SdrForm(ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper(self)
-
-    class Meta:
-        model = Wbs
-        fields = ["wbs_code", "docsdiv", "wbs1", "wbs2", "wbs3", "specs"]
-
-
-class URNForm(forms.Form):
-    id = forms.IntegerField()
-    type = forms.CharField()
-    urn = forms.CharField()
-
-
-class RuleForm(ModelForm):
-    class Meta:
-        model = Rule
-        fields = [
-            "name",
-            "names",
-            "fields",
-            "unique_name",
-            "filters",
-            "group_by",
-            "sum_by",
-            "operations",
-            "userId",
-            "isActive",
-        ]
-        widgets = {
-            "names": Textarea(attrs={'cols': 80, 'rows': 20}),
-            "fields": Textarea(attrs={'cols': 80, 'rows': 20}),
-            "unique_name": Textarea(attrs={'cols': 80, 'rows': 20}),
-            "filters": Textarea(attrs={'cols': 80, 'rows': 20}),
-            "group_by": Textarea(attrs={'cols': 80, 'rows': 20}),
-            "sum_by": Textarea(attrs={'cols': 80, 'rows': 20}),
-            "operations": Textarea(attrs={'cols': 80, 'rows': 20}),
-            "userId": forms.HiddenInput(),
-            "isActive": forms.HiddenInput(),
-        }
-
-
-class WbsForm(ModelForm):
-    class Meta:
-        model = Wbs
-        fields = ["wbs_code", "docsdiv", "wbs1", "wbs2", "wbs3", "specs"]
-
 
 class FileFieldForm(forms.Form):
     def __init__(self, *args, **kwargs):
