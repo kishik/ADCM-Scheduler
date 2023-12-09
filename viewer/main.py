@@ -1,23 +1,19 @@
-import os
-import requests
-from urllib.parse import urlencode
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 import gdown
-import re
 import shutil
 import json
 import os
-import pickle
 from fastapi.responses import JSONResponse
-from new_loader.ifc_to_nx_converter import IfcToNxConverter
-from new_loader.nx_to_neo4j_converter import NxToNeo4jConverter
+from new_loader.ifc_to_neo4j import IfcToNeo4jConverter
 from new_loader.create_group_graph import create_group_graph
 
 
 class Project(BaseModel):
     name: str
     link: str
+
 
 app = FastAPI()
 
@@ -29,7 +25,8 @@ async def deploy_project(project: Project):
     # print(match[0][2:-5] if match else 'Not found')
     url = f"{k[39:-12]}"
     print(f'https://drive.google.com/drive/folders/{url}')
-    gdown.download_folder(f'https://drive.google.com/drive/folders/{url}', quiet=True, use_cookies=False, output=f'{project.name}')
+    gdown.download_folder(f'https://drive.google.com/drive/folders/{url}', quiet=True, use_cookies=False,
+                          output=f'{project.name}')
     # os.system('ls')
     # os.system('wget --no-check-certificate \'https://docs.google.com/uc?export=download&id=FILEID\' -O FILENAME')
     os.chdir('./xeokit-bim-viewer-app/')
@@ -39,7 +36,8 @@ async def deploy_project(project: Project):
     for file in files:
         print(f'./{project.name}/{file}')
         print(f'./xeokit-bim-viewer-app/data/projects/{project.name}/models/{file[:-4]}/source/geometry.ifc')
-        shutil.move(f'./{project.name}/{file}', f'./xeokit-bim-viewer-app/data/projects/{project.name}/models/{file[:-4]}/source/geometry.ifc')
+        shutil.move(f'./{project.name}/{file}',
+                    f'./xeokit-bim-viewer-app/data/projects/{project.name}/models/{file[:-4]}/source/geometry.ifc')
     return 200
 
 
@@ -48,12 +46,10 @@ async def get_nodes(project_name: str):
     path = f'./xeokit-bim-viewer-app/data/projects/{project_name}/models/'
 
     create_group_graph()
-    nx_exp = IfcToNxConverter()
-    nx_exp.create_net_graph(path)
 
-    neo4j_exp = NxToNeo4jConverter()
-    G = nx_exp.get_net_graph()
-    neo4j_exp.create_neo4j(G)
+    neo4j_exp = IfcToNeo4jConverter()
+    neo4j_exp.create(path)
+
     return JSONResponse(content=json.dumps(neo4j_exp.get_nodes()))
     # neo4j_exp.close()
 
@@ -63,11 +59,8 @@ async def get_links(project_name: str):
     path = f'./xeokit-bim-viewer-app/data/projects/{project_name}/models/'
 
     create_group_graph()
-    nx_exp = IfcToNxConverter()
-    nx_exp.create_net_graph(path)
 
-    neo4j_exp = NxToNeo4jConverter()
-    G = nx_exp.get_net_graph()
-    neo4j_exp.create_neo4j(G)
+    neo4j_exp = IfcToNeo4jConverter()
+    neo4j_exp.create(path)
+
     return JSONResponse(content=json.dumps(neo4j_exp.get_edges()))
-

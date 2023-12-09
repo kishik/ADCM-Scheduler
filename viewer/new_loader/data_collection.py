@@ -7,8 +7,9 @@ def allNodes(session):
     :return: список нодов
     """
 
-    q_data_obtain = "MATCH (n) WHERE n.DIN IS NOT NULL " \
-                    " RETURN DISTINCT n.id AS din"
+    q_data_obtain = '''MATCH (n:Element) 
+    WHERE NOT n.is_a IN ["IfcBuilding", "IfcBuildingStorey"]
+    RETURN DISTINCT n.id AS din'''
     result = session.run(q_data_obtain).data()
     return np.array([item["din"] for item in result])
 
