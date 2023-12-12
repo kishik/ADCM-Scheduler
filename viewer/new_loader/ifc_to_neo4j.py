@@ -335,19 +335,24 @@ class IfcToNeo4jConverter:
             )
 
     def get_nodes(self):
-        query = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.ADCM_Title as wbs1,
+        q_storey_wbs2 = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.ADCM_Title as wbs1,
         el.storey_name as wbs2, el.ADCM_GESN as wbs3_id, el.name as name 
         UNION MATCH (el)-[:TRAVERSE]->(relEl) RETURN relEl.id as id, relEl.ADCM_Title as wbs1,
         relEl.storey_name as wbs2, relEl.ADCM_GESN as wbs3_id, relEl.name as name"""
+
+        q_storey_wbs1 = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.storey_name as wbs1,
+        el.is_a as wbs2, el.ADCM_GESN as wbs3_id, el.name as name 
+        UNION MATCH (el)-[:TRAVERSE]->(relEl) RETURN relEl.id as id, relEl.storey_name as wbs1,
+        relEl.is_a as wbs2, relEl.ADCM_GESN as wbs3_id, relEl.name as name"""
         with self.element_driver.session() as session:
-            nodes = session.run(query).data()
+            nodes = session.run(q_storey_wbs1).data()  # or use q_storey_wbs2
             distances = calculateDistance(session, allNodes(session))
-            hist_distances = calculate_hist_distance(session)  # , allNodes(session))
+            # hist_distances = calculate_hist_distance(session)  # , allNodes(session))
         for i in nodes:
             i.update({
                 "wbs3": self.gesn_to_name.get(i.get("wbs3_id")),
                 "distance": distances.get(i.get("id")),
-                "hist_distance": hist_distances.get(i.get("id")),
+                # "hist_distance": hist_distances.get(i.get("id")),
             })
         return nodes
 
