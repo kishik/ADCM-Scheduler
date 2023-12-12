@@ -336,9 +336,9 @@ class IfcToNeo4jConverter:
 
     def get_nodes(self):
         query = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.ADCM_Title as wbs1,
-        el.level_name as wbs2, el.ADCM_GESN as wbs3_id, el.name as name 
+        el.storey_name as wbs2, el.ADCM_GESN as wbs3_id, el.name as name 
         UNION MATCH (el)-[:TRAVERSE]->(relEl) RETURN relEl.id as id, relEl.ADCM_Title as wbs1,
-        relEl.level_name as wbs2, relEl.ADCM_GESN as wbs3_id, relEl.name as name"""
+        relEl.storey_name as wbs2, relEl.ADCM_GESN as wbs3_id, relEl.name as name"""
         with self.element_driver.session() as session:
             nodes = session.run(query).data()
             distances = calculateDistance(session, allNodes(session))
