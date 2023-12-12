@@ -440,15 +440,15 @@ def schedule(request):
                     parent=f"{node['wbs1']}{node['wbs2']}"
                 ).save()
 
-            Task2(
-                    id=node['id'],
-                    text=node['name'],
-                    # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(days=node['distance']),
-                    # duration = max([distances[din] for din in result[wbs1]])
-                    duration=1,
-                    parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3_id']}"
-                ).save()
+        Task2(
+                id=node['id'],
+                text=node['name'],
+                # min(start_date of levels)
+                start_date=datetime.today() + timedelta(days=node['distance']),
+                # duration = max([distances[din] for din in result[wbs1]])
+                duration=1,
+                parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3_id']}"
+            ).save()
     project_id = request.session["project_id"]
     project = Project.objects.get(id=project_id)
     response = requests.get(f'http://viewer:8070/links/{project.name}/')
