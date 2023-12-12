@@ -37,13 +37,13 @@ def add_rel(tx, pred_name: str, flw_name: str):
 
 def create_group_graph():
     group_driver = GraphDatabase.driver(
-        "bolt://localhost:7688",
+        "bolt://neo4j_groups:7687",
         auth=("neo4j", "23109900")
     )
     group_driver.verify_connectivity()
 
     df = pd.read_excel(
-        "./solution.xls",
+        "./new_loader/solution.xls",
         # index_col=0,
         header=None,
         names=["GESN", "name"]
