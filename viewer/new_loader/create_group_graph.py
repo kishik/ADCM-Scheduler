@@ -37,7 +37,7 @@ def add_rel(tx, pred_name: str, flw_name: str):
 
 def create_group_graph():
     group_driver = GraphDatabase.driver(
-        "bolt://neo4j_groups:7687",
+        "neo4j://neo4j_groups:7687",
         auth=("neo4j", "23109900")
     )
     group_driver.verify_connectivity()

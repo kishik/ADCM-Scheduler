@@ -4,7 +4,7 @@ import ifcopenshell
 import pandas as pd
 from neo4j import GraphDatabase
 
-from .data_collection import calculateDistance, allNodes
+from .data_collection import calculateDistance, allNodes, calculate_hist_distance
 
 # Number of elements in storey for visualisation
 LIMIT = 5
@@ -175,7 +175,7 @@ class IfcToNeo4jConverter:
             names=["GESN", "name"]
         ).dropna()
         df.index = df.index.str[1:]
-        self.gesn_to_name = df.name.to_dict()
+        self.gesn_to_name: dict = df.name.to_dict()
 
     def close(self):
         self.element_driver.close()
@@ -197,11 +197,15 @@ class IfcToNeo4jConverter:
 
             for file_num, ifc_path in enumerate(file_list):
                 def node(element):
-                    return str(file_num) + '_' + str(element.id())
+                    return str(file_num) + '-' + str(element.id())
 
                 model = ifcopenshell.open(ifc_path)
                 storeys = model.by_type(WBS1)
                 for stor in storeys:
+                    storey_name = stor.Name
+                    print(storey_name)
+                    marks = set()
+
                     session.execute_write(add_node, node(stor), node_attributes(stor))
                     session.execute_write(add_edge, str(building.id()), node(stor))
 
@@ -229,7 +233,7 @@ class IfcToNeo4jConverter:
                         wbs3_to_id = dict()  # unique dict on each hierarchial level
 
                         for k, wbs3 in enumerate(wbs3_set):
-                            wbs3_to_id[wbs3] = wbs2_to_id[group] + '_' + str(k)
+                            wbs3_to_id[wbs3] = wbs2_to_id[group] + '-' + str(k)
                             # add wbs3 node
                             session.execute_write(
                                 add_wbs_node,
@@ -245,7 +249,11 @@ class IfcToNeo4jConverter:
                             ))
                             target_elems.sort(key=lambda el: node_attributes(el).get("Elevation"))
                             for i in range(len(target_elems[:LIMIT])):
-                                session.execute_write(add_node, node(target_elems[i]), node_attributes(target_elems[i]))
+                                atts = node_attributes(target_elems[i])
+                                marks.add(atts.get("ADCM_Level"))
+                                atts.update({"storey_name": storey_name})
+
+                                session.execute_write(add_node, node(target_elems[i]), atts)
                                 session.execute_write(add_el_to_wbs, wbs3_to_id[wbs3], node(target_elems[i]))
                                 if i != 0:
                                     session.execute_write(traverse, node(target_elems[i - 1]), node(target_elems[i]))
@@ -260,7 +268,7 @@ class IfcToNeo4jConverter:
                         )
 
                     for j, wbs2 in enumerate(wbs2_set):
-                        wbs2_to_id[wbs2] = node(stor) + '_' + str(j)
+                        wbs2_to_id[wbs2] = node(stor) + '-' + str(j)
                         insert_elements(wbs2)
 
                     self.wbs2_link_df.apply(
@@ -271,6 +279,7 @@ class IfcToNeo4jConverter:
                         ),
                         axis=1,
                     )
+                    print(marks)
 
             q_storeys = '''
             MATCH (n) WHERE n.is_a = 'IfcBuildingStorey'
@@ -326,19 +335,19 @@ class IfcToNeo4jConverter:
             )
 
     def get_nodes(self):
-        query = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.ADCM_Title as wbs1, el.ADCM_Level as wbs2, 
-        el.ADCM_GESN as wbs3_id, el.name as name 
-        UNION MATCH (el)-[:TRAVERSE]->(relEl) RETURN 
-        relEl.id as id, relEl.ADCM_Title as wbs1, relEl.ADCM_Level as wbs2, relEl.ADCM_GESN as wbs3_id, 
-        relEl.name as name"""
+        query = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.storey_name as wbs1,
+        el.is_a as wbs2, el.ADCM_GESN as wbs3_id, el.name as name 
+        UNION MATCH (el)-[:TRAVERSE]->(relEl) RETURN relEl.id as id, relEl.storey_name as wbs1,
+        relEl.is_a as wbs2, relEl.ADCM_GESN as wbs3_id, relEl.name as name"""
         with self.element_driver.session() as session:
             nodes = session.run(query).data()
             distances = calculateDistance(session, allNodes(session))
-            # distances = calculate_hist_distance(session)  # , allNodes(session))
+            hist_distances = calculate_hist_distance(session)  # , allNodes(session))
         for i in nodes:
             i.update({
+                "wbs3": self.gesn_to_name.get(i.get("wbs3_id")),
                 "distance": distances.get(i.get("id")),
-                "wbs3": self.gesn_to_name.get(i.get("wbs3_id"))
+                "hist_distance": hist_distances.get(i.get("id")),
             })
         return nodes
 
