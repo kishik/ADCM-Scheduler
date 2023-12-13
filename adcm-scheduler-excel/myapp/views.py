@@ -431,7 +431,7 @@ def schedule(request):
             wbs[node['wbs1']][node['wbs2']].append(node['wbs3_id'])
             Task2(
                     id=f"{node['wbs1']}{node['wbs2']}{node['wbs3_id']}",
-                    text=node['wbs3_id'],
+                    text=f"({node['wbs3_id']}) {node['wbs3']}",
                     # min(start_date of levels)
                     start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3_id'] == node['wbs3_id'])])),
                     end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3_id'] == node['wbs3_id'])]) + 1),
