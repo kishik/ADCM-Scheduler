@@ -32,7 +32,7 @@ def get_wbs2(element):
 def get_wbs3(element) -> str:
     atts = node_attributes(element)
     if "ADCM_GESN" in atts.keys():
-        return atts.get("ADCM_GESN")
+        return atts.get("ADCM_GESN")[:-3]
     elif "ADCM_DIN" in atts.keys():
         return atts.get("ADCM_DIN")
     return "no GESN"
@@ -51,15 +51,17 @@ def node_attributes(elem) -> dict:
         # delete unnecessary key "id" from ADCM
         psets["ADCM"].pop('id')
         atts.update(psets["ADCM"])
-
+    if "ADCM_GESN" in atts.keys():
+        atts["ADCM_GESN"] = atts["ADCM_GESN"][:-3]
+        print(atts["ADCM_GESN"])
     atts.setdefault("ADCM_Title", None)
     atts.setdefault("ADCM_Level", None)
     atts.setdefault("ADCM_RD", None)
     atts.setdefault("ADCM_JobType", None)
     atts.setdefault("ADCM_Part", None)
 
-    if atts['is_a'] not in {"IfcBuilding", "IfcBuildingStorey"}:
-        atts.setdefault("ADCM_GESN", "no GESN")
+    # if atts['is_a'] not in {"IfcBuilding", "IfcBuildingStorey"}:
+    #     atts.setdefault("ADCM_GESN", "no GESN")
 
     def get_coordinates(el) -> tuple[float, float, float]:
         if not hasattr(el, "ObjectPlacement"):
@@ -169,12 +171,11 @@ class IfcToNeo4jConverter:
         group_driver.close()
 
         df = pd.read_excel(
-            "./new_loader/solution.xls",
+            "./solution.xls",
             index_col=0,
             header=None,
             names=["GESN", "name"]
         ).dropna()
-        df.index = df.index.str[1:]
         self.gesn_to_name: dict = df.name.to_dict()
 
     def close(self):
@@ -195,6 +196,8 @@ class IfcToNeo4jConverter:
             building = first_model.by_type("IfcBuilding")[0]
             session.execute_write(add_node, str(building.id()), node_attributes(building))
 
+            # storey_to_marks = dict()
+
             for file_num, ifc_path in enumerate(file_list):
                 def node(element):
                     return str(file_num) + '-' + str(element.id())
@@ -202,9 +205,9 @@ class IfcToNeo4jConverter:
                 model = ifcopenshell.open(ifc_path)
                 storeys = model.by_type(WBS1)
                 for stor in storeys:
-                    storey_name = stor.Name
-                    print(storey_name)
-                    marks = set()
+                    atts = node_attributes(stor)
+                    storey_name = atts.get("name") + ' ' + str(round(atts.get("Elevation"), 1))
+                    # marks = set()
 
                     session.execute_write(add_node, node(stor), node_attributes(stor))
                     session.execute_write(add_edge, str(building.id()), node(stor))
@@ -250,13 +253,14 @@ class IfcToNeo4jConverter:
                             target_elems.sort(key=lambda el: node_attributes(el).get("Elevation"))
                             for i in range(len(target_elems[:LIMIT])):
                                 atts = node_attributes(target_elems[i])
-                                marks.add(atts.get("ADCM_Level"))
+                                # marks.add(atts.get("ADCM_Level"))
                                 atts.update({"storey_name": storey_name})
 
                                 session.execute_write(add_node, node(target_elems[i]), atts)
                                 session.execute_write(add_el_to_wbs, wbs3_to_id[wbs3], node(target_elems[i]))
                                 if i != 0:
                                     session.execute_write(traverse, node(target_elems[i - 1]), node(target_elems[i]))
+                            # storey_to_marks[storey_name] = marks
 
                         self.wbs3_link_df.apply(
                             lambda row: session.execute_write(
@@ -271,6 +275,7 @@ class IfcToNeo4jConverter:
                         wbs2_to_id[wbs2] = node(stor) + '-' + str(j)
                         insert_elements(wbs2)
 
+
                     self.wbs2_link_df.apply(
                         lambda row: session.execute_write(
                             link_classes,
@@ -279,7 +284,6 @@ class IfcToNeo4jConverter:
                         ),
                         axis=1,
                     )
-                    print(marks)
 
             q_storeys = '''
             MATCH (n) WHERE n.is_a = 'IfcBuildingStorey'
@@ -316,13 +320,16 @@ class IfcToNeo4jConverter:
 
             q_get_neighbor_els = f'''
             MATCH (a:{WBS2_LABEL})-[:FOLLOWS]->(b:{WBS2_LABEL})
-            RETURN a.id AS id1, b.id AS id2
+            RETURN a.id AS id1, b.id AS id2, a.name AS name1, b.name AS name2
             '''
             wbs2_df = pd.DataFrame(session.run(q_get_neighbor_els).data())
             wbs2_df.apply(
                 lambda row: connect_wbs(row.id1, row.id2, WBS3_LABEL, "FOLLOWS"),
                 axis=1
             )
+            # for ind, row in wbs2_df.iterrows():
+            #     if row.name2 == "IfcColumn":
+            #         print(row.id1, row.id2)
 
             q_get_neighbor_els = f'''
                     MATCH (a:{WBS3_LABEL})-[:FOLLOWS]->(b:{WBS3_LABEL})
@@ -335,24 +342,22 @@ class IfcToNeo4jConverter:
             )
 
     def get_nodes(self):
-        q_storey_wbs2 = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.ADCM_Title as wbs1,
-        el.storey_name as wbs2, el.ADCM_GESN as wbs3_id, el.name as name 
-        UNION MATCH (el)-[:TRAVERSE]->(relEl) RETURN relEl.id as id, relEl.ADCM_Title as wbs1,
-        relEl.storey_name as wbs2, relEl.ADCM_GESN as wbs3_id, relEl.name as name"""
-
-        q_storey_wbs1 = """MATCH (el)-[:TRAVERSE]->(relEl) RETURN el.id as id, el.storey_name as wbs1,
-        el.is_a as wbs2, el.ADCM_GESN as wbs3_id, el.name as name 
-        UNION MATCH (el)-[:TRAVERSE]->(relEl) RETURN relEl.id as id, relEl.storey_name as wbs1,
-        relEl.is_a as wbs2, relEl.ADCM_GESN as wbs3_id, relEl.name as name"""
+        q_storey_wbs2 = """MATCH 
+        (el)-[:TRAVERSE]->(fl) RETURN el.id as id, el.ADCM_Title as wbs1,
+        el.storey_name as wbs2, el.ADCM_RD as wbs3, el.ADCM_GESN as wbs4_id, el.name as name 
+        UNION 
+        MATCH (el)-[:TRAVERSE]->(fl) RETURN fl.id as id, fl.ADCM_Title as wbs1,
+        fl.storey_name as wbs2, fl.ADCM_RD as wbs3, fl.ADCM_GESN as wbs4_id, fl.name as name
+        """
         with self.element_driver.session() as session:
-            nodes = session.run(q_storey_wbs1).data()  # or use q_storey_wbs2
-            distances = calculateDistance(session, allNodes(session))
-            # hist_distances = calculate_hist_distance(session)  # , allNodes(session))
+            nodes = session.run(q_storey_wbs2).data()  # or
+            # distances = calculateDistance(session, allNodes(session))
+            hist_distances = calculate_hist_distance(session)  # , allNodes(session))
         for i in nodes:
             i.update({
-                "wbs3": self.gesn_to_name.get(i.get("wbs3_id")),
-                "distance": distances.get(i.get("id")),
-                # "hist_distance": hist_distances.get(i.get("id")),
+                "wbs4": self.gesn_to_name.get(i.get("wbs4_id")),
+                # "distance": distances.get(i.get("id")),
+                "distance": hist_distances.get(i.get("id")),
             })
         return nodes
 

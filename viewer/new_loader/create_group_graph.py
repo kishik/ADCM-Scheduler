@@ -2,6 +2,8 @@ import pandas as pd
 from neo4j import GraphDatabase, Transaction
 
 
+EXCEL_GESN_PATH = "./new_loader/solution.xls"
+GROUPS_URI = "neo4j://neo4j_groups:7687"
 classes = (
     'IfcWall',
     'IfcBeam',
@@ -37,19 +39,23 @@ def add_rel(tx, pred_name: str, flw_name: str):
 
 def create_group_graph():
     group_driver = GraphDatabase.driver(
-        "neo4j://neo4j_groups:7687",
+        GROUPS_URI,
         auth=("neo4j", "23109900")
     )
     group_driver.verify_connectivity()
 
     df = pd.read_excel(
-        "./new_loader/solution.xls",
-        # index_col=0,
+        EXCEL_GESN_PATH,
+        sheet_name=0,
         header=None,
         names=["GESN", "name"]
     ).dropna()
-    df.GESN = df.GESN.str[1:]
     gesn_list = df.GESN.to_numpy()
+
+    df_gesn_links = pd.read_excel(
+        EXCEL_GESN_PATH,
+        sheet_name=1,
+    ).dropna()
 
     with group_driver.session() as session:
         session.run('MATCH (n) DETACH DELETE n')
@@ -61,6 +67,11 @@ def create_group_graph():
             pred_gesn = gesn
         session.execute_write(add_class, "no GESN", "WBS3")
         session.execute_write(add_rel, gesn_list[-1], "no GESN")
+        session.execute_write(add_rel, gesn_list[-2], "no GESN")
+        df_gesn_links.apply(
+            lambda row: session.execute_write(add_rel, row.pred, row.flw),
+            axis=1
+        )
 
         for i in classes:
             session.execute_write(add_class, i, "IfcClass")
