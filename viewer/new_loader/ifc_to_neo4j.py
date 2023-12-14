@@ -171,7 +171,7 @@ class IfcToNeo4jConverter:
         group_driver.close()
 
         df = pd.read_excel(
-            "./solution.xls",
+            "./new_loader/solution.xls",
             index_col=0,
             header=None,
             names=["GESN", "name"]
