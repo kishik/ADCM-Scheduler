@@ -32,7 +32,7 @@ def get_wbs2(element):
 def get_wbs3(element) -> str:
     atts = node_attributes(element)
     if "ADCM_GESN" in atts.keys():
-        return atts.get("ADCM_GESN")[:-3]
+        return atts.get("ADCM_GESN")
     elif "ADCM_DIN" in atts.keys():
         return atts.get("ADCM_DIN")
     return "no GESN"
@@ -53,15 +53,11 @@ def node_attributes(elem) -> dict:
         atts.update(psets["ADCM"])
     if "ADCM_GESN" in atts.keys():
         atts["ADCM_GESN"] = atts["ADCM_GESN"][:-3]
-        print(atts["ADCM_GESN"])
     atts.setdefault("ADCM_Title", None)
     atts.setdefault("ADCM_Level", None)
     atts.setdefault("ADCM_RD", None)
     atts.setdefault("ADCM_JobType", None)
     atts.setdefault("ADCM_Part", None)
-
-    # if atts['is_a'] not in {"IfcBuilding", "IfcBuildingStorey"}:
-    #     atts.setdefault("ADCM_GESN", "no GESN")
 
     def get_coordinates(el) -> tuple[float, float, float]:
         if not hasattr(el, "ObjectPlacement"):
@@ -142,7 +138,7 @@ def link_classes(tx, id1: str, id2: str):
     q_link_classes = '''
     MATCH (a {id: $id1})
     MATCH (b {id: $id2})
-    MERGE (a)-[r:FOLLOWS]->(b)
+    MERGE (a)-[r:FOLLOWS_IN_GROUP]->(b)
     '''
     tx.run(q_link_classes, id1=str(id1), id2=str(id2))
 
@@ -151,7 +147,7 @@ def traverse(tx, id1, id2):
     q_traverse = '''
     MATCH (a:Element) WHERE a.id = $id1
     MATCH (b:Element) WHERE b.id = $id2
-    MERGE (a)-[:TRAVERSE]->(b)
+    MERGE (a)-[:TRAVERSE_GROUP]->(b)
     '''
     tx.run(q_traverse, id1=str(id1), id2=str(id2))
 
@@ -171,7 +167,7 @@ class IfcToNeo4jConverter:
         group_driver.close()
 
         df = pd.read_excel(
-            "./new_loader/solution.xls",
+            "./solution.xls",
             index_col=0,
             header=None,
             names=["GESN", "name"]
@@ -206,10 +202,9 @@ class IfcToNeo4jConverter:
                 storeys = model.by_type(WBS1)
                 for stor in storeys:
                     atts = node_attributes(stor)
-                    storey_name = atts.get("name") + ' ' + str(round(atts.get("Elevation"), 1))
-                    # marks = set()
+                    storey_name = atts.get("name")  # + ' ' + str(round(atts.get("Elevation"), 1))
 
-                    session.execute_write(add_node, node(stor), node_attributes(stor))
+                    session.execute_write(add_node, node(stor), atts)
                     session.execute_write(add_edge, str(building.id()), node(stor))
 
                     all_elements = get_all_children(stor)
@@ -260,7 +255,6 @@ class IfcToNeo4jConverter:
                                 session.execute_write(add_el_to_wbs, wbs3_to_id[wbs3], node(target_elems[i]))
                                 if i != 0:
                                     session.execute_write(traverse, node(target_elems[i - 1]), node(target_elems[i]))
-                            # storey_to_marks[storey_name] = marks
 
                         self.wbs3_link_df.apply(
                             lambda row: session.execute_write(
@@ -274,7 +268,6 @@ class IfcToNeo4jConverter:
                     for j, wbs2 in enumerate(wbs2_set):
                         wbs2_to_id[wbs2] = node(stor) + '-' + str(j)
                         insert_elements(wbs2)
-
 
                     self.wbs2_link_df.apply(
                         lambda row: session.execute_write(
@@ -291,14 +284,14 @@ class IfcToNeo4jConverter:
             level_df = pd.DataFrame(session.run(q_storeys).data())
             level_df.sort_values(by=['elevation'], inplace=True, ignore_index=True)
 
-            def connect_wbs(parent_id_1, parent_id_2, label, rel_type):
+            def connect_wbs(parent_id_1, parent_id_2, label, rel_in_group, rel_type):
                 q_get_last = f'''MATCH (p {{id: '{str(parent_id_1)}' }}) --> (s:{label})
-                WHERE NOT (s)-[]->(:{label})
+                WHERE NOT (s)-[:{rel_in_group}]->(:{label})
                 RETURN s.id AS id'''
                 last_res = session.run(q_get_last).data()
 
                 q_get_first = f'''MATCH (p {{id: '{str(parent_id_2)}' }}) --> (s:{label})
-                WHERE NOT (:{label})-[]->(s)
+                WHERE NOT (:{label})-[:{rel_in_group}]->(s)
                 RETURN s.id AS id'''
                 first_res = session.run(q_get_first).data()
 
@@ -315,29 +308,26 @@ class IfcToNeo4jConverter:
                     # Connect WBS1 based on elevation
                     session.execute_write(link_classes, pred_id, row.id)
                     # Connect WBS2
-                    connect_wbs(pred_id, row.id, WBS2_LABEL, "FOLLOWS")
+                    connect_wbs(pred_id, row.id, WBS2_LABEL, "FOLLOWS_IN_GROUP", "FOLLOWS")
                 pred_id = row.id
 
             q_get_neighbor_els = f'''
-            MATCH (a:{WBS2_LABEL})-[:FOLLOWS]->(b:{WBS2_LABEL})
-            RETURN a.id AS id1, b.id AS id2, a.name AS name1, b.name AS name2
+            MATCH (a:{WBS2_LABEL})-[:FOLLOWS_IN_GROUP|FOLLOWS]->(b:{WBS2_LABEL})
+            RETURN a.id AS id1, b.id AS id2
             '''
             wbs2_df = pd.DataFrame(session.run(q_get_neighbor_els).data())
             wbs2_df.apply(
-                lambda row: connect_wbs(row.id1, row.id2, WBS3_LABEL, "FOLLOWS"),
+                lambda row: connect_wbs(row.id1, row.id2, WBS3_LABEL, "FOLLOWS_IN_GROUP", "FOLLOWS"),
                 axis=1
             )
-            # for ind, row in wbs2_df.iterrows():
-            #     if row.name2 == "IfcColumn":
-            #         print(row.id1, row.id2)
 
             q_get_neighbor_els = f'''
-                    MATCH (a:{WBS3_LABEL})-[:FOLLOWS]->(b:{WBS3_LABEL})
-                    RETURN a.id AS id1, b.id AS id2
-                    '''
+            MATCH (a:{WBS3_LABEL})-[:FOLLOWS_IN_GROUP|FOLLOWS]->(b:{WBS3_LABEL})
+            RETURN a.id AS id1, b.id AS id2
+            '''
             wbs3_df = pd.DataFrame(session.run(q_get_neighbor_els).data())
             wbs3_df.apply(
-                lambda row: connect_wbs(row.id1, row.id2, "Element", "TRAVERSE"),
+                lambda row: connect_wbs(row.id1, row.id2, "Element", "TRAVERSE_GROUP", "TRAVERSE"),
                 axis=1
             )
 

@@ -23,14 +23,13 @@ def parentsByDin(din, session):
     """
 
     q_data_obtain = """
-    MATCH (c)-[r:TRAVERSE]->(a)
+    MATCH (c)-[r:TRAVERSE|TRAVERSE_GROUP]->(a)
     WHERE a.id = $din
     RETURN DISTINCT c.id AS din
     """
     result = session.run(q_data_obtain, din=din).data()
     dins_arr = np.array([item["din"] for item in result])
-    if din in dins_arr:
-        dins_arr = dins_arr[dins_arr != din]
+    dins_arr = dins_arr[~np.isin(dins_arr, din)]
     return dins_arr
 
 
@@ -42,14 +41,13 @@ def childrenByDin(din, session):
     :return: list динов
     """
     q_data_obtain = """
-    MATCH (a)-[r:TRAVERSE]->(c)
+    MATCH (a)-[r:TRAVERSE|TRAVERSE_GROUP]->(c)
     WHERE a.id = $din
     RETURN DISTINCT c.id AS din
     """
     result = session.run(q_data_obtain, din=din).data()
     children_arr = np.array([item["din"] for item in result])
-    if din in children_arr:
-        children_arr = children_arr[children_arr != din]
+    children_arr = children_arr[~np.isin(children_arr, din)]
     return children_arr
 
 
