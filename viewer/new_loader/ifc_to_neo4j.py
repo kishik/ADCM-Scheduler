@@ -4,7 +4,7 @@ import ifcopenshell
 import pandas as pd
 from neo4j import GraphDatabase
 
-from .data_collection import calculateDistance, allNodes, calculate_hist_distance
+from .data_collection import calculate_hist_distance
 
 # Number of elements in storey for visualisation
 LIMIT = 5
@@ -203,7 +203,7 @@ class IfcToNeo4jConverter:
                 for stor in storeys:
                     atts = node_attributes(stor)
                     storey_name = atts.get("name")  # + ' ' + str(round(atts.get("Elevation"), 1))
-                    storey_elevation = atts.get("Elevation")
+                    storey_elevation = round(atts.get("Elevation"), 1)
                     session.execute_write(add_node, node(stor), atts)
                     session.execute_write(add_edge, str(building.id()), node(stor))
 
@@ -351,9 +351,9 @@ class IfcToNeo4jConverter:
 
     def get_edges(self):
         query = """
-                MATCH (el)-[:TRAVERSE|TRAVERSE_GROUP]->(flw) 
-                RETURN el.id as source, flw.id as target
-                """
+        MATCH (el)-[:TRAVERSE|TRAVERSE_GROUP]->(flw) 
+        RETURN el.id as source, flw.id as target
+        """
         edges = self.element_driver.session().run(query).data()
         for edge in edges:
             edge.update({"type": "0", "lag": 0})
