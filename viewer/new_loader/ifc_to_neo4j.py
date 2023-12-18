@@ -203,7 +203,7 @@ class IfcToNeo4jConverter:
                 for stor in storeys:
                     atts = node_attributes(stor)
                     storey_name = atts.get("name")  # + ' ' + str(round(atts.get("Elevation"), 1))
-
+                    storey_elevation = atts.get("Elevation")
                     session.execute_write(add_node, node(stor), atts)
                     session.execute_write(add_edge, str(building.id()), node(stor))
 
@@ -248,9 +248,8 @@ class IfcToNeo4jConverter:
                             target_elems.sort(key=lambda el: node_attributes(el).get("Elevation"))
                             for i in range(len(target_elems[:LIMIT])):
                                 atts = node_attributes(target_elems[i])
-                                # marks.add(atts.get("ADCM_Level"))
                                 atts.update({"storey_name": storey_name})
-
+                                atts.update({"storey_elevation": storey_elevation})
                                 session.execute_write(add_node, node(target_elems[i]), atts)
                                 session.execute_write(add_el_to_wbs, wbs3_to_id[wbs3], node(target_elems[i]))
                                 if i != 0:
@@ -333,27 +332,26 @@ class IfcToNeo4jConverter:
 
     def get_nodes(self):
         q_storey_wbs2 = """MATCH 
-        (el)-[:TRAVERSE]->(fl) RETURN el.id as id, el.ADCM_Title as wbs1,
+        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN el.id as id, el.ADCM_Title as wbs1, el.storey_elevation as level
         el.storey_name as wbs2, el.ADCM_RD as wbs3, el.ADCM_GESN as wbs4_id, el.name as name 
         UNION 
-        MATCH (el)-[:TRAVERSE]->(fl) RETURN fl.id as id, fl.ADCM_Title as wbs1,
+        MATCH (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN fl.id as id, fl.ADCM_Title as wbs1, fl.storey_elevation as level
         fl.storey_name as wbs2, fl.ADCM_RD as wbs3, fl.ADCM_GESN as wbs4_id, fl.name as name
         """
         with self.element_driver.session() as session:
-            nodes = session.run(q_storey_wbs2).data()  # or
-            # distances = calculateDistance(session, allNodes(session))
-            hist_distances = calculate_hist_distance(session)  # , allNodes(session))
+            nodes = session.run(q_storey_wbs2).data()
+            hist_distances = calculate_hist_distance(session)
         for i in nodes:
             i.update({
                 "wbs4": self.gesn_to_name.get(i.get("wbs4_id")),
-                # "distance": distances.get(i.get("id")),
                 "distance": hist_distances.get(i.get("id")),
             })
+            nodes.sort(key=lambda el: el["level"])
         return nodes
 
     def get_edges(self):
         query = """
-                MATCH (el)-[:TRAVERSE]->(flw) 
+                MATCH (el)-[:TRAVERSE|TRAVERSE_GROUP]->(flw) 
                 RETURN el.id as source, flw.id as target
                 """
         edges = self.element_driver.session().run(query).data()
