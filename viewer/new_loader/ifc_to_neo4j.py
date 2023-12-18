@@ -332,10 +332,10 @@ class IfcToNeo4jConverter:
 
     def get_nodes(self):
         q_storey_wbs2 = """MATCH 
-        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN el.id as id, el.ADCM_Title as wbs1, el.storey_elevation as level
+        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN el.id as id, el.ADCM_Title as wbs1, el.storey_elevation as level,
         el.storey_name as wbs2, el.ADCM_RD as wbs3, el.ADCM_GESN as wbs4_id, el.name as name 
-        UNION 
-        MATCH (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN fl.id as id, fl.ADCM_Title as wbs1, fl.storey_elevation as level
+        UNION MATCH 
+        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN fl.id as id, fl.ADCM_Title as wbs1, fl.storey_elevation as level,
         fl.storey_name as wbs2, fl.ADCM_RD as wbs3, fl.ADCM_GESN as wbs4_id, fl.name as name
         """
         with self.element_driver.session() as session:
