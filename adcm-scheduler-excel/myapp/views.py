@@ -97,7 +97,7 @@ def projects(request):
         project.modelId = None
 
     form = FileFieldForm()
-    return render(request, "myapp/projects.html", {"projects": projects, "project": project.projectId, "form": form})
+    return render(request, "myapp/projects.html", {"projects": projects, "project": project.projectId, "form": form, 'link': 'viewer'})
 
 
 def project_create(request):

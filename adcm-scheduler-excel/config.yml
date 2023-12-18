@@ -15,5 +15,6 @@ neo4j:
   js_url: 'neo4j://localhost:7688'
   js_pass: '23109900'
 
+  viewer: 'viewer:3000'
   # last_url: 'neo4j://127.0.0.1:7688'
   # file: 'data/2021-11-19 Roder связи.xlsx'
