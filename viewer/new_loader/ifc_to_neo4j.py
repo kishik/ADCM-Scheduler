@@ -202,8 +202,8 @@ class IfcToNeo4jConverter:
                 storeys = model.by_type(WBS1)
                 for stor in storeys:
                     atts = node_attributes(stor)
-                    storey_name = atts.get("name")  # + ' ' + str(round(atts.get("Elevation"), 1))
-                    storey_elevation = round(atts.get("Elevation"), 1)
+                    storey_name = atts.get("name")
+                    # storey_elevation = round(atts.get("Elevation"), 1)
                     session.execute_write(add_node, node(stor), atts)
                     session.execute_write(add_edge, str(building.id()), node(stor))
 
@@ -248,8 +248,8 @@ class IfcToNeo4jConverter:
                             target_elems.sort(key=lambda el: node_attributes(el).get("Elevation"))
                             for i in range(len(target_elems[:LIMIT])):
                                 atts = node_attributes(target_elems[i])
-                                atts.update({"storey_name": storey_name})
-                                atts.update({"storey_elevation": storey_elevation})
+                                # marks.add(atts.get("ADCM_Level"))
+                                atts.update({"storey_name": storey_name})  # , "storey_elevation": storey_elevation})
                                 session.execute_write(add_node, node(target_elems[i]), atts)
                                 session.execute_write(add_el_to_wbs, wbs3_to_id[wbs3], node(target_elems[i]))
                                 if i != 0:
@@ -332,10 +332,10 @@ class IfcToNeo4jConverter:
 
     def get_nodes(self):
         q_storey_wbs2 = """MATCH 
-        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN el.id as id, el.ADCM_Title as wbs1, el.storey_elevation as level,
+        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN el.id as id, el.ADCM_Title as wbs1,
         el.storey_name as wbs2, el.ADCM_RD as wbs3, el.ADCM_GESN as wbs4_id, el.name as name 
         UNION MATCH 
-        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN fl.id as id, fl.ADCM_Title as wbs1, fl.storey_elevation as level,
+        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN fl.id as id, fl.ADCM_Title as wbs1,
         fl.storey_name as wbs2, fl.ADCM_RD as wbs3, fl.ADCM_GESN as wbs4_id, fl.name as name
         """
         with self.element_driver.session() as session:
@@ -346,7 +346,7 @@ class IfcToNeo4jConverter:
                 "wbs4": self.gesn_to_name.get(i.get("wbs4_id")),
                 "distance": hist_distances.get(i.get("id")),
             })
-            nodes.sort(key=lambda el: el["level"])
+        nodes.sort(key=lambda el: el["distance"])
         return nodes
 
     def get_edges(self):
