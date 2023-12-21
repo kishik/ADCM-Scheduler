@@ -9,8 +9,8 @@ from .data_collection import calculate_hist_distance
 # Number of elements in storey for visualisation
 LIMIT = 5
 
-# ELEMENTS_URI = "neo4j://localhost:7687"
-# GROUPS_URI = "neo4j://localhost:7688"
+# ELEMENTS_URI = "neo4j://localhost:7686"
+# GROUPS_URI = "neo4j://localhost:7685"
 ELEMENTS_URI = "neo4j://neo4j_elements:7687"
 GROUPS_URI = "neo4j://neo4j_groups:7687"
 USER = "neo4j"
@@ -328,18 +328,18 @@ class IfcToNeo4jConverter:
 
     def get_nodes(self):
         q_storey_wbs2 = """MATCH 
-        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN el.id as id, el.ADCM_Title as wbs1,
-        el.storey_name as wbs2, el.ADCM_RD as wbs3, el.ADCM_GESN as wbs4_id, el.name as name 
+        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN el.id as id, el.ADCM_Title as wbs1, el.storey_name as wbs2, 
+        el.ADCM_RD as wbs3, el.ADCM_GESN as wbs4_id, el.name as name, el.is_a as ifc_type 
         UNION MATCH 
-        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN fl.id as id, fl.ADCM_Title as wbs1,
-        fl.storey_name as wbs2, fl.ADCM_RD as wbs3, fl.ADCM_GESN as wbs4_id, fl.name as name
+        (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN fl.id as id, fl.ADCM_Title as wbs1, fl.storey_name as wbs2, 
+        fl.ADCM_RD as wbs3, fl.ADCM_GESN as wbs4_id, fl.name as name, el.is_a as ifc_type
         """
         with self.element_driver.session() as session:
             nodes = session.run(q_storey_wbs2).data()
             hist_distances = calculate_hist_distance(session)
         for i in nodes:
             i.update({
-                "wbs4": self.gesn_to_name.get(i.get("wbs4_id")),
+                "wbs4": f'({i.get("ifc_type")}) {self.gesn_to_name.get(i.get("wbs4_id"))}',
                 "distance": hist_distances.get(i.get("id")),
             })
         nodes.sort(key=lambda el: el["distance"])
