@@ -181,7 +181,6 @@ class IfcToNeo4jConverter:
         with self.element_driver.session() as session:
             session.run('MATCH (n) DETACH DELETE n')
 
-            # file_list = list(map(lambda file: os.path.join(path, file), os.listdir(path)))
             file_list = []
             for path, subdirs, files in os.walk(root):
                 for name in files:
@@ -191,8 +190,6 @@ class IfcToNeo4jConverter:
             first_model = ifcopenshell.open(file_list[0])
             building = first_model.by_type("IfcBuilding")[0]
             session.execute_write(add_node, str(building.id()), node_attributes(building))
-
-            # storey_to_marks = dict()
 
             for file_num, ifc_path in enumerate(file_list):
                 def node(element):
@@ -248,8 +245,7 @@ class IfcToNeo4jConverter:
                             target_elems.sort(key=lambda el: node_attributes(el).get("Elevation"))
                             for i in range(len(target_elems[:LIMIT])):
                                 atts = node_attributes(target_elems[i])
-                                # marks.add(atts.get("ADCM_Level"))
-                                atts.update({"storey_name": storey_name})  # , "storey_elevation": storey_elevation})
+                                atts.update({"storey_name": storey_name})
                                 session.execute_write(add_node, node(target_elems[i]), atts)
                                 session.execute_write(add_el_to_wbs, wbs3_to_id[wbs3], node(target_elems[i]))
                                 if i != 0:
