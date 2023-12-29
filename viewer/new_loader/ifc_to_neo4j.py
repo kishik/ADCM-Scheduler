@@ -332,7 +332,7 @@ class IfcToNeo4jConverter:
         el.ADCM_RD as wbs3, el.ADCM_GESN as wbs4_id, el.name as name, el.is_a as ifc_type 
         UNION MATCH 
         (el)-[:TRAVERSE|TRAVERSE_GROUP]->(fl) RETURN fl.id as id, fl.ADCM_Title as wbs1, fl.storey_name as wbs2, 
-        fl.ADCM_RD as wbs3, fl.ADCM_GESN as wbs4_id, fl.name as name, el.is_a as ifc_type
+        fl.ADCM_RD as wbs3, fl.ADCM_GESN as wbs4_id, fl.name as name, fl.is_a as ifc_type
         """
         with self.element_driver.session() as session:
             nodes = session.run(q_storey_wbs2).data()
