@@ -340,6 +340,7 @@ class IfcToNeo4jConverter:
         for i in nodes:
             i.update({
                 "wbs4": f'({i.get("ifc_type")}) {self.gesn_to_name.get(i.get("wbs4_id"))}',
+                "wbs4_id": f'{i.get("ifc_type")}-{i.get("wbs4_id")}',
                 "distance": hist_distances.get(i.get("id")),
             })
         nodes.sort(key=lambda el: el["distance"])
