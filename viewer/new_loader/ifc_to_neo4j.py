@@ -4,7 +4,7 @@ import ifcopenshell
 import pandas as pd
 from neo4j import GraphDatabase
 
-from .data_collection import calculate_hist_distance
+from .data_collection import allNodes, calculateDistance
 
 # Number of elements in storey for visualisation
 LIMIT = 5
@@ -25,7 +25,7 @@ WBS3_LABEL = "WBS3"
 
 # WBS2 - other IFC types
 def get_wbs2(element):
-    return element.is_a()
+    return node_attributes(element).get("ADCM_RD")
 
 
 # WBS3 - GESN or DIN
@@ -33,7 +33,7 @@ def get_wbs3(element) -> str:
     atts = node_attributes(element)
     if "ADCM_GESN" in atts.keys():
         return atts.get("ADCM_GESN")
-    elif "ADCM_DIN" in atts.keys():
+    if "ADCM_DIN" in atts.keys():
         return atts.get("ADCM_DIN")
     return "no GESN"
 
@@ -108,7 +108,7 @@ def add_node(tx, id_, props_: dict):
     tx.run(q, id=str(id_), props=props_)  # , stor_id=str(stor_id_)
 
 
-def add_edge(tx, a_id, b_id):
+def add_contains_edge(tx, a_id, b_id):
     q_edge = '''
     MATCH (a:Element) WHERE a.id = $id1
     MATCH (b:Element) WHERE b.id = $id2
@@ -202,7 +202,7 @@ class IfcToNeo4jConverter:
                     storey_name = atts.get("name")
                     # storey_elevation = round(atts.get("Elevation"), 1)
                     session.execute_write(add_node, node(stor), atts)
-                    session.execute_write(add_edge, str(building.id()), node(stor))
+                    session.execute_write(add_contains_edge, str(building.id()), node(stor))
 
                     all_elements = get_all_children(stor)
 
@@ -336,13 +336,12 @@ class IfcToNeo4jConverter:
         """
         with self.element_driver.session() as session:
             nodes = session.run(q_storey_wbs2).data()
-            hist_distances = calculate_hist_distance(session)
-        for i in nodes:
-            i.update({
-                "wbs4": f'({i.get("ifc_type")}) {self.gesn_to_name.get(i.get("wbs4_id"))}',
-                "wbs4_id": f'{i.get("ifc_type")}-{i.get("wbs4_id")}',
-                "distance": hist_distances.get(i.get("id")),
-            })
+            distances = calculateDistance(session, allNodes(session))
+            for i in nodes:
+                i.update({
+                    "wbs4": self.gesn_to_name.get(i.get("wbs4_id")),
+                    "distance": distances.get(i.get("id")),
+                })
         nodes.sort(key=lambda el: el["distance"])
         return nodes
 
