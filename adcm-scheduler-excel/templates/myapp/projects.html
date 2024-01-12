@@ -39,7 +39,7 @@
 
                     <!-- <td><a href="/project_edit/{{project.id}}">Изменить</a></td> -->
                     <td><a href="/project_delete/{{project.id}}">Удалить</a></td>
-                    <td><a target="_blank" href="http://viewer:3000/xeokit-bim-viewer-app/?projectId={{ project.name }}">Показать</a></td></tr>
+                    <td><a target="_blank" href="{{ link }}/xeokit-bim-viewer-app/?projectId={{ project.name }}">Показать</a></td></tr>
             {% endif %}
         {% endfor %}
     </table>

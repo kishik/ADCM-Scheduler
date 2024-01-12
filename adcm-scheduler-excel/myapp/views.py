@@ -37,6 +37,7 @@ X2_URL = cfg.get("x2_url")
 X2_PASS = cfg.get("x2_password")
 JS_URL = cfg.get("js_url")
 JS_PASS = cfg.get("js_pass")
+VIEWER_URL = cfg.get("viewer")
 graph_data = []
 df = pd.DataFrame()
 dates = dict()
@@ -97,7 +98,7 @@ def projects(request):
         project.modelId = None
 
     form = FileFieldForm()
-    return render(request, "myapp/projects.html", {"projects": projects, "project": project.projectId, "form": form, 'link': 'viewer'})
+    return render(request, "myapp/projects.html", {"projects": projects, "project": project.projectId, "form": form, 'link': VIEWER_URL})
 
 
 def project_create(request):
