@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 import gdown
@@ -14,7 +15,12 @@ class Project(BaseModel):
     link: str
 
 
+# need to execute in separate docker in future
+create_group_graph()
+
 app = FastAPI()
+
+path_to_explorer = dict()
 
 
 @app.post("/")
@@ -37,17 +43,19 @@ async def deploy_project(project: Project):
         print(f'./xeokit-bim-viewer-app/data/projects/{project.name}/models/{file[:-4]}/source/geometry.ifc')
         shutil.move(f'./{project.name}/{file}',
                     f'./xeokit-bim-viewer-app/data/projects/{project.name}/models/{file[:-4]}/source/geometry.ifc')
+
+    neo4j_exp = IfcToNeo4jConverter()
+    path = f'./xeokit-bim-viewer-app/data/projects/{project.name}/models/'
+    neo4j_exp.create(path)
+    path_to_explorer[path] = neo4j_exp
     return 200
 
 
 @app.get("/load/{project_name}")
 async def get_nodes(project_name: str):
     path = f'./xeokit-bim-viewer-app/data/projects/{project_name}/models/'
-    # need to execute in separate docker in future
-    create_group_graph()
+    neo4j_exp = path_to_explorer.get(path)
 
-    neo4j_exp = IfcToNeo4jConverter()
-    neo4j_exp.create(path)
     return JSONResponse(content=json.dumps(neo4j_exp.get_nodes()))
     # neo4j_exp.close()
 
@@ -55,10 +63,6 @@ async def get_nodes(project_name: str):
 @app.get("/links/{project_name}")
 async def get_links(project_name: str):
     path = f'./xeokit-bim-viewer-app/data/projects/{project_name}/models/'
-    # need to execute in separate docker in future
-    create_group_graph()
-
-    neo4j_exp = IfcToNeo4jConverter()
-    neo4j_exp.create(path)
+    neo4j_exp = path_to_explorer.get(path)
 
     return JSONResponse(content=json.dumps(neo4j_exp.get_edges()))
