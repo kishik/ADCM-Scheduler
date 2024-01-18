@@ -40,16 +40,14 @@ async def deploy_project(project: Project):
     return 200
 
 
-path = f'./xeokit-bim-viewer-app/data/projects/{project_name}/models/'
-# need to execute in separate docker in future
-create_group_graph()
-
-neo4j_exp = IfcToNeo4jConverter()
-neo4j_exp.create(path)
-
-
 @app.get("/load/{project_name}")
 async def get_nodes(project_name: str):
+    path = f'./xeokit-bim-viewer-app/data/projects/{project_name}/models/'
+    # need to execute in separate docker in future
+    create_group_graph()
+
+    neo4j_exp = IfcToNeo4jConverter()
+    neo4j_exp.create(path)
     return JSONResponse(content=json.dumps(neo4j_exp.get_nodes()))
     # neo4j_exp.close()
 
