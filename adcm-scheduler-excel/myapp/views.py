@@ -92,8 +92,8 @@ def excel_upload(request):
             # skiprows=[0, 1, 2, 3],
             # index_col=3,
         )
-        data_raw = data_raw[data_raw["Шифр"].str.startswith("1.") == False]
-        data_raw = data_raw[data_raw["Шифр"].str.startswith("ОКЦ") == False]
+        # data_raw = data_raw[data_raw["Шифр"].str.startswith("1.") == False]
+        # data_raw = data_raw[data_raw["Шифр"].str.startswith("ОКЦ") == False]
         # info = 'Проект,Смета,Шифр,НаименованиеПолное'
         # data = data_raw
 
@@ -104,13 +104,13 @@ def excel_upload(request):
         time_now = datetime.now()
         try:
             # graph_copy(driver_hist.session(), driver_user.session())
-            user_graph.hist_graph_copy()
+            neo4jexplorer.Neo4jExplorer().hist_graph_copy()
         except Exception as e:
             print("views.py 402", e.args)
         # переделать под series pandas
 
         d = data_raw
-        logger.debug(set(d['Шифр'].unique()))
+        # logger.debug(set(d['Шифр'].unique()))
         user_graph.create_new_graph_algo(set(d['Шифр'].unique()))
         d_js = pd.DataFrame()
         # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]

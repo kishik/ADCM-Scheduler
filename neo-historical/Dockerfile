@@ -13,10 +13,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Скопируйте ваш скрипт Python в контейнер
 # COPY GESN_graph_creation.py .
 # COPY 2022-02-07.xlsx .
-COPY din_graph_creation.py .
+COPY GESN_graph_creation.py .
 COPY DIN.xlsx .
 COPY Sinara.xlsx .
+COPY 2022-02-07.xlsx .
 
 # Команда для запуска скрипта при запуске контейнера
-CMD ["python3", "din_graph_creation.py"]
+CMD ["python3", "GESN_graph_creation.py"]
 # CMD ["tail", "-f", "/dev/null"]
