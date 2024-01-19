@@ -16,7 +16,7 @@
 <script src="{%  static 'myapp/js/javascript.js' %}"></script>
 
 <body>
-<form action="{% url "uploading" %}" method="post" enctype="multipart/form-data">
+<form action={% url uploading %} method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <input type="file"
                    title="Upload excel file"

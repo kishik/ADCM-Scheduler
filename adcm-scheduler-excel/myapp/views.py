@@ -81,6 +81,93 @@ def new_graph(request):
     return render(request, "myapp/hist_graph.html", context)
 
 
+def excel_upload(request):
+    if request.method == "POST":
+        path = request.FILES['excel_file']
+        # data_raw = pd.read_excel(path, dtype=str, skiprows=7)
+        data_raw = pd.read_excel(
+            path,
+            dtype=str,
+            # usecols="A:F"
+            # skiprows=[0, 1, 2, 3],
+            # index_col=3,
+        )
+        data_raw = data_raw[data_raw["Шифр"].str.startswith("1.") == False]
+        data_raw = data_raw[data_raw["Шифр"].str.startswith("ОКЦ") == False]
+        # info = 'Проект,Смета,Шифр,НаименованиеПолное'
+        # data = data_raw
+
+        user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+        driver_hist = GraphDatabase.driver(X2_URL, auth=(USER, PASS))
+        driver_user = GraphDatabase.driver(URL, auth=(USER, PASS))
+        # тут ресторю в свой граф из эксель
+        time_now = datetime.now()
+        try:
+            # graph_copy(driver_hist.session(), driver_user.session())
+            user_graph.hist_graph_copy()
+        except Exception as e:
+            print("views.py 402", e.args)
+        # переделать под series pandas
+
+        d = data_raw
+        logger.debug(set(d['Шифр'].unique()))
+        user_graph.create_new_graph_algo(set(d['Шифр'].unique()))
+        d_js = pd.DataFrame()
+        # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
+        d_js['СПП'] = d['СПП']
+        d_js['wbs1'] = d['Проект']
+        d_js['№ локальной сметы'] = d['№ локальной сметы']
+        d_js['wbs2'] = d['Наименование локальной сметы']
+        d_js['Пункт'] = d['№ п/п']
+        d_js['wbs3_id'] = d['Шифр']
+        d_js['wbs3'] = d['Шифр']
+        d_js['Код'] = d['Код']
+        d_js['name'] = d['Строка сметы']
+        d_js['wbs'] = d[['Наименование локальной сметы', '№ п/п']].apply(
+            lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
+        )
+        d_js['number'] = d['Наименование локальной сметы'].apply(
+            lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0]))
+        d_js['Предшественник'] = None
+        d_js['value'] = d['Объем']
+        d_js['Единица измерения'] = d['Единица измерения']
+        d_js['Плановая дата начала'] = d['Плановая дата начала']
+        d_js['Плановая дата окончания'] = d['Плановая дата окончания']
+
+        myJson = d_js.to_dict('records')
+        myJson.sort(
+            key=lambda x: (
+                x.get("number", "") or "",
+                x.get("wbs", "") or ""
+            )
+        )
+        global graph_data
+        graph_data = myJson
+        global df
+        df = d_js
+        # df.to_excel('out.xlsx', index=False)
+        # print(myJson)
+        # переделать template под pandas
+        # вставлять готовый текст
+        return render(
+            request,
+            "myapp/excel_table.html",
+            {
+                "myJson": myJson,
+            }
+        )
+
+    return render(
+        request,
+        "myapp/excel.html",
+        {
+                "uploading": 'excel',
+        }
+    )
+
+
+
+
 def projects(request):
     """
     Выводит проекты

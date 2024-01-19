@@ -17,6 +17,7 @@ urlpatterns = [
     path("project_create/", views.project_create),
     path("project_edit/<int:id>/", views.project_edit),
     path("project_delete/<int:id>/", views.project_delete),
+    path("excel/", views.excel_upload, name="excel"),
     path("upload/", views.upload, name="upload"),
     path("upload_gantt/", views.upload_gantt, name="upload_gantt"),
     path("add_link/", views.add_link, name="add_link"),
