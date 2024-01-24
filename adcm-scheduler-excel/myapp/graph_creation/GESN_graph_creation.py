@@ -4,7 +4,7 @@ import numpy as np
 from neo4j import GraphDatabase, Transaction
 import pandas as pd
 
-from myapp.graph_creation import yml
+from myapp.graph_creation import yml, add
 from myapp.graph_creation.graph_copy import graph_copy
 from myapp.graph_creation.neo4jexplorer import Neo4jExplorer
 
@@ -100,19 +100,27 @@ def gesn_upload(file):
     app.create_new_graph_algo(targ_gesns)
 
 
-def main(location):
+def main(location):  # check neo4j URI
     df = read_graph_data(location)
     driver = GraphDatabase.driver(cfg.get("x2_url"), auth=(cfg.get("user"), cfg.get("password")))
+    # driver = GraphDatabase.driver("neo4j://localhost:7686", auth=("neo4j", "23109900"))
     with driver.session() as session:
         session.execute_write(clear_database)
         session.execute_write(make_graph, df)
         session.run(
             "MATCH (n1)-[:EXECUTION]->(n2) "
-            "WHERE size(()-->(n1))=0 AND size((n2)-->())=0 "
+            "WHERE NOT (()-->(n1)) AND NOT ((n2)-->()) "
             "DETACH DELETE n1, n2"
         )
     driver.close()
 
 
 if __name__ == "__main__":
+    print(os.getcwd())
     main("../data/2022-02-07 МОЭК_ЕКС график по смете.xlsx")
+    # driver_ = GraphDatabase.driver("neo4j://localhost:7686", auth=("neo4j", "23109900"))
+    # with driver_.session() as session:
+    #     add.node(session, "1", "one")
+    #     add.node(session, "2", "two")
+    #     add.edge(session, "1", "2", 10)
+
