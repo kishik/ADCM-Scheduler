@@ -1,9 +1,11 @@
+import os
+
 import pandas as pd
 from neo4j import GraphDatabase, Transaction
 
 
-EXCEL_GESN_PATH = "./new_loader/solution.xls"
-GROUPS_URI = "neo4j://neo4j_groups:7687"
+EXCEL_GESN_PATH = "./solution.xls"
+GROUPS_URI = 'neo4j://neo4j_historical:7687'
 # GROUPS_URI = "neo4j://localhost:7685"
 classes = (
     'IfcWall',
@@ -59,7 +61,7 @@ def create_group_graph():
     ).dropna()
 
     with group_driver.session() as session:
-        session.run('MATCH (n) DETACH DELETE n')
+        # session.run('MATCH (n) DETACH DELETE n')
 
         for ind, gesn in enumerate(gesn_list):
             session.execute_write(add_class, gesn, "WBS3")
@@ -98,4 +100,5 @@ def create_group_graph():
 
 
 if __name__ == "__main__":
+    print(os.getcwd())
     create_group_graph()

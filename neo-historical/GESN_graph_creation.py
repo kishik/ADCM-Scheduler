@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 pd.options.mode.chained_assignment = None
 
+GROUPS_URI = 'neo4j://neo4j_historical:7687'
+
 
 def read_graph_data(file_name: str) -> pd.DataFrame:
     df = pd.read_excel(file_name)
@@ -80,12 +82,12 @@ def main(location):
     print(df.head())
     logger.debug('Initializing NEO4j Driver....')
     driver = GraphDatabase.driver(
-        'neo4j://neo4j_historical:7687',
+        GROUPS_URI,
         auth=("neo4j", "23109900")
     )
     with driver.session() as session:
         logger.debug('Inside Driver Session....')
-        session.execute_write(clear_database)
+        # session.execute_write(clear_database)
         session.execute_write(make_graph, df)
         session.run(
             "MATCH (n1)-[:EXECUTION]->(n2) "
@@ -93,19 +95,19 @@ def main(location):
             "DETACH DELETE n1, n2"
         )
         q_del_4x_loop = """
-                match (n1)-->(n2)-->(n3)-->(n4)-->(n1)-->()
+                match (n1:Work)-->(n2:Work)-->(n3:Work)-->(n4:Work)-->(n1:Work)-->()
                 detach delete n3, n4
                 """
         q_del_3x_loop = """
-                match (b)<-[r]-(a)-[]->(c)-[]->(b)
+                match (b:Work)<-[r]-(a:Work)-[]->(c:Work)-[]->(b:Work)
                 delete r
                 """
         q_del_2x_loop = """
-                match (x)-[]->(y)-[]->(x)
+                match (x:Work)-[]->(y:Work)-[]->(x:Work)
                 detach delete y
                 """
         q_del_1x_loop = """
-                match (x)-[r]->(x)
+                match (x:Work)-[r]->(x:Work)
                 delete r
                 """
         session.run(q_del_1x_loop)
