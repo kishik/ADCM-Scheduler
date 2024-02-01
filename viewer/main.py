@@ -6,16 +6,12 @@ import json
 import os
 from fastapi.responses import JSONResponse
 from new_loader.ifc_to_neo4j import IfcToNeo4jConverter
-from new_loader.create_group_graph import create_group_graph
 
 
 class Project(BaseModel):
     name: str
     link: str
 
-
-# need to execute in separate docker in future
-create_group_graph()
 
 app = FastAPI()
 

@@ -12,7 +12,7 @@ LIMIT = 5
 # ELEMENTS_URI = "neo4j://localhost:7686"
 # GROUPS_URI = "neo4j://localhost:7685"
 ELEMENTS_URI = "neo4j://neo4j_elements:7687"
-GROUPS_URI = "neo4j://neo4j_groups:7687"
+GROUPS_URI = 'neo4j://neo4j_historical:7687'
 USER = "neo4j"
 PSWD = "23109900"
 
