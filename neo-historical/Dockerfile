@@ -17,6 +17,5 @@ COPY create_group_graph.py .
 COPY solution.xls .
 
 # Команда для запуска скрипта при запуске контейнера
-CMD ["python3", "GESN_graph_creation.py"]
-CMD ["python3", "create_group_graph.py"]
+CMD ["bash", "creation_script.sh"]
 # CMD ["tail", "-f", "/dev/null"]

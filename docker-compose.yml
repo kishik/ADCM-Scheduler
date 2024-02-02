@@ -48,25 +48,25 @@ services:
       # - neo4j_historical
 
 
-  neo4j_groups:
-    image: neo4j:latest
-    container_name: neo4j_groups
-    restart: unless-stopped
-    ports:
-      - "7472:7474" # HTTP
-      - "7685:7687" # Bolt
-    volumes:
-      - ./conf:/conf_groups
-      - ./data:/data_groups
-      - ./import:/import_groups
-      - ./logs:/logs_groups
-      - ./plugins:/plugins_groups
-    environment:
-      NEO4J_AUTH: neo4j/23109900
-    depends_on:
-      # - neo4j_user
-      # - neo4j_historical
-      - neo4j_elements
+  # neo4j_groups:
+  #   image: neo4j:latest
+  #   container_name: neo4j_groups
+  #   restart: unless-stopped
+  #   ports:
+  #     - "7472:7474" # HTTP
+  #     - "7685:7687" # Bolt
+  #   volumes:
+  #     - ./conf:/conf_groups
+  #     - ./data:/data_groups
+  #     - ./import:/import_groups
+  #     - ./logs:/logs_groups
+  #     - ./plugins:/plugins_groups
+  #   environment:
+  #     NEO4J_AUTH: neo4j/23109900
+  #   depends_on:
+  #     # - neo4j_user
+  #     # - neo4j_historical
+  #     - neo4j_elements
   
 
   viewer:
