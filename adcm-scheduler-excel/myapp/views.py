@@ -38,6 +38,7 @@ X2_PASS = cfg.get("x2_password")
 JS_URL = cfg.get("js_url")
 JS_PASS = cfg.get("js_pass")
 VIEWER_URL = cfg.get("viewer")
+IP = cfg.get("white_ip")
 graph_data = []
 df = pd.DataFrame()
 dates = dict()
@@ -77,6 +78,7 @@ def new_graph(request):
         "pass": PASS,
         "link": AddLink(),
         "node": AddNode(),
+        "ip": f'bolt://{IP}:7688'
     }
     return render(request, "myapp/hist_graph.html", context)
 
