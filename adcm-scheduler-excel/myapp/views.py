@@ -211,7 +211,7 @@ def adcm_projects(request):
     for el in m.json():
         projects.append({'id': el['id'], 'name': el['name']})
     print(projects)
-    return render(request, "myapp/adcm_projects.html", {"projects": projects})
+    return render(request, "myapp/adcm_projects.html", {"projects": projects, 'link': VIEWER_URL})
 
 
 def project_download(request, project_id):
