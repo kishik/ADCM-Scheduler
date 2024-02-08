@@ -9,7 +9,9 @@ from registration import views as v
 urlpatterns = [
     path("", views.projects),
     path("volumes/<int:project_id>/", views.volumes, name="volumes"),
+    path("adcm_volumes/<int:project_id>/", views.adcm_volumes, name="adcm_volumes"),
     path("schedule/", views.schedule),
+    path("adcm_schedule/", views.adcm_schedule),
     path("new_graph/", views.new_graph),
     path("register/", v.register, name="register"),
     path("", include("django.contrib.auth.urls")),
@@ -24,6 +26,7 @@ urlpatterns = [
     path("add_node/", views.add_node, name="add_node"),
     path("new_gantt/", views.new_gantt),
     path("hist_gantt/", views.hist_gantt),
+    path("adcm_projects/", views.adcm_projects),
     re_path(r"^data/(.*)$", views.data_list),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

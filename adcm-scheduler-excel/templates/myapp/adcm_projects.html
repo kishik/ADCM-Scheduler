@@ -1,0 +1,25 @@
+{% extends "myapp/hat.html" %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% csrf_token %}
+
+{% block content %}
+
+    <div class="container">
+
+    <h2>Список проектов</h2>
+    <table class="table">
+        {% for project in projects %}
+        
+
+            <tr><td><a class="" href="/adcm_volumes/{{project.id}}">{{project.name}}</a></td>
+
+
+                    <td><a href="/project_delete/{{project.id}}">Удалить</a></td>
+                    <td><a target="_blank" href="http://{{ link }}/xeokit-bim-viewer-app/?projectId={{ project.name }}">Показать</a></td></tr>
+
+        {% endfor %}
+    </table>
+
+    </div>
+{% endblock %}

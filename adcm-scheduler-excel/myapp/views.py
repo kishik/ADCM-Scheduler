@@ -188,6 +188,39 @@ def projects(request):
     return render(request, "myapp/projects.html", {"projects": projects, "project": project.projectId, "form": form, 'link': VIEWER_URL})
 
 
+
+def adcm_projects(request):
+    """
+    Выводит проекты
+    :param request:
+    :return:
+    """
+    if not request.user.is_authenticated:
+        return redirect("/login/")
+    # projects = Project.objects.all()
+
+    # project = ActiveLink.objects.filter(userId=request.user.id).last()
+    # if not project:
+    #     project = ActiveLink()
+    #     project.projectId = None
+    #     project.modelId = None
+
+    # form = FileFieldForm()
+    m = requests.get('http://adcm.acceleration.ru/api/projinfo/')
+    projects = []
+    for el in m.json():
+        projects.append({'id': el['id'], 'name': el['name']})
+    print(projects)
+    return render(request, "myapp/adcm_projects.html", {"projects": projects})
+
+
+def project_download(request, project_id):
+    # api call to download
+    response = requests.post(f'http://viewer:8070/copy/{project_id}')
+    # volumes
+    return HttpResponseRedirect(f"/volumes/{project_id}")
+
+
 def project_create(request):
     """
     Создание project
@@ -469,6 +502,148 @@ def volumes(request, project_id):
     )
 
 
+def adcm_volumes(request, project_id):
+    """
+    Ведомость объемов
+    :param request:
+    :return:vol
+    """
+    project = ActiveLink.objects.filter(userId=request.user.id).last()
+    if not project:
+        project = ActiveLink()
+        project.projectId = None
+        project.modelId = None
+    request.session["project_id"] = project_id
+    # project = Project.objects.get(id=project_id)
+    response = requests.get(f'http://viewer:8070/copy/{project_id}/')
+    response = requests.get(f'http://viewer:8070/load/{project_id}/')
+    # print(response)
+    data = json.loads(response.json())
+    for i in range(len(data)):
+        data[i]['wbs'] = f"{data[i]['wbs1']}{data[i]['wbs4_id']}"
+    for i in range(len(data)):
+        if data[i]['distance'] is None:
+            data[i]['distance'] = 0 
+    for i in range(len(data)):
+        data[i] = {k: (str(0) if v is None else v) for k, v in data[i].items()}
+    global graph_data
+    graph_data = data.copy()
+    data = [{k: v for k, v in d.items() if k != 'distance'} for d in data]
+    wbs = {}
+    for node in graph_data:
+        if node['wbs1'] not in wbs.keys():
+            wbs[node['wbs1']] = {}
+
+        if node['wbs2'] not in wbs[node['wbs1']].keys():
+            wbs[node['wbs1']][node['wbs2']] = {}
+
+        if node['wbs3'] not in wbs[node['wbs1']][node['wbs2']]:
+            wbs[node['wbs1']][node['wbs2']][node['wbs3']] = {}
+
+        if node['wbs4'] not in wbs[node['wbs1']][node['wbs2']][node['wbs3']]:
+                wbs[node['wbs1']][node['wbs2']][node['wbs3']][node['wbs4']] = []
+
+        wbs[node['wbs1']][node['wbs2']][node['wbs3']][node['wbs4']].append(node)
+    
+    final = []
+    for el in sorted(wbs):
+        final.append({'id':'', 'wbs1':el, 'wbs2': '', 'wbs3':'', 'wbs4_id':'', 'wbs4':'', 'name':'', 'distance':''})
+        for subel in sorted(wbs[el]):
+            final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3':'', 'wbs4_id':'', 'wbs4':'', 'name':'', 'distance':''})
+            for miniel in sorted(wbs[el][subel]):
+                final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3':miniel, 'wbs4_id':'', 'wbs4':'', 'name':'', 'distance':''})
+                for picoel in sorted(wbs[el][subel][miniel]):
+                    final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3':miniel, 'wbs4_id':'', 'wbs4':picoel, 'name':'', 'distance':''})
+                    for nanoel in wbs[el][subel][miniel][picoel]:
+                        final.append(nanoel)
+
+    last_lvl = [0, 0, 0, 0, 0]
+    for i, el in enumerate(final):
+        if not el['wbs2']:
+            last_lvl[0] += 1
+            last_lvl[1] = 0
+            last_lvl[2] = 0
+            last_lvl[3] = 0
+            last_lvl[4] = 0
+            print(f'lvl1 {last_lvl[0]}')
+            final[i].update({'lvl1':last_lvl[0], 'lvl2':'', 'lvl3':'', 'lvl4':'', 'lvl5':'',
+                            'p_lvl1':'', 'p_lvl2':'', 'p_lvl3':'', 'p_lvl4':'', 'p_lvl5':''})
+            continue
+        elif not el['wbs3']:
+            last_lvl[1] += 1
+            last_lvl[2] = 0
+            last_lvl[3] = 0
+            last_lvl[4] = 0
+            print(f'lvl2 {last_lvl[0]} {last_lvl[1]}')
+            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':'', 'lvl4':'', 'lvl5':'',
+                            'p_lvl1':last_lvl[0], 'p_lvl2':'', 'p_lvl3':'', 'p_lvl4':'', 'p_lvl5':''})
+            continue
+        elif not el['wbs4_id']:
+            last_lvl[2] += 1
+            last_lvl[3] = 0
+            last_lvl[4] = 0
+            print(f'lvl3 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]}')
+            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':'', 'lvl5':'',
+                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':'', 'p_lvl4':'', 'p_lvl5':''})
+            continue
+        elif not el['id']:
+            last_lvl[3] += 1
+            last_lvl[4] = 0
+            print(f'lvl4 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]} {last_lvl[3]}')
+            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':last_lvl[3], 'lvl5':'',
+                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':last_lvl[2], 'p_lvl4':'', 'p_lvl5':''})
+            continue
+        else:
+            last_lvl[4] += 1
+            print(f'lvl4 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]} {last_lvl[3]} {last_lvl[4]}')
+            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':last_lvl[3], 'lvl5':last_lvl[4],
+                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':last_lvl[2], 'p_lvl4':last_lvl[3], 'p_lvl5':''})
+            
+    text = ''
+    for el in final:
+        if el['lvl2'] == '':
+            text += f'''
+                <tr data-node="treetable-{el['lvl1']}" data-pnode="">
+                    <td>{el['wbs1']}</td><td>{el['wbs2']}</td><td>{el['wbs3']}</td><td>{el['wbs4_id']}</td><td>{el['wbs4']}</td><td>{el['id']}</td><td>{el['name']}</td>
+                </tr>
+                '''
+            continue
+        if el['lvl3'] == '':
+            text += f'''
+                <tr data-node="treetable-{el['lvl1']}.{el['lvl2']}" data-pnode="treetable-parent-{el['p_lvl1']}">
+                    <td>{el['wbs1']}</td><td>{el['wbs2']}</td><td>{el['wbs3']}</td><td>{el['wbs4_id']}</td><td>{el['wbs4']}</td><td>{el['id']}</td><td>{el['name']}</td>
+                </tr>
+                '''
+            continue
+        if el['lvl4'] == '':
+            text += f'''
+                <tr data-node="treetable-{el['lvl1']}.{el['lvl2']}.{el['lvl3']}" data-pnode="treetable-parent-{el['p_lvl1']}.{el['p_lvl2']}">
+                    <td>{el['wbs1']}</td><td>{el['wbs2']}</td><td>{el['wbs3']}</td><td>{el['wbs4_id']}</td><td>{el['wbs4']}</td><td>{el['id']}</td><td>{el['name']}</td>
+                </tr>
+                '''
+            continue
+        if el['lvl5'] == '':
+            text += f'''
+                <tr data-node="treetable-{el['lvl1']}.{el['lvl2']}.{el['lvl3']}.{el['lvl4']}" data-pnode="treetable-parent-{el['p_lvl1']}.{el['p_lvl2']}.{el['p_lvl3']}">
+                    <td>{el['wbs1']}</td><td>{el['wbs2']}</td><td>{el['wbs3']}</td><td>{el['wbs4_id']}</td><td>{el['wbs4']}</td><td>{el['id']}</td><td>{el['name']}</td>
+                </tr>
+                '''
+            continue
+
+        text += f'''
+            <tr data-node="treetable-{el['lvl1']}.{el['lvl2']}.{el['lvl3']}.{el['lvl4']}.{el['lvl5']}" data-pnode="treetable-parent-{el['p_lvl1']}.{el['p_lvl2']}.{el['p_lvl3']}.{el['p_lvl4']}">
+                <td>{el['wbs1']}</td><td>{el['wbs2']}</td><td>{el['wbs3']}</td><td>{el['wbs4_id']}</td><td>{el['wbs4']}</td><td>{el['id']}</td><td>{el['name']}</td>
+            </tr>
+            '''
+    return render(
+        request,
+        "myapp/volumes.html",
+        {
+            "text": text
+        },
+    )
+
+
 def hist_gantt(request):
     """
     Диаграмма Ганта для исторического графа
@@ -574,6 +749,90 @@ def schedule(request):
     project_id = request.session["project_id"]
     project = Project.objects.get(id=project_id)
     response = requests.get(f'http://viewer:8070/links/{project.name}/')
+    data = json.loads(response.json())
+    for el in data:
+        Link(
+            source=str(el['source']),
+            target=str(el['target']),
+            type=str(el['type']),
+            lag=el['lag'],
+        ).save()
+    return render(request, "myapp/new_gantt.html")
+
+
+def adcm_schedule(request):
+    """
+    Диаграмма Ганта
+    :param request:
+    :return:
+    """
+    if not request.user.is_authenticated:
+        return redirect("/login/")
+    wbs = {}
+    Task2.objects.all().delete()
+    Link.objects.all().delete()
+    for node in graph_data:
+        if node['wbs1'] not in wbs.keys():
+            wbs[node['wbs1']] = {}
+            Task2(
+                    id=node['wbs1'],
+                    text=node['wbs1'],
+                    # min(start_date of levels)
+                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']])),
+                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']]) + 1)
+                    # duration = max([distances[din] for din in result[wbs1]])
+                    # duration=1
+                    
+                ).save()
+        if node['wbs2'] not in wbs[node['wbs1']].keys():
+            wbs[node['wbs1']][node['wbs2']] = {}
+            Task2(
+                    id=f"{node['wbs1']}{node['wbs2']}",
+                    text=node['wbs2'],
+                    # min(start_date of levels)
+                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])])),
+                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])]) + 1),
+                    # duration = max([distances[din] for din in result[wbs1]])
+                    # duration=1,
+                    parent=node['wbs1']
+                ).save()
+        if node['wbs3'] not in wbs[node['wbs1']][node['wbs2']]:
+            wbs[node['wbs1']][node['wbs2']][node['wbs3']] = []
+            Task2(
+                    id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}",
+                    text=f"{node['wbs3']}",
+                    # min(start_date of levels)
+                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'])])),
+                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'])]) + 1),
+                    # duration = max([distances[din] for din in result[wbs1]])
+                    # duration=1,
+                    parent=f"{node['wbs1']}{node['wbs2']}"
+                ).save()
+        if node['wbs4'] not in wbs[node['wbs1']][node['wbs2']][node['wbs3']]:
+            wbs[node['wbs1']][node['wbs2']][node['wbs3']].append(node['wbs4'])
+            Task2(
+                    id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}",
+                    text=f"({node['wbs4_id']}) {node['wbs4']}",
+                    # min(start_date of levels)
+                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and el['wbs4'] == node['wbs4'])])),
+                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and el['wbs4'] == node['wbs4'])]) + 1),
+                    # duration = max([distances[din] for din in result[wbs1]])
+                    # duration=1,
+                    parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}"
+                ).save()    
+
+        Task2(
+                id=f"{node['id']}",
+                text=node['name'],
+                # min(start_date of levels)
+                start_date=datetime.today() + timedelta(days=node['distance']),
+                # duration = max([distances[din] for din in result[wbs1]])
+                duration=1,
+                parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}"
+            ).save()
+    project_id = request.session["project_id"]
+    # project = Project.objects.get(id=project_id)
+    response = requests.get(f'http://viewer:8070/links/{project_id}/')
     data = json.loads(response.json())
     for el in data:
         Link(
