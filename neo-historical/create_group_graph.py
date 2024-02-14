@@ -5,8 +5,8 @@ from neo4j import GraphDatabase, Transaction
 
 
 EXCEL_GESN_PATH = "./solution.xls"
-GROUPS_URI = 'neo4j://neo4j_historical:7687'
-# GROUPS_URI = "neo4j://localhost:7685"
+# GROUPS_URI = 'neo4j://neo4j_historical:7687'
+GROUPS_URI = "neo4j://localhost:7688"
 classes = (
     'IfcWall',
     'IfcBeam',
@@ -41,6 +41,7 @@ def add_rel(tx, pred_name: str, flw_name: str):
 
 
 def create_group_graph():
+    print(GROUPS_URI)
     group_driver = GraphDatabase.driver(
         GROUPS_URI,
         auth=("neo4j", "23109900")
@@ -101,4 +102,5 @@ def create_group_graph():
 
 if __name__ == "__main__":
     print(os.getcwd())
+    print("create group graph")
     create_group_graph()

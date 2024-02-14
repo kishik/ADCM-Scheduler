@@ -405,6 +405,52 @@ def saving_typed_edges_with_wbs(session, result):
                                     ).save()
 
 
+def calculateDinsDistance(session, dins):
+    """
+    Запускает проход по всем нодам, не имеющим родителей
+    dins это дины которые нас интересуют в рамках одного отчета
+    :return: dict нодов с их глубиной в графе
+    """
+    distances = {}
+    for node in allDins(session):
+        # if dinParentsByDin(node, session).size > 0:
+        #     continue
+        prohod(start_din=node, distances=distances, session=session, cur_level=0, dins=dins, visited=list())
+    return distances
+
+
+def dinParentsByDin(din, session):
+    """
+    Возвращает всех родителей элемента din
+    :param din:
+    :param session:
+    :return: np.array массив DINов родителей элемента
+    """
+
+    q_data_obtain = """
+    MATCH (c)-[]->(a)
+    WHERE a.DIN = $din
+    RETURN DISTINCT c.DIN AS din
+    """
+    result = session.run(q_data_obtain, din=din).data()
+    dins_arr = np.array([item["din"] for item in result])
+    dins_arr = dins_arr[~np.isin(dins_arr, din)]
+    print(dins_arr)
+    return dins_arr
+
+
+def allDins(session):
+    """
+    Возвращает все ноды
+    :return: список нодов
+    """
+
+    q_data_obtain = '''MATCH (n)
+    RETURN DISTINCT n.DIN AS din'''
+    result = session.run(q_data_obtain).data()
+    return np.array([item["din"] for item in result])
+
+
 if __name__ == "__main__":
     cfg: dict = yml.get_cfg("neo4j")
     url = cfg.get("url")  # NEW_URL

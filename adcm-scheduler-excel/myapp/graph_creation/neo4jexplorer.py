@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class Neo4jExplorer:
-    def __init__(self, uri=None, pswd=None):
+    def __init__(self, uri=None, pswd="23109900"):
         # read settings from config
         self.cfg: dict = yml.get_cfg("neo4j")
         if uri:
@@ -21,7 +21,7 @@ class Neo4jExplorer:
         else:
             _pswd = self.cfg.get("password")
 
-        _user = self.cfg.get("user")
+        _user = "neo4j"
 
         logger.debug(f'Init NEO4J driver: {_uri}')
         self.driver = GraphDatabase.driver(_uri, auth=(_user, _pswd))
@@ -62,21 +62,23 @@ class Neo4jExplorer:
             session.run("MATCH (n) DETACH DELETE n")  # Предварительная очистка базы данных
             session.run(Q_CREATE)
 
-    def hist_graph_copy(self, uri=None):
-        _hist_uri = self.cfg.get("x2_url")
-        _hist_user = self.cfg.get("user")
-        _hist_pass = self.cfg.get("hist_password")
+    def single_graph_copy(self, uri=None):
+        if uri:
+            _hist_uri = uri
+        else:
+            _hist_uri = self.cfg.get("x2_url")
+        _hist_user = "neo4j"
+        # _hist_pass = self.cfg.get("hist_password")
+        _hist_pass = "23109900"
         logger.debug(f'Historical graph copy: {_hist_uri}')
         _hist_driver = GraphDatabase.driver(_hist_uri, auth=(_hist_user, _hist_pass))
         Q_NODES_OBTAIN = """
-        MATCH (n)
+        MATCH (n:Work)
         WHERE n.type = 'start'
         RETURN n.name AS n_name, n.DIN AS n_din
         """
         Q_NODES_CREATE = """
-        MERGE (s:Work {DIN: $n_din, name: $n_name, type: 'start'})
-        MERGE (f:Work {DIN: $n_din, name: $n_name, type: 'finish'})
-        MERGE (s)-[r:EXECUTION {weight: 100}]->(f)
+        MERGE (s:Work {DIN: $n_din, name: $n_name})
         """
         Q_RELS_OBTAIN = """
         MATCH (n)-[r:FOLLOWS]->(m) 
@@ -84,13 +86,13 @@ class Neo4jExplorer:
         """
         Q_RELS_CREATE = """
         MATCH (n:Work)
-        WHERE n.DIN = $n_din AND n.type = 'finish'
+        WHERE n.DIN = $n_din
         MATCH (m:Work)
-        WHERE m.DIN = $m_din AND m.type = 'start'
+        WHERE m.DIN = $m_din
         MERGE (n)-[r:FOLLOWS]->(m)
-        SET r.weight = coalesce(r.weight, 0) + 1;
+        SET r.weight = $wght;
         """
-
+        # SET r.weight = coalesce(r.weight, 0) + 1;
         with _hist_driver.session() as in_session:
             node_df = pd.DataFrame(in_session.run(Q_NODES_OBTAIN).data())
             rel_df = pd.DataFrame(in_session.run(Q_RELS_OBTAIN).data())
@@ -99,8 +101,11 @@ class Neo4jExplorer:
             session.execute_write(utils.clear_database)
             logger.debug("local database cleared")
             node_df.apply(
-                lambda row: session.run(Q_NODES_CREATE, n_din=row["n_din"], n_name=row["n_name"]),
-                axis=1
+                lambda row: session.run(
+                    Q_NODES_CREATE,
+                    n_din=row["n_din"],
+                    n_name=row["n_name"]
+                ), axis=1
             )
 
             rel_df.apply(
@@ -150,14 +155,25 @@ class Neo4jExplorer:
         return result.din.to_numpy()
 
     def create_new_graph_algo(self, target_ids):
-        self.del_loops()
+        # self.del_loops()
         for element in self.get_all_dins():
             if element not in target_ids:
                 self.removing_node(element)
+        self.del_loops()
 
     def del_loops(self):
+        q_del_isolated_pairs = """
+        MATCH (n1)-->(n2)
+        WHERE not ()-->(n1) AND not (n2)-->()
+        DETACH DELETE n1, n2;
+        """
+        q_del_isolated_nodes = """
+        MATCH (n)
+        WHERE NOT ()- -(n)
+        DETACH DELETE n;
+        """
         q_del_4x_loop = """
-        match (n1)-->(n2)-->(n3)-->(n4)-->(n1)-->()
+        match ()-->(n1)-->(n2)-->(n3)-->(n4)-->(n1)-->()
         detach delete n3, n4
         """
         q_del_3x_loop = """
@@ -176,7 +192,8 @@ class Neo4jExplorer:
         self.driver.session().run(q_del_2x_loop)
         self.driver.session().run(q_del_3x_loop)
         self.driver.session().run(q_del_4x_loop)
-        logger.debug("4x loops deleted")
+        self.driver.session().run(q_del_isolated_pairs)
+        self.driver.session().run(q_del_isolated_nodes)
 
 
 if __name__ == "__main__":

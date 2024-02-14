@@ -17,6 +17,8 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 import time
+
+from .gantt.data_collect import allDins, calculateDinsDistance
 from myapp.graph_creation import yml
 from myapp.forms import AddLink, AddNode, UploadFileForm
 from myapp.models import ActiveLink, Link, Project, Task2
@@ -84,6 +86,35 @@ def new_graph(request):
 
 
 def excel_upload(request):
+    def get_nodes():
+        q_storey_wbs2 = """MATCH 
+        (el)-[:FOLLOWS]->(fl) RETURN el.DIN as id, 
+        el.DIN as wbs4_id, el.name as name
+        UNION MATCH 
+        (el)-[:FOLLOWS]->(fl) RETURN fl.DIN as id, 
+        fl.DIN as wbs4_id, fl.name as name
+        """
+        with user_graph.driver.session() as session:
+            nodes = session.run(q_storey_wbs2).data()
+            print(allDins(session))
+            print()
+            # hist_distances = calculate_hist_distance(session)
+            distances = calculateDinsDistance(session, allDins(session))
+            print(distances)
+            print()
+
+        for i in nodes:
+            for k, v in i.items():
+                print(k, v)
+            break
+        #     i.update({
+        #         # "wbs4": self.gesn_to_name.get(i.get("wbs4_id")),
+        #         "distance": distances.get(i.get("id")),
+        #     })
+        # nodes.sort(key=lambda el: el["distance"])
+        # return nodes
+
+
     if request.method == "POST":
         path = request.FILES['excel_file']
         # data_raw = pd.read_excel(path, dtype=str, skiprows=7)
@@ -163,11 +194,9 @@ def excel_upload(request):
         request,
         "myapp/excel.html",
         {
-                "uploading": 'excel',
+            "uploading": 'excel',
         }
     )
-
-
 
 
 def projects(request):
@@ -187,8 +216,8 @@ def projects(request):
         project.modelId = None
 
     form = FileFieldForm()
-    return render(request, "myapp/projects.html", {"projects": projects, "project": project.projectId, "form": form, 'link': VIEWER_URL})
-
+    return render(request, "myapp/projects.html",
+                  {"projects": projects, "project": project.projectId, "form": form, 'link': VIEWER_URL})
 
 
 def adcm_projects(request):
@@ -266,7 +295,7 @@ def project_edit(request, id):
             return render(request, "myapp/project_edit.html", {"project": project})
     except project.DoesNotExist:
         return HttpResponseNotFound("<h2>project not found</h2>")
-    
+
 
 def project_delete(request, id):
     """
@@ -285,7 +314,7 @@ def project_delete(request, id):
         return HttpResponseRedirect("/projects/")
     except project.DoesNotExist:
         return HttpResponseNotFound("<h2>Проект не найден</h2>")
-    
+
 
 @csrf_exempt
 def upload(request):
@@ -383,7 +412,7 @@ def volumes(request, project_id):
         data[i]['wbs'] = f"{data[i]['wbs1']}{data[i]['wbs4_id']}"
     for i in range(len(data)):
         if data[i]['distance'] is None:
-            data[i]['distance'] = 0 
+            data[i]['distance'] = 0
     for i in range(len(data)):
         data[i] = {k: (str(0) if v is None else v) for k, v in data[i].items()}
     global graph_data
@@ -401,19 +430,25 @@ def volumes(request, project_id):
             wbs[node['wbs1']][node['wbs2']][node['wbs3']] = {}
 
         if node['wbs4'] not in wbs[node['wbs1']][node['wbs2']][node['wbs3']]:
-                wbs[node['wbs1']][node['wbs2']][node['wbs3']][node['wbs4']] = []
+            wbs[node['wbs1']][node['wbs2']][node['wbs3']][node['wbs4']] = []
 
         wbs[node['wbs1']][node['wbs2']][node['wbs3']][node['wbs4']].append(node)
-    
+
     final = []
     for el in sorted(wbs):
-        final.append({'id':'', 'wbs1':el, 'wbs2': '', 'wbs3':'', 'wbs4_id':'', 'wbs4':'', 'name':'', 'distance':''})
+        final.append(
+            {'id': '', 'wbs1': el, 'wbs2': '', 'wbs3': '', 'wbs4_id': '', 'wbs4': '', 'name': '', 'distance': ''})
         for subel in sorted(wbs[el]):
-            final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3':'', 'wbs4_id':'', 'wbs4':'', 'name':'', 'distance':''})
+            final.append({'id': '', 'wbs1': el, 'wbs2': subel, 'wbs3': '', 'wbs4_id': '', 'wbs4': '', 'name': '',
+                          'distance': ''})
             for miniel in sorted(wbs[el][subel]):
-                final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3':miniel, 'wbs4_id':'', 'wbs4':'', 'name':'', 'distance':''})
+                final.append(
+                    {'id': '', 'wbs1': el, 'wbs2': subel, 'wbs3': miniel, 'wbs4_id': '', 'wbs4': '', 'name': '',
+                     'distance': ''})
                 for picoel in sorted(wbs[el][subel][miniel]):
-                    final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3':miniel, 'wbs4_id':'', 'wbs4':picoel, 'name':'', 'distance':''})
+                    final.append(
+                        {'id': '', 'wbs1': el, 'wbs2': subel, 'wbs3': miniel, 'wbs4_id': '', 'wbs4': picoel, 'name': '',
+                         'distance': ''})
                     for nanoel in wbs[el][subel][miniel][picoel]:
                         final.append(nanoel)
 
@@ -426,8 +461,8 @@ def volumes(request, project_id):
             last_lvl[3] = 0
             last_lvl[4] = 0
             print(f'lvl1 {last_lvl[0]}')
-            final[i].update({'lvl1':last_lvl[0], 'lvl2':'', 'lvl3':'', 'lvl4':'', 'lvl5':'',
-                            'p_lvl1':'', 'p_lvl2':'', 'p_lvl3':'', 'p_lvl4':'', 'p_lvl5':''})
+            final[i].update({'lvl1': last_lvl[0], 'lvl2': '', 'lvl3': '', 'lvl4': '', 'lvl5': '',
+                             'p_lvl1': '', 'p_lvl2': '', 'p_lvl3': '', 'p_lvl4': '', 'p_lvl5': ''})
             continue
         elif not el['wbs3']:
             last_lvl[1] += 1
@@ -435,30 +470,33 @@ def volumes(request, project_id):
             last_lvl[3] = 0
             last_lvl[4] = 0
             print(f'lvl2 {last_lvl[0]} {last_lvl[1]}')
-            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':'', 'lvl4':'', 'lvl5':'',
-                            'p_lvl1':last_lvl[0], 'p_lvl2':'', 'p_lvl3':'', 'p_lvl4':'', 'p_lvl5':''})
+            final[i].update({'lvl1': last_lvl[0], 'lvl2': last_lvl[1], 'lvl3': '', 'lvl4': '', 'lvl5': '',
+                             'p_lvl1': last_lvl[0], 'p_lvl2': '', 'p_lvl3': '', 'p_lvl4': '', 'p_lvl5': ''})
             continue
         elif not el['wbs4_id']:
             last_lvl[2] += 1
             last_lvl[3] = 0
             last_lvl[4] = 0
             print(f'lvl3 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]}')
-            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':'', 'lvl5':'',
-                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':'', 'p_lvl4':'', 'p_lvl5':''})
+            final[i].update({'lvl1': last_lvl[0], 'lvl2': last_lvl[1], 'lvl3': last_lvl[2], 'lvl4': '', 'lvl5': '',
+                             'p_lvl1': last_lvl[0], 'p_lvl2': last_lvl[1], 'p_lvl3': '', 'p_lvl4': '', 'p_lvl5': ''})
             continue
         elif not el['id']:
             last_lvl[3] += 1
             last_lvl[4] = 0
             print(f'lvl4 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]} {last_lvl[3]}')
-            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':last_lvl[3], 'lvl5':'',
-                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':last_lvl[2], 'p_lvl4':'', 'p_lvl5':''})
+            final[i].update(
+                {'lvl1': last_lvl[0], 'lvl2': last_lvl[1], 'lvl3': last_lvl[2], 'lvl4': last_lvl[3], 'lvl5': '',
+                 'p_lvl1': last_lvl[0], 'p_lvl2': last_lvl[1], 'p_lvl3': last_lvl[2], 'p_lvl4': '', 'p_lvl5': ''})
             continue
         else:
             last_lvl[4] += 1
             print(f'lvl4 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]} {last_lvl[3]} {last_lvl[4]}')
-            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':last_lvl[3], 'lvl5':last_lvl[4],
-                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':last_lvl[2], 'p_lvl4':last_lvl[3], 'p_lvl5':''})
-            
+            final[i].update({'lvl1': last_lvl[0], 'lvl2': last_lvl[1], 'lvl3': last_lvl[2], 'lvl4': last_lvl[3],
+                             'lvl5': last_lvl[4],
+                             'p_lvl1': last_lvl[0], 'p_lvl2': last_lvl[1], 'p_lvl3': last_lvl[2], 'p_lvl4': last_lvl[3],
+                             'p_lvl5': ''})
+
     text = ''
     for el in final:
         if el['lvl2'] == '':
@@ -525,7 +563,7 @@ def adcm_volumes(request, project_id):
         data[i]['wbs'] = f"{data[i]['wbs1']}{data[i]['wbs4_id']}"
     for i in range(len(data)):
         if data[i]['distance'] is None:
-            data[i]['distance'] = 0 
+            data[i]['distance'] = 0
     for i in range(len(data)):
         data[i] = {k: (str(0) if v is None else v) for k, v in data[i].items()}
     global graph_data
@@ -543,19 +581,25 @@ def adcm_volumes(request, project_id):
             wbs[node['wbs1']][node['wbs2']][node['wbs3']] = {}
 
         if node['wbs4'] not in wbs[node['wbs1']][node['wbs2']][node['wbs3']]:
-                wbs[node['wbs1']][node['wbs2']][node['wbs3']][node['wbs4']] = []
+            wbs[node['wbs1']][node['wbs2']][node['wbs3']][node['wbs4']] = []
 
         wbs[node['wbs1']][node['wbs2']][node['wbs3']][node['wbs4']].append(node)
-    
+
     final = []
     for el in sorted(wbs):
-        final.append({'id':'', 'wbs1':el, 'wbs2': '', 'wbs3':'', 'wbs4_id':'', 'wbs4':'', 'name':'', 'distance':''})
+        final.append(
+            {'id': '', 'wbs1': el, 'wbs2': '', 'wbs3': '', 'wbs4_id': '', 'wbs4': '', 'name': '', 'distance': ''})
         for subel in sorted(wbs[el]):
-            final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3':'', 'wbs4_id':'', 'wbs4':'', 'name':'', 'distance':''})
+            final.append({'id': '', 'wbs1': el, 'wbs2': subel, 'wbs3': '', 'wbs4_id': '', 'wbs4': '', 'name': '',
+                          'distance': ''})
             for miniel in sorted(wbs[el][subel]):
-                final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3':miniel, 'wbs4_id':'', 'wbs4':'', 'name':'', 'distance':''})
+                final.append(
+                    {'id': '', 'wbs1': el, 'wbs2': subel, 'wbs3': miniel, 'wbs4_id': '', 'wbs4': '', 'name': '',
+                     'distance': ''})
                 for picoel in sorted(wbs[el][subel][miniel]):
-                    final.append({'id':'', 'wbs1':el, 'wbs2': subel, 'wbs3':miniel, 'wbs4_id':'', 'wbs4':picoel, 'name':'', 'distance':''})
+                    final.append(
+                        {'id': '', 'wbs1': el, 'wbs2': subel, 'wbs3': miniel, 'wbs4_id': '', 'wbs4': picoel, 'name': '',
+                         'distance': ''})
                     for nanoel in wbs[el][subel][miniel][picoel]:
                         final.append(nanoel)
 
@@ -568,8 +612,8 @@ def adcm_volumes(request, project_id):
             last_lvl[3] = 0
             last_lvl[4] = 0
             print(f'lvl1 {last_lvl[0]}')
-            final[i].update({'lvl1':last_lvl[0], 'lvl2':'', 'lvl3':'', 'lvl4':'', 'lvl5':'',
-                            'p_lvl1':'', 'p_lvl2':'', 'p_lvl3':'', 'p_lvl4':'', 'p_lvl5':''})
+            final[i].update({'lvl1': last_lvl[0], 'lvl2': '', 'lvl3': '', 'lvl4': '', 'lvl5': '',
+                             'p_lvl1': '', 'p_lvl2': '', 'p_lvl3': '', 'p_lvl4': '', 'p_lvl5': ''})
             continue
         elif not el['wbs3']:
             last_lvl[1] += 1
@@ -577,30 +621,33 @@ def adcm_volumes(request, project_id):
             last_lvl[3] = 0
             last_lvl[4] = 0
             print(f'lvl2 {last_lvl[0]} {last_lvl[1]}')
-            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':'', 'lvl4':'', 'lvl5':'',
-                            'p_lvl1':last_lvl[0], 'p_lvl2':'', 'p_lvl3':'', 'p_lvl4':'', 'p_lvl5':''})
+            final[i].update({'lvl1': last_lvl[0], 'lvl2': last_lvl[1], 'lvl3': '', 'lvl4': '', 'lvl5': '',
+                             'p_lvl1': last_lvl[0], 'p_lvl2': '', 'p_lvl3': '', 'p_lvl4': '', 'p_lvl5': ''})
             continue
         elif not el['wbs4_id']:
             last_lvl[2] += 1
             last_lvl[3] = 0
             last_lvl[4] = 0
             print(f'lvl3 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]}')
-            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':'', 'lvl5':'',
-                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':'', 'p_lvl4':'', 'p_lvl5':''})
+            final[i].update({'lvl1': last_lvl[0], 'lvl2': last_lvl[1], 'lvl3': last_lvl[2], 'lvl4': '', 'lvl5': '',
+                             'p_lvl1': last_lvl[0], 'p_lvl2': last_lvl[1], 'p_lvl3': '', 'p_lvl4': '', 'p_lvl5': ''})
             continue
         elif not el['id']:
             last_lvl[3] += 1
             last_lvl[4] = 0
             print(f'lvl4 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]} {last_lvl[3]}')
-            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':last_lvl[3], 'lvl5':'',
-                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':last_lvl[2], 'p_lvl4':'', 'p_lvl5':''})
+            final[i].update(
+                {'lvl1': last_lvl[0], 'lvl2': last_lvl[1], 'lvl3': last_lvl[2], 'lvl4': last_lvl[3], 'lvl5': '',
+                 'p_lvl1': last_lvl[0], 'p_lvl2': last_lvl[1], 'p_lvl3': last_lvl[2], 'p_lvl4': '', 'p_lvl5': ''})
             continue
         else:
             last_lvl[4] += 1
             print(f'lvl4 {last_lvl[0]} {last_lvl[1]} {last_lvl[2]} {last_lvl[3]} {last_lvl[4]}')
-            final[i].update({'lvl1':last_lvl[0], 'lvl2':last_lvl[1], 'lvl3':last_lvl[2], 'lvl4':last_lvl[3], 'lvl5':last_lvl[4],
-                            'p_lvl1':last_lvl[0], 'p_lvl2':last_lvl[1], 'p_lvl3':last_lvl[2], 'p_lvl4':last_lvl[3], 'p_lvl5':''})
-            
+            final[i].update({'lvl1': last_lvl[0], 'lvl2': last_lvl[1], 'lvl3': last_lvl[2], 'lvl4': last_lvl[3],
+                             'lvl5': last_lvl[4],
+                             'p_lvl1': last_lvl[0], 'p_lvl2': last_lvl[1], 'p_lvl3': last_lvl[2], 'p_lvl4': last_lvl[3],
+                             'p_lvl5': ''})
+
     text = ''
     for el in final:
         if el['lvl2'] == '':
@@ -693,61 +740,73 @@ def schedule(request):
         if node['wbs1'] not in wbs.keys():
             wbs[node['wbs1']] = {}
             Task2(
-                    id=node['wbs1'],
-                    text=node['wbs1'],
-                    # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']])),
-                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']]) + 1)
-                    # duration = max([distances[din] for din in result[wbs1]])
-                    # duration=1
-                    
-                ).save()
+                id=node['wbs1'],
+                text=node['wbs1'],
+                # min(start_date of levels)
+                start_date=datetime.today() + timedelta(
+                    days=min([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']])),
+                end_date=datetime.today() + timedelta(
+                    days=max([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']]) + 1)
+                # duration = max([distances[din] for din in result[wbs1]])
+                # duration=1
+
+            ).save()
         if node['wbs2'] not in wbs[node['wbs1']].keys():
             wbs[node['wbs1']][node['wbs2']] = {}
             Task2(
-                    id=f"{node['wbs1']}{node['wbs2']}",
-                    text=node['wbs2'],
-                    # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])])),
-                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])]) + 1),
-                    # duration = max([distances[din] for din in result[wbs1]])
-                    # duration=1,
-                    parent=node['wbs1']
-                ).save()
+                id=f"{node['wbs1']}{node['wbs2']}",
+                text=node['wbs2'],
+                # min(start_date of levels)
+                start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])])),
+                end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])]) + 1),
+                # duration = max([distances[din] for din in result[wbs1]])
+                # duration=1,
+                parent=node['wbs1']
+            ).save()
         if node['wbs3'] not in wbs[node['wbs1']][node['wbs2']]:
             wbs[node['wbs1']][node['wbs2']][node['wbs3']] = []
             Task2(
-                    id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}",
-                    text=f"{node['wbs3']}",
-                    # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'])])),
-                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'])]) + 1),
-                    # duration = max([distances[din] for din in result[wbs1]])
-                    # duration=1,
-                    parent=f"{node['wbs1']}{node['wbs2']}"
-                ).save()
+                id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}",
+                text=f"{node['wbs3']}",
+                # min(start_date of levels)
+                start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
+                        'wbs3'])])),
+                end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
+                        'wbs3'])]) + 1),
+                # duration = max([distances[din] for din in result[wbs1]])
+                # duration=1,
+                parent=f"{node['wbs1']}{node['wbs2']}"
+            ).save()
         if node['wbs4'] not in wbs[node['wbs1']][node['wbs2']][node['wbs3']]:
             wbs[node['wbs1']][node['wbs2']][node['wbs3']].append(node['wbs4'])
             Task2(
-                    id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}",
-                    text=f"({node['wbs4_id']}) {node['wbs4']}",
-                    # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and el['wbs4'] == node['wbs4'])])),
-                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and el['wbs4'] == node['wbs4'])]) + 1),
-                    # duration = max([distances[din] for din in result[wbs1]])
-                    # duration=1,
-                    parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}"
-                ).save()    
+                id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}",
+                text=f"({node['wbs4_id']}) {node['wbs4']}",
+                # min(start_date of levels)
+                start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
+                            el['wbs4'] == node['wbs4'])])),
+                end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
+                            el['wbs4'] == node['wbs4'])]) + 1),
+                # duration = max([distances[din] for din in result[wbs1]])
+                # duration=1,
+                parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}"
+            ).save()
 
         Task2(
-                id=f"{node['id']}",
-                text=node['name'],
-                # min(start_date of levels)
-                start_date=datetime.today() + timedelta(days=node['distance']),
-                # duration = max([distances[din] for din in result[wbs1]])
-                duration=1,
-                parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}"
-            ).save()
+            id=f"{node['id']}",
+            text=node['name'],
+            # min(start_date of levels)
+            start_date=datetime.today() + timedelta(days=node['distance']),
+            # duration = max([distances[din] for din in result[wbs1]])
+            duration=1,
+            parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}"
+        ).save()
     project_id = request.session["project_id"]
     project = Project.objects.get(id=project_id)
     response = requests.get(f'http://viewer:8070/links/{project.name}/')
@@ -777,61 +836,73 @@ def adcm_schedule(request):
         if node['wbs1'] not in wbs.keys():
             wbs[node['wbs1']] = {}
             Task2(
-                    id=node['wbs1'],
-                    text=node['wbs1'],
-                    # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']])),
-                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']]) + 1)
-                    # duration = max([distances[din] for din in result[wbs1]])
-                    # duration=1
-                    
-                ).save()
+                id=node['wbs1'],
+                text=node['wbs1'],
+                # min(start_date of levels)
+                start_date=datetime.today() + timedelta(
+                    days=min([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']])),
+                end_date=datetime.today() + timedelta(
+                    days=max([el['distance'] for el in graph_data if el['wbs1'] == node['wbs1']]) + 1)
+                # duration = max([distances[din] for din in result[wbs1]])
+                # duration=1
+
+            ).save()
         if node['wbs2'] not in wbs[node['wbs1']].keys():
             wbs[node['wbs1']][node['wbs2']] = {}
             Task2(
-                    id=f"{node['wbs1']}{node['wbs2']}",
-                    text=node['wbs2'],
-                    # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])])),
-                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])]) + 1),
-                    # duration = max([distances[din] for din in result[wbs1]])
-                    # duration=1,
-                    parent=node['wbs1']
-                ).save()
+                id=f"{node['wbs1']}{node['wbs2']}",
+                text=node['wbs2'],
+                # min(start_date of levels)
+                start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])])),
+                end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])]) + 1),
+                # duration = max([distances[din] for din in result[wbs1]])
+                # duration=1,
+                parent=node['wbs1']
+            ).save()
         if node['wbs3'] not in wbs[node['wbs1']][node['wbs2']]:
             wbs[node['wbs1']][node['wbs2']][node['wbs3']] = []
             Task2(
-                    id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}",
-                    text=f"{node['wbs3']}",
-                    # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'])])),
-                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'])]) + 1),
-                    # duration = max([distances[din] for din in result[wbs1]])
-                    # duration=1,
-                    parent=f"{node['wbs1']}{node['wbs2']}"
-                ).save()
+                id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}",
+                text=f"{node['wbs3']}",
+                # min(start_date of levels)
+                start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
+                        'wbs3'])])),
+                end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
+                        'wbs3'])]) + 1),
+                # duration = max([distances[din] for din in result[wbs1]])
+                # duration=1,
+                parent=f"{node['wbs1']}{node['wbs2']}"
+            ).save()
         if node['wbs4'] not in wbs[node['wbs1']][node['wbs2']][node['wbs3']]:
             wbs[node['wbs1']][node['wbs2']][node['wbs3']].append(node['wbs4'])
             Task2(
-                    id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}",
-                    text=f"({node['wbs4_id']}) {node['wbs4']}",
-                    # min(start_date of levels)
-                    start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and el['wbs4'] == node['wbs4'])])),
-                    end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and el['wbs4'] == node['wbs4'])]) + 1),
-                    # duration = max([distances[din] for din in result[wbs1]])
-                    # duration=1,
-                    parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}"
-                ).save()    
+                id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}",
+                text=f"({node['wbs4_id']}) {node['wbs4']}",
+                # min(start_date of levels)
+                start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
+                            el['wbs4'] == node['wbs4'])])),
+                end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
+                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
+                            el['wbs4'] == node['wbs4'])]) + 1),
+                # duration = max([distances[din] for din in result[wbs1]])
+                # duration=1,
+                parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}"
+            ).save()
 
         Task2(
-                id=f"{node['id']}",
-                text=node['name'],
-                # min(start_date of levels)
-                start_date=datetime.today() + timedelta(days=node['distance']),
-                # duration = max([distances[din] for din in result[wbs1]])
-                duration=1,
-                parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}"
-            ).save()
+            id=f"{node['id']}",
+            text=node['name'],
+            # min(start_date of levels)
+            start_date=datetime.today() + timedelta(days=node['distance']),
+            # duration = max([distances[din] for din in result[wbs1]])
+            duration=1,
+            parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}"
+        ).save()
     project_id = request.session["project_id"]
     # project = Project.objects.get(id=project_id)
     response = requests.get(f'http://viewer:8070/links/{project_id}/')
