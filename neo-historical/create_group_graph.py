@@ -5,8 +5,8 @@ from neo4j import GraphDatabase, Transaction
 
 
 EXCEL_GESN_PATH = "./solution.xls"
-# GROUPS_URI = 'neo4j://neo4j_historical:7687'
-GROUPS_URI = "neo4j://localhost:7688"
+GROUPS_URI = 'neo4j://neo4j_historical:7687'
+# GROUPS_URI = "neo4j://localhost:7688"
 classes = (
     'IfcWall',
     'IfcBeam',

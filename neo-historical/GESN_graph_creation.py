@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 pd.options.mode.chained_assignment = None
 
-# GROUPS_URI = 'neo4j://neo4j_historical:7687'
-GROUPS_URI = 'neo4j://localhost:7688'
+GROUPS_URI = 'neo4j://neo4j_historical:7687'
+# GROUPS_URI = 'neo4j://localhost:7688'
 
 
 def read_graph_data(file_name: str) -> pd.DataFrame:
