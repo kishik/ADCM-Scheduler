@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 pd.options.mode.chained_assignment = None
 
-GROUPS_URI = 'neo4j://neo4j_historical:7687'
-# GROUPS_URI = 'neo4j://localhost:7688'
+# GROUPS_URI = 'neo4j://neo4j_historical:7687'
+GROUPS_URI = 'neo4j://localhost:7688'
 
 
 def read_graph_data(file_name: str) -> pd.DataFrame:
@@ -77,6 +77,41 @@ def clear_database(tx: Transaction):
     tx.run("MATCH (n) DETACH DELETE n;")
 
 
+def del_loops(tx: Transaction):
+    q_del_isolated_pairs = """
+    MATCH (n1)-->(n2)
+    WHERE not ()-->(n1) AND not (n2)-->()
+    DETACH DELETE n1, n2;
+    """
+    q_del_isolated_nodes = """
+    MATCH (n)
+    WHERE NOT ()- -(n)
+    DETACH DELETE n;
+    """
+    q_del_4x_loop = """
+    match ()-->(n1)-->(n2)-->(n3)-->(n4)-->(n1)-->()
+    detach delete n3, n4
+    """
+    q_del_3x_loop = """
+    match (b)<-[r]-(a)-[]->(c)-[]->(b)
+    delete r
+    """
+    q_del_2x_loop = """
+    match (x)-[]->(y)-[]->(x)
+    detach delete y
+    """
+    q_del_1x_loop = """
+    match (x)-[r]->(x)
+    delete r
+    """
+    tx.run(q_del_1x_loop)
+    tx.run(q_del_2x_loop)
+    tx.run(q_del_3x_loop)
+    tx.run(q_del_4x_loop)
+    tx.run(q_del_isolated_pairs)
+    tx.run(q_del_isolated_nodes)
+
+
 def main(location):
     logger.debug('Starting MAIN....')
     df = read_graph_data(location)
@@ -88,34 +123,9 @@ def main(location):
     )
     with driver.session() as session:
         logger.debug('Inside Driver Session....')
-        # session.execute_write(clear_database)
+        session.execute_write(clear_database)
         session.execute_write(make_graph, df)
-        session.run(
-            "MATCH (n1)-[:EXECUTION]->(n2) "
-            "WHERE not ()-->(n1) AND not (n2)-->() "
-            "DETACH DELETE n1, n2"
-        )
-        q_del_4x_loop = """
-                match (n1:Work)-->(n2:Work)-->(n3:Work)-->(n4:Work)-->(n1:Work)-->()
-                detach delete n3, n4
-                """
-        q_del_3x_loop = """
-                match (b:Work)<-[r]-(a:Work)-[]->(c:Work)-[]->(b:Work)
-                delete r
-                """
-        q_del_2x_loop = """
-                match (x:Work)-[]->(y:Work)-[]->(x:Work)
-                detach delete y
-                """
-        q_del_1x_loop = """
-                match (x:Work)-[r]->(x:Work)
-                delete r
-                """
-        session.run(q_del_1x_loop)
-        session.run(q_del_2x_loop)
-        session.run(q_del_3x_loop)
-        session.run(q_del_4x_loop)
-        logger.debug("4x loops deleted")
+        session.execute_write(del_loops)
     driver.close()
 
 
