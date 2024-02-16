@@ -26,6 +26,7 @@ path_to_explorer = dict()
 
 @app.post("/")
 async def deploy_project(project: Project):
+    os.chdir('/app/')
     k = project.link
     # match = re.search(r'd/.*/view', str(k)) 
     # print(match[0][2:-5] if match else 'Not found')
@@ -71,6 +72,7 @@ async def get_links(project_name: str):
 
 @app.get("/copy/{project_id}")
 async def load_project(project_id: int):
+    os.chdir('/app/')
     if os.path.isdir(f'{project_id}'):
         shutil.rmtree(f'{project_id}')
     if os.path.isdir(f'./xeokit-bim-viewer-app/data/projects/{project_id}/'):    
