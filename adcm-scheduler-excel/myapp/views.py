@@ -114,7 +114,6 @@ def excel_upload(request):
         # nodes.sort(key=lambda el: el["distance"])
         # return nodes
 
-
     if request.method == "POST":
         path = request.FILES['excel_file']
         # data_raw = pd.read_excel(path, dtype=str, skiprows=7)
@@ -137,7 +136,7 @@ def excel_upload(request):
         time_now = datetime.now()
         try:
             # graph_copy(driver_hist.session(), driver_user.session())
-            neo4jexplorer.Neo4jExplorer().hist_graph_copy()
+            neo4jexplorer.Neo4jExplorer().single_graph_copy()
         except Exception as e:
             print("views.py 402", e.args)
         # переделать под series pandas
@@ -758,9 +757,9 @@ def schedule(request):
                 text=node['wbs2'],
                 # min(start_date of levels)
                 start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])])),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])])),
                 end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])]) + 1),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])]) + 1),
                 # duration = max([distances[din] for din in result[wbs1]])
                 # duration=1,
                 parent=node['wbs1']
@@ -772,11 +771,11 @@ def schedule(request):
                 text=f"{node['wbs3']}",
                 # min(start_date of levels)
                 start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
-                        'wbs3'])])),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
+                    'wbs3'])])),
                 end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
-                        'wbs3'])]) + 1),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
+                    'wbs3'])]) + 1),
                 # duration = max([distances[din] for din in result[wbs1]])
                 # duration=1,
                 parent=f"{node['wbs1']}{node['wbs2']}"
@@ -788,11 +787,11 @@ def schedule(request):
                 text=f"({node['wbs4_id']}) {node['wbs4']}",
                 # min(start_date of levels)
                 start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
-                            el['wbs4'] == node['wbs4'])])),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
+                        el['wbs4'] == node['wbs4'])])),
                 end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
-                            el['wbs4'] == node['wbs4'])]) + 1),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
+                        el['wbs4'] == node['wbs4'])]) + 1),
                 # duration = max([distances[din] for din in result[wbs1]])
                 # duration=1,
                 parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}"
@@ -854,9 +853,9 @@ def adcm_schedule(request):
                 text=node['wbs2'],
                 # min(start_date of levels)
                 start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])])),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])])),
                 end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])]) + 1),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'])]) + 1),
                 # duration = max([distances[din] for din in result[wbs1]])
                 # duration=1,
                 parent=node['wbs1']
@@ -868,11 +867,11 @@ def adcm_schedule(request):
                 text=f"{node['wbs3']}",
                 # min(start_date of levels)
                 start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
-                        'wbs3'])])),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
+                    'wbs3'])])),
                 end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
-                        'wbs3'])]) + 1),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node[
+                    'wbs3'])]) + 1),
                 # duration = max([distances[din] for din in result[wbs1]])
                 # duration=1,
                 parent=f"{node['wbs1']}{node['wbs2']}"
@@ -884,11 +883,11 @@ def adcm_schedule(request):
                 text=f"({node['wbs4_id']}) {node['wbs4']}",
                 # min(start_date of levels)
                 start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
-                            el['wbs4'] == node['wbs4'])])),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
+                        el['wbs4'] == node['wbs4'])])),
                 end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
-                            el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
-                            el['wbs4'] == node['wbs4'])]) + 1),
+                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
+                        el['wbs4'] == node['wbs4'])]) + 1),
                 # duration = max([distances[din] for din in result[wbs1]])
                 # duration=1,
                 parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}"

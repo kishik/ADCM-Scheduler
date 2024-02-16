@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 pd.options.mode.chained_assignment = None
 
-# GROUPS_URI = 'neo4j://neo4j_historical:7687'
-GROUPS_URI = 'neo4j://localhost:7688'
+GROUPS_URI = 'neo4j://neo4j_historical:7687'
+# GROUPS_URI = 'neo4j://localhost:7688'
 
 
 def read_graph_data(file_name: str) -> pd.DataFrame:
@@ -44,9 +44,11 @@ def make_graph(tx: Transaction, data: pd.DataFrame):
 
 def add_node(tx: Transaction, din: str, name: str) -> None:
     Q_CREATE_NODE = '''
-        MERGE (s:Work {DIN: $n_din, name: $n_name, type: 'start'})
-        MERGE (f:Work {DIN: $n_din, name: $n_name, type: 'finish'})
-        MERGE (s)-[r:EXECUTION {weight: 100}]->(f)
+        MERGE (s:Work {DIN: $n_din, type: 'start'})
+        SET s.name = $n_name
+        MERGE (f:Work {DIN: $n_din, type: 'finish'})
+        SET f.name = $n_name
+        MERGE (s)-[r:EXECUTION {weight: 100}]->(f);
         '''
     tx.run(Q_CREATE_NODE, n_din=din, n_name=name)
 
