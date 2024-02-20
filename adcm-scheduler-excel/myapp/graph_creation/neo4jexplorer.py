@@ -3,6 +3,7 @@ import logging
 import pandas as pd
 from neo4j import GraphDatabase
 
+from gantt.data_collect import calculateDinsDistance, allDins
 from myapp.graph_creation import utils, yml
 
 logger = logging.getLogger(__name__)
@@ -194,6 +195,36 @@ class Neo4jExplorer:
         self.driver.session().run(q_del_4x_loop)
         self.driver.session().run(q_del_isolated_pairs)
         self.driver.session().run(q_del_isolated_nodes)
+
+    def get_nodes(self, df: pd.DataFrame) -> list[dict]:
+        q_nodes = """MATCH 
+        (el)-[:FOLLOWS]->(fl) RETURN el.DIN as id, el.name as name
+        UNION MATCH 
+        (el)-[:FOLLOWS]->(fl) RETURN fl.DIN as id, fl.name as name
+        """
+        with self.driver.session() as session:
+            nodes = session.run(q_nodes).data()
+            distances = calculateDinsDistance(session, allDins(session))
+
+        for i in nodes:
+            i.update({
+                "wbs1": df.loc[df['Шифр'] == i.get("id"), 'СПП'].values[0],
+                "wbs2": df.loc[df['Шифр'] == i.get("id"), 'Проект'].values[0],
+                "wbs3": df.loc[df['Шифр'] == i.get("id"), 'Наименование локальной сметы'].values[0],
+                "distance": distances.get(i.get("id")),
+            })
+        nodes.sort(key=lambda el: el["distance"])
+        return nodes
+
+    def get_edges(self):
+        query = """
+        MATCH (el)-[:FOLLOWS]->(flw) 
+        RETURN el.DIN as source, flw.DIN as target
+        """
+        edges = self.driver.session().run(query).data()
+        for edge in edges:
+            edge.update({"type": "0", "lag": 0})
+        return edges
 
 
 if __name__ == "__main__":

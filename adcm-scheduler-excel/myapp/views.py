@@ -1,32 +1,26 @@
-import os
+import json
+import logging
 import re
 from datetime import datetime, timedelta
-import logging
-import json
-import pickle
+
 import pandas as pd
 import requests
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, JsonResponse, FileResponse
+from django.http import HttpResponseNotFound, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import DetailView, UpdateView
 from django.views.generic.edit import FormView
-from neo4j import GraphDatabase
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-import time
 
-from .gantt.data_collect import allDins, calculateDinsDistance
-from myapp.graph_creation import yml
 from myapp.forms import AddLink, AddNode, UploadFileForm
+from myapp.graph_creation import yml
 from myapp.models import ActiveLink, Link, Project, Task2
 from myapp.serializers import LinkSerializer, TaskSerializer
 from .forms import FileFieldForm
 from .gantt import data_collect, net_hierarhy
 from .graph_creation import add, neo4jexplorer
-from .graph_creation.graph_copy import graph_copy
 
 logger = logging.getLogger(__name__)
 cfg: dict = yml.get_cfg("neo4j")
@@ -86,85 +80,49 @@ def new_graph(request):
 
 
 def excel_upload(request):
-    def get_nodes():
-        q_storey_wbs2 = """MATCH 
-        (el)-[:FOLLOWS]->(fl) RETURN el.DIN as id, 
-        el.DIN as wbs4_id, el.name as name
-        UNION MATCH 
-        (el)-[:FOLLOWS]->(fl) RETURN fl.DIN as id, 
-        fl.DIN as wbs4_id, fl.name as name
-        """
-        with user_graph.driver.session() as session:
-            nodes = session.run(q_storey_wbs2).data()
-            print(allDins(session))
-            print()
-            # hist_distances = calculate_hist_distance(session)
-            distances = calculateDinsDistance(session, allDins(session))
-            print(distances)
-            print()
-
-        for i in nodes:
-            for k, v in i.items():
-                print(k, v)
-            break
-        #     i.update({
-        #         # "wbs4": self.gesn_to_name.get(i.get("wbs4_id")),
-        #         "distance": distances.get(i.get("id")),
-        #     })
-        # nodes.sort(key=lambda el: el["distance"])
-        # return nodes
-
     if request.method == "POST":
         path = request.FILES['excel_file']
-        # data_raw = pd.read_excel(path, dtype=str, skiprows=7)
-        data_raw = pd.read_excel(
+        d_js = pd.read_excel(
             path,
             dtype=str,
-            # usecols="A:F"
-            # skiprows=[0, 1, 2, 3],
-            # index_col=3,
         )
-        # data_raw = data_raw[data_raw["Шифр"].str.startswith("1.") == False]
-        # data_raw = data_raw[data_raw["Шифр"].str.startswith("ОКЦ") == False]
-        # info = 'Проект,Смета,Шифр,НаименованиеПолное'
-        # data = data_raw
 
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
-        driver_hist = GraphDatabase.driver(X2_URL, auth=(USER, PASS))
-        driver_user = GraphDatabase.driver(URL, auth=(USER, PASS))
-        # тут ресторю в свой граф из эксель
-        time_now = datetime.now()
         try:
-            # graph_copy(driver_hist.session(), driver_user.session())
-            neo4jexplorer.Neo4jExplorer().single_graph_copy()
+            user_graph.single_graph_copy()
         except Exception as e:
             print("views.py 402", e.args)
-        # переделать под series pandas
 
-        d = data_raw
-        # logger.debug(set(d['Шифр'].unique()))
-        user_graph.create_new_graph_algo(set(d['Шифр'].unique()))
-        d_js = pd.DataFrame()
-        # d_js[['wbs', 'wbs2', 'wbs3_id', 'name']] = d[['Проект','Смета', 'Шифр', 'НаименованиеПолное' ]]
-        d_js['СПП'] = d['СПП']
-        d_js['wbs1'] = d['Проект']
-        d_js['№ локальной сметы'] = d['№ локальной сметы']
-        d_js['wbs2'] = d['Наименование локальной сметы']
-        d_js['Пункт'] = d['№ п/п']
-        d_js['wbs3_id'] = d['Шифр']
-        d_js['wbs3'] = d['Шифр']
-        d_js['Код'] = d['Код']
-        d_js['name'] = d['Строка сметы']
-        d_js['wbs'] = d[['Наименование локальной сметы', '№ п/п']].apply(
+        user_graph.create_new_graph_algo(set(d_js['Шифр'].unique()))
+
+        # Пример использования get_nodes и get_edges - возвращают список словарей
+        # get_nodes принимает на вход исходный датафрейм ДО изменений
+        for node in user_graph.get_nodes(d_js):
+            for k, v in node.items():
+                print(k, ": ", v, sep='')
+            print()
+
+        for edge in user_graph.get_edges():
+            for k, v in edge.items():
+                print(k, ": ", v, sep='')
+            print()
+
+        d_js['wbs'] = d_js[['Наименование локальной сметы', '№ п/п']].apply(
             lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
         )
-        d_js['number'] = d['Наименование локальной сметы'].apply(
-            lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0]))
+        d_js['number'] = d_js['Наименование локальной сметы'].apply(
+            lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0])
+        )
+        d_js.rename(columns={
+            'Проект': 'wbs1',
+            'Наименование локальной сметы': 'wbs2',
+            'Шифр': 'wbs3',
+            'Строка сметы': 'name',
+            'Объем': 'value',
+            '№ п/п': 'Пункт',
+        })
+        d_js['wbs3_id'] = d_js['wbs3']
         d_js['Предшественник'] = None
-        d_js['value'] = d['Объем']
-        d_js['Единица измерения'] = d['Единица измерения']
-        d_js['Плановая дата начала'] = d['Плановая дата начала']
-        d_js['Плановая дата окончания'] = d['Плановая дата окончания']
 
         myJson = d_js.to_dict('records')
         myJson.sort(
