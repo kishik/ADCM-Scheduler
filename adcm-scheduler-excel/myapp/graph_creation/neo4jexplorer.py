@@ -3,7 +3,7 @@ import logging
 import pandas as pd
 from neo4j import GraphDatabase
 
-from gantt.data_collect import calculateDinsDistance, allDins
+from myapp.gantt.data_collect import calculateDinsDistance, allDins
 from myapp.graph_creation import utils, yml
 
 logger = logging.getLogger(__name__)
