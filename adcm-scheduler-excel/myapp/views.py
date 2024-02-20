@@ -113,14 +113,17 @@ def excel_upload(request):
         d_js['number'] = d_js['Наименование локальной сметы'].apply(
             lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0])
         )
-        d_js.rename(columns={
-            'Проект': 'wbs1',
-            'Наименование локальной сметы': 'wbs2',
-            'Шифр': 'wbs3',
-            'Строка сметы': 'name',
-            'Объем': 'value',
-            '№ п/п': 'Пункт',
-        })
+        d_js.rename(
+            columns={
+                'Проект': 'wbs1',
+                'Наименование локальной сметы': 'wbs2',
+                'Шифр': 'wbs3',
+                'Строка сметы': 'name',
+                'Объем': 'value',
+                '№ п/п': 'Пункт',
+            },
+            inplace=True
+        )
         d_js['wbs3_id'] = d_js['wbs3']
         d_js['Предшественник'] = None
 
