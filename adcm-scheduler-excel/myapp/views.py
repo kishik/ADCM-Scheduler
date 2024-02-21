@@ -285,23 +285,12 @@ def excel_upload(request):
         try:
             user_graph.single_graph_copy()
         except Exception as e:
-            print("views.py 402", e.args)
+            print("views.py 402 Cannot copy historical graph", e.args)
 
         user_graph.create_new_graph_algo(set(d_js['Шифр'].unique()))
 
-        # Пример использования get_nodes и get_edges - возвращают список словарей
-        # get_nodes принимает на вход исходный датафрейм ДО изменений
-        # for node in user_graph.get_nodes(d_js):
-        #     for k, v in node.items():
-        #         print(k, ": ", v, sep='')
-        #     print()
         global graph_data
         graph_data = user_graph.get_nodes(d_js)
-        print(graph_data)
-        # for edge in user_graph.get_edges():
-        #     for k, v in edge.items():
-        #         print(k, ": ", v, sep='')
-        #     print()
 
         d_js['wbs'] = d_js[['Наименование локальной сметы', '№ п/п']].apply(
             lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1

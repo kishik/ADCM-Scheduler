@@ -111,9 +111,6 @@ def authentication(url=NEW_URL, user=USER, password=PASS, database="neo4j"):
     return session
 
 
-
-
-
 def allNodes(session):
     """
     Возвращает все ноды
@@ -165,6 +162,24 @@ def childrenByDin(din, session):
     return children_arr
 
 
+def dinСhildrenByDin(din, session):
+    """
+    Возвращает всех детей элемента din
+    :param din:
+    :param session:
+    :return: list динов
+    """
+    q_data_obtain = """
+    MATCH (a)-[]->(c)
+    WHERE a.DIN = $din
+    RETURN DISTINCT c.DIN AS din
+    """
+    result = session.run(q_data_obtain, din=din).data()
+    children_arr = np.array([item["din"] for item in result])
+    children_arr = children_arr[~np.isin(children_arr, din)]
+    return children_arr
+
+
 def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
     """
     Проходит рекурсивный путь по своим детям, указывая максимальную глубину рекурсии,
@@ -187,6 +202,30 @@ def prohod(start_din, distances, session, dins, cur_level=0, visited=[]):
                 continue
             # раньше здесь был get_edge_type, но сейчас у нас всегда тип связи "FS"
             prohod(element, distances, session, dins, cur_level + 1, visited.copy())
+
+
+def prohodDin(start_din, distances, session, dins, cur_level=0, visited=[]):
+    """
+    Проходит рекурсивный путь по своим детям, указывая максимальную глубину рекурсии,
+    сравнивая текущую и полученную сейчас
+    """
+    if start_din in visited:
+        return
+    visited.append(start_din)
+    if start_din not in dins:
+        for element in childrenByDin(start_din, session):
+            prohodDin(element, distances, session, dins, cur_level, visited)
+    else:
+        if start_din not in distances:
+            distances[start_din] = 0
+
+        distances[start_din] = max(cur_level, distances[start_din])
+
+        for element in dinСhildrenByDin(start_din, session):
+            if start_din == element:
+                continue
+            # раньше здесь был get_edge_type, но сейчас у нас всегда тип связи "FS"
+            prohodDin(element, distances, session, dins, cur_level + 1, visited.copy())
 
 
 def calculateDistance(session, dins):
@@ -367,7 +406,6 @@ def delete_clones(session):
 
 
 def get_typed_edges(session: Session) -> pd.DataFrame:
-
     Q_FINISH_START = f"""
     MATCH (n)-[:FOLLOWS]->(m)
     RETURN n.DIN AS pred_din, m.DIN AS flw_din
@@ -413,9 +451,9 @@ def calculateDinsDistance(session, dins):
     """
     distances = {}
     for node in allDins(session):
-        # if dinParentsByDin(node, session).size > 0:
-        #     continue
-        prohod(start_din=node, distances=distances, session=session, cur_level=0, dins=dins, visited=list())
+        if dinParentsByDin(node, session).size > 0:
+            continue
+        prohodDin(start_din=node, distances=distances, session=session, cur_level=0, dins=dins, visited=list())
     return distances
 
 
