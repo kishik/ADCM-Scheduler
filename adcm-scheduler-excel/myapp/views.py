@@ -291,16 +291,17 @@ def excel_upload(request):
 
         # Пример использования get_nodes и get_edges - возвращают список словарей
         # get_nodes принимает на вход исходный датафрейм ДО изменений
-        for node in user_graph.get_nodes(d_js):
-            for k, v in node.items():
-                print(k, ": ", v, sep='')
-            print()
+        # for node in user_graph.get_nodes(d_js):
+        #     for k, v in node.items():
+        #         print(k, ": ", v, sep='')
+        #     print()
         global graph_data
         graph_data = user_graph.get_nodes(d_js)
-        for edge in user_graph.get_edges():
-            for k, v in edge.items():
-                print(k, ": ", v, sep='')
-            print()
+        print(graph_data)
+        # for edge in user_graph.get_edges():
+        #     for k, v in edge.items():
+        #         print(k, ": ", v, sep='')
+        #     print()
 
         d_js['wbs'] = d_js[['Наименование локальной сметы', '№ п/п']].apply(
             lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
@@ -751,6 +752,7 @@ def schedule(request):
             duration=1,
             parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}"
         ).save()
+        print(node['distance'])
     # project_id = request.session["project_id"]
     # project = Project.objects.get(id=project_id)
     # response = requests.get(f'http://viewer:8070/links/{project.name}/')
