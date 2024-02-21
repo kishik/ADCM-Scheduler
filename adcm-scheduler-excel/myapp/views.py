@@ -79,86 +79,6 @@ def new_graph(request):
     return render(request, "myapp/hist_graph.html", context)
 
 
-def excel_upload(request):
-    if request.method == "POST":
-        path = request.FILES['excel_file']
-        d_js = pd.read_excel(
-            path,
-            dtype=str,
-        )
-
-        user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
-        try:
-            user_graph.single_graph_copy()
-        except Exception as e:
-            print("views.py 402", e.args)
-
-        user_graph.create_new_graph_algo(set(d_js['Шифр'].unique()))
-
-        # Пример использования get_nodes и get_edges - возвращают список словарей
-        # get_nodes принимает на вход исходный датафрейм ДО изменений
-        for node in user_graph.get_nodes(d_js):
-            for k, v in node.items():
-                print(k, ": ", v, sep='')
-            print()
-
-        for edge in user_graph.get_edges():
-            for k, v in edge.items():
-                print(k, ": ", v, sep='')
-            print()
-
-        d_js['wbs'] = d_js[['Наименование локальной сметы', '№ п/п']].apply(
-            lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
-        )
-        d_js['number'] = d_js['Наименование локальной сметы'].apply(
-            lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0])
-        )
-        d_js.rename(
-            columns={
-                'Проект': 'wbs1',
-                'Наименование локальной сметы': 'wbs2',
-                'Шифр': 'wbs3',
-                'Строка сметы': 'name',
-                'Объем': 'value',
-                '№ п/п': 'Пункт',
-            },
-            inplace=True
-        )
-        d_js['wbs3_id'] = d_js['wbs3']
-        d_js['Предшественник'] = None
-
-        myJson = d_js.to_dict('records')
-        myJson.sort(
-            key=lambda x: (
-                x.get("number", "") or "",
-                x.get("wbs", "") or ""
-            )
-        )
-        global graph_data
-        graph_data = myJson
-        global df
-        df = d_js
-        # df.to_excel('out.xlsx', index=False)
-        # print(myJson)
-        # переделать template под pandas
-        # вставлять готовый текст
-        return render(
-            request,
-            "myapp/excel_table.html",
-            {
-                "myJson": myJson,
-            }
-        )
-
-    return render(
-        request,
-        "myapp/excel.html",
-        {
-            "uploading": 'excel',
-        }
-    )
-
-
 def projects(request):
     """
     Выводит проекты
@@ -351,6 +271,86 @@ class FileFieldFormView(FormView):
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
+
+
+def excel_upload(request):
+    if request.method == "POST":
+        path = request.FILES['excel_file']
+        d_js = pd.read_excel(
+            path,
+            dtype=str,
+        )
+
+        user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+        try:
+            user_graph.single_graph_copy()
+        except Exception as e:
+            print("views.py 402", e.args)
+
+        user_graph.create_new_graph_algo(set(d_js['Шифр'].unique()))
+
+        # Пример использования get_nodes и get_edges - возвращают список словарей
+        # get_nodes принимает на вход исходный датафрейм ДО изменений
+        for node in user_graph.get_nodes(d_js):
+            for k, v in node.items():
+                print(k, ": ", v, sep='')
+            print()
+        global graph_data
+        graph_data = user_graph.get_nodes(d_js)
+        for edge in user_graph.get_edges():
+            for k, v in edge.items():
+                print(k, ": ", v, sep='')
+            print()
+
+        d_js['wbs'] = d_js[['Наименование локальной сметы', '№ п/п']].apply(
+            lambda x: ''.join((re.search(r'№\S*', x[0]).group(0)[1:], '.', str(x[1]))), axis=1
+        )
+        d_js['number'] = d_js['Наименование локальной сметы'].apply(
+            lambda x: int(re.search(r'№\S*', x).group(0)[1:].split('-')[0])
+        )
+        d_js.rename(
+            columns={
+                'Проект': 'wbs1',
+                'Наименование локальной сметы': 'wbs2',
+                'Шифр': 'wbs3',
+                'Строка сметы': 'name',
+                'Объем': 'value',
+                '№ п/п': 'Пункт',
+            },
+            inplace=True
+        )
+        d_js['wbs3_id'] = d_js['wbs3']
+        d_js['Предшественник'] = None
+
+        myJson = d_js.to_dict('records')
+        myJson.sort(
+            key=lambda x: (
+                x.get("number", "") or "",
+                x.get("wbs", "") or ""
+            )
+        )
+        
+        global df
+        df = d_js
+        # df.to_excel('out.xlsx', index=False)
+        # print(myJson)
+        # переделать template под pandas
+        # вставлять готовый текст
+        return render(
+            request,
+            "myapp/excel_table.html",
+            {
+                "myJson": myJson,
+            }
+        )
+
+    return render(
+        request,
+        "myapp/excel.html",
+        {
+            "uploading": 'excel',
+        }
+    )
 
 
 def volumes(request, project_id):
@@ -741,22 +741,6 @@ def schedule(request):
                 # duration=1,
                 parent=f"{node['wbs1']}{node['wbs2']}"
             ).save()
-        if node['wbs4'] not in wbs[node['wbs1']][node['wbs2']][node['wbs3']]:
-            wbs[node['wbs1']][node['wbs2']][node['wbs3']].append(node['wbs4'])
-            Task2(
-                id=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}",
-                text=f"({node['wbs4_id']}) {node['wbs4']}",
-                # min(start_date of levels)
-                start_date=datetime.today() + timedelta(days=min([el['distance'] for el in graph_data if (
-                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
-                        el['wbs4'] == node['wbs4'])])),
-                end_date=datetime.today() + timedelta(days=max([el['distance'] for el in graph_data if (
-                        el['wbs1'] == node['wbs1'] and el['wbs2'] == node['wbs2'] and el['wbs3'] == node['wbs3'] and
-                        el['wbs4'] == node['wbs4'])]) + 1),
-                # duration = max([distances[din] for din in result[wbs1]])
-                # duration=1,
-                parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}"
-            ).save()
 
         Task2(
             id=f"{node['id']}",
@@ -765,12 +749,14 @@ def schedule(request):
             start_date=datetime.today() + timedelta(days=node['distance']),
             # duration = max([distances[din] for din in result[wbs1]])
             duration=1,
-            parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}{node['wbs4']}"
+            parent=f"{node['wbs1']}{node['wbs2']}{node['wbs3']}"
         ).save()
-    project_id = request.session["project_id"]
-    project = Project.objects.get(id=project_id)
-    response = requests.get(f'http://viewer:8070/links/{project.name}/')
-    data = json.loads(response.json())
+    # project_id = request.session["project_id"]
+    # project = Project.objects.get(id=project_id)
+    # response = requests.get(f'http://viewer:8070/links/{project.name}/')
+    user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+    data = user_graph.get_edges()
+    # data = json.loads(response.json())
     for el in data:
         Link(
             source=str(el['source']),
