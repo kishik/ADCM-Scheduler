@@ -280,7 +280,7 @@ def excel_upload(request):
             path,
             dtype=str,
         )
-
+        request.session["gantt"] = 'excel'
         user_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
         try:
             user_graph.single_graph_copy()
@@ -349,6 +349,7 @@ def volumes(request, project_id):
     :param request:
     :return:vol
     """
+    request.session["gantt"] = 'excel'
     project = ActiveLink.objects.filter(userId=request.user.id).last()
     if not project:
         project = ActiveLink()
@@ -498,6 +499,7 @@ def adcm_volumes(request, project_id):
     :param request:
     :return:vol
     """
+    request.session["gantt"] = 'adcm'
     project = ActiveLink.objects.filter(userId=request.user.id).last()
     if not project:
         project = ActiveLink()
@@ -766,6 +768,8 @@ def adcm_schedule(request):
     """
     if not request.user.is_authenticated:
         return redirect("/login/")
+    if request.session["gantt"] == 'excel':
+        return redirect("/schedule/")
     wbs = {}
     Task2.objects.all().delete()
     Link.objects.all().delete()
