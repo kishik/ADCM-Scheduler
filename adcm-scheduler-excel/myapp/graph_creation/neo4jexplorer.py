@@ -217,7 +217,7 @@ class Neo4jExplorer:
             distances = calculateDinsDistance(session, allDins(session))
 
         for i in nodes:
-            i.update({"distance": distances.get(i.get("id")) if distances.get(i.get("id")) is not None else 1})
+            i.update({"distance": distances.get(i.get("id")) if distances.get(i.get("id")) is not None else 0})
             if df:
                 i.update({
                     "wbs1": df.loc[df['Шифр'] == i.get("id"), 'СПП'].values[0],
