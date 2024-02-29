@@ -27,9 +27,11 @@ class Neo4jExplorer:
         logger.debug(f'Init NEO4J driver: {_uri}')
         self.driver = GraphDatabase.driver(_uri, auth=(_user, _pswd))
 
+
     def close(self):
         # Don't forget to close the driver connection when you are finished with it
         self.driver.close()
+
 
     def load_historical_graph(self):
         # driver to historical database
@@ -62,6 +64,7 @@ class Neo4jExplorer:
         with self.driver.session() as session:
             session.run("MATCH (n) DETACH DELETE n")  # Предварительная очистка базы данных
             session.run(Q_CREATE)
+
 
     def single_graph_copy(self, uri=None):
         if uri:
@@ -123,6 +126,7 @@ class Neo4jExplorer:
         logger.debug('all dins after copy db')
         logger.debug(len(self.get_all_dins()))
 
+
     def removing_node(self, din: str):
         Q_PRED_FLW_OBTAIN = """
         MATCH (pred)-[]->(m) WHERE m.DIN = $din
@@ -147,6 +151,7 @@ class Neo4jExplorer:
             )
             session.run("MATCH (n) WHERE n.DIN = $din DETACH DELETE n", din=din)
 
+
     def get_all_dins(self):
         Q_DATA_OBTAIN = """
         MATCH (n)
@@ -157,12 +162,14 @@ class Neo4jExplorer:
         logger.debug(result)
         return result.din.to_numpy()
 
+
     def create_new_graph_algo(self, target_ids):
         # self.del_loops()
         for element in self.get_all_dins():
             if element not in target_ids:
                 self.removing_node(element)
         self.del_loops()
+
 
     def del_loops(self):
         q_del_isolated_pairs = """
@@ -198,6 +205,7 @@ class Neo4jExplorer:
         self.driver.session().run(q_del_isolated_pairs)
         self.driver.session().run(q_del_isolated_nodes)
 
+
     def get_nodes(self, df: pd.DataFrame = None) -> list[dict]:
         q_nodes = """MATCH 
         (el)-[:FOLLOWS]->(fl) RETURN el.DIN as id, el.name as name
@@ -209,7 +217,7 @@ class Neo4jExplorer:
             distances = calculateDinsDistance(session, allDins(session))
 
         for i in nodes:
-            i.update({"distance": distances.get(i.get("id"))})
+            i.update({"distance": distances.get(i.get("id")) if distances.get(i.get("id")) is not None else 1})
             if df:
                 i.update({
                     "wbs1": df.loc[df['Шифр'] == i.get("id"), 'СПП'].values[0],
@@ -218,6 +226,7 @@ class Neo4jExplorer:
                 })
         nodes.sort(key=lambda el: el["distance"])
         return nodes
+    
 
     def get_edges(self):
         query = """
