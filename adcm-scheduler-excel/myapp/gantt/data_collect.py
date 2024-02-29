@@ -417,7 +417,12 @@ def get_typed_edges(session: Session) -> pd.DataFrame:
 def saving_typed_edges(session):
     edges = get_typed_edges(session)
     for index, row in edges.iterrows():
-        Link(source=str(row["pred_din"]), target=str(row["flw_din"]), type='0', lag=0).save()
+        Link(
+            source=str(row["pred_din"]),
+            target=str(row["flw_din"]),
+            type='0',
+            lag=0
+        ).save()
 
 
 def saving_typed_edges_with_wbs(session, result):

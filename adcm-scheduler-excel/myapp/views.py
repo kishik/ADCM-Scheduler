@@ -319,7 +319,7 @@ def excel_upload(request):
                 x.get("wbs", "") or ""
             )
         )
-        
+
         global df
         df = d_js
         # df.to_excel('out.xlsx', index=False)
@@ -653,24 +653,28 @@ def hist_gantt(request):
     """
     if not request.user.is_authenticated:
         return redirect("/login/")
-    hist_graph = neo4jexplorer.Neo4jExplorer(uri=X2_URL, pswd=X2_PASS)
-    hist_graph.del_loops()
+    hist_graph = neo4jexplorer.Neo4jExplorer(uri=URL)
+    hist_graph.single_graph_copy()
 
-    session = hist_graph.driver.session()
     if "hist_restored" not in request.session:
         request.session["hist_restored"] = True
     Task2.objects.all().delete()
     Link.objects.all().delete()
-    distances = data_collect.calculate_hist_distance(session=session)
-    data_collect.saving_typed_edges(session)
+
+    for edge in hist_graph.get_edges():
+        Link(
+            source=edge["source"],
+            target=edge["target"],
+            type=edge["type"],
+            lag=edge["lag"]
+        ).save()
+
     duration = 1
-    data = data_collect.hist_allNodes(session)
-    data = sorted(data, key=lambda x: distances.get(0) or 0)
-    for node in data:
+    for node in hist_graph.get_nodes():
         Task2(
-            id=node,
-            text=data_collect.get_name_by_din(session, node) + " GESN-" + str(node),
-            start_date=datetime.today() + timedelta(days=distances.get(node) or 0),
+            id=node.get("id"),
+            text=node.get("name") + " GESN-" + node.get("id"),
+            start_date=datetime.today() + timedelta(days=node.get("distance") or 0),
             duration=duration,
         ).save()
 

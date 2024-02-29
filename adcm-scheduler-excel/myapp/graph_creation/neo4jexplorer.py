@@ -117,7 +117,9 @@ class Neo4jExplorer:
                     wght=row["weight"]
                 ), axis=1
             )
-            logger.debug("historical db copied to local")
+
+        self.del_loops()
+        logger.debug("historical db copied to local")
         logger.debug('all dins after copy db')
         logger.debug(len(self.get_all_dins()))
 
@@ -196,7 +198,7 @@ class Neo4jExplorer:
         self.driver.session().run(q_del_isolated_pairs)
         self.driver.session().run(q_del_isolated_nodes)
 
-    def get_nodes(self, df: pd.DataFrame) -> list[dict]:
+    def get_nodes(self, df: pd.DataFrame = None) -> list[dict]:
         q_nodes = """MATCH 
         (el)-[:FOLLOWS]->(fl) RETURN el.DIN as id, el.name as name
         UNION MATCH 
@@ -207,12 +209,13 @@ class Neo4jExplorer:
             distances = calculateDinsDistance(session, allDins(session))
 
         for i in nodes:
-            i.update({
-                "wbs1": df.loc[df['Шифр'] == i.get("id"), 'СПП'].values[0],
-                "wbs2": df.loc[df['Шифр'] == i.get("id"), 'Проект'].values[0],
-                "wbs3": df.loc[df['Шифр'] == i.get("id"), 'Наименование локальной сметы'].values[0],
-                "distance": distances.get(i.get("id")),
-            })
+            i.update({"distance": distances.get(i.get("id"))})
+            if df:
+                i.update({
+                    "wbs1": df.loc[df['Шифр'] == i.get("id"), 'СПП'].values[0],
+                    "wbs2": df.loc[df['Шифр'] == i.get("id"), 'Проект'].values[0],
+                    "wbs3": df.loc[df['Шифр'] == i.get("id"), 'Наименование локальной сметы'].values[0],
+                })
         nodes.sort(key=lambda el: el["distance"])
         return nodes
 
