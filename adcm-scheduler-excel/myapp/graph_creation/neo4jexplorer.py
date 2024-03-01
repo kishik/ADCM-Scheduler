@@ -218,7 +218,7 @@ class Neo4jExplorer:
 
         for i in nodes:
             i.update({"distance": distances.get(i.get("id")) if distances.get(i.get("id")) is not None else 0})
-            if df:
+            if df is not None:
                 i.update({
                     "wbs1": df.loc[df['Шифр'] == i.get("id"), 'СПП'].values[0],
                     "wbs2": df.loc[df['Шифр'] == i.get("id"), 'Проект'].values[0],
