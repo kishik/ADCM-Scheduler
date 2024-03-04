@@ -77,6 +77,8 @@ services:
     ports:
       - "8070:8070" # fastapi
       - "3000:3000" # viewer
+    environment:
+      - PYTHONUNBUFFERED=0
 
 
 volumes:

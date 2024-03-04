@@ -73,11 +73,14 @@ async def get_links(project_name: str):
 @app.get("/copy/{project_id}")
 async def load_project(project_id: int):
     os.chdir('/app/')
-    if os.path.isdir(f'{project_id}'):
-        shutil.rmtree(f'{project_id}')
+    if os.path.isdir(f'./{project_id}'):
+        shutil.rmtree(f'./{project_id}')
     if os.path.isdir(f'./xeokit-bim-viewer-app/data/projects/{project_id}/'):    
-        shutil.rmtree(f'./xeokit-bim-viewer-app/data/projects/{project_id}/')
-
+        # shutil.rmtree(f'./xeokit-bim-viewer-app/data/projects/{project_id}/')
+        os.chdir('./xeokit-bim-viewer-app/')
+        os.system(f'node deleteProject.js -p {project_id}')
+        os.chdir('/app/')
+    
     os.mkdir(f'{project_id}')
     # download project
     os.chdir(f'./{project_id}/')
@@ -85,11 +88,11 @@ async def load_project(project_id: int):
     for el in r.json()['models']:
         m = requests.get(el['ifc'], allow_redirects=True)
         open(f'{el["name"]}.ifc', 'wb').write(m.content)
-    os.chdir('..')
+    os.chdir('/app/')
 
     os.chdir('./xeokit-bim-viewer-app/')
     os.system(f'node ./createProject.js -p {project_id} -s ../{project_id}/**/*.ifc')
-    os.chdir('..')
+    os.chdir('/app/')
     files = [f for f in os.listdir(f'./{project_id}')]
     for file in files:
         # print(f'./{project.name}/{file}')
