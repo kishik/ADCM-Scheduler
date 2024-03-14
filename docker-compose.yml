@@ -20,10 +20,11 @@ services:
     ports:
       - "7474:7474" # HTTP
       - "7687:7687" # Bolt
-    # volumes:
-    #   - neo4j_data:/data
-    #   - neo4j_logs:/logs
-    #   - neo4j_import:/var/lib/neo4j/import
+    volumes:
+       - ./neo4j.conf:/conf/neo4j.conf
+#       - neo4j_data:/data
+#       - neo4j_logs:/logs
+#       - neo4j_import:/var/lib/neo4j/import
     environment:
       NEO4J_AUTH: neo4j/23109900
 
@@ -41,6 +42,7 @@ services:
       - ./import:/import_elements
       - ./logs:/logs_elements
       - ./plugins:/plugins_elements
+      - ./neo4j.conf:/conf/neo4j.conf
     environment:
       NEO4J_AUTH: neo4j/23109900
     # depends_on:
