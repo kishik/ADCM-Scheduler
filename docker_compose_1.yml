@@ -12,6 +12,7 @@ services:
       - neo4j_data:/data
       - neo4j_logs:/logs
       - neo4j_import:/var/lib/neo4j/import
+      - ./neo4j.conf:/conf/neo4j.conf
     environment:
       NEO4J_AUTH: neo4j/23109900
 
